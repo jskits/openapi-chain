@@ -104,3 +104,16 @@ Strict clients index route shapes and HTTP methods at creation. Both chain and
 `$path()` routing use that snapshot; changing the routing table requires creating
 a new client. Request matching is proportional to path depth rather than total
 schema route count. Metadata records must remain immutable for the client's lifetime.
+
+## Implementation map
+
+- `client.ts`: schema-free request pipeline with descriptive runtime/state names.
+- `strict-client.ts`: strict client orchestration, middleware, parsing and Proxy API.
+- `serialization.ts`: strict wire encodings and request validation, without transport I/O.
+- `routes.ts`: the strict routing snapshot and lookups.
+- `path.ts`: shared dot-segment policy.
+- `metadata.ts`: OpenAPI serialization metadata compiler.
+- `type.ts`: public contracts and operation-derived type computation.
+
+Shared behavior is qualified through core/strict contract tests rather than merging
+the whole strict serializer into the core dependency graph.
