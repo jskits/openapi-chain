@@ -80,7 +80,7 @@ await api.users(userId).post({
     },
 
     request: (request, input) => {
-      // Ultimate per-operation wire escape hatch. `input` is still OpenAPI-derived.
+      // Runs after validation and serialization. `input` stays OpenAPI-derived.
       return patchVendorRequest(request, input);
     },
   },
@@ -159,7 +159,12 @@ The implementation prefers an explicit error over silently sending the wrong wir
 - advanced multipart features that native Fetch primitives cannot represent;
 - compound cookie values using legacy `style: form`, whose RFC6570 delimiter is not a faithful `Cookie` header representation.
 
-The final escape hatch is always available through a typed operation `request` extension or a custom global `transport`.
+Request processing runs in this order: input validation → location/body serialization →
+`extensions.request` → transport → response parsing. The final request extension and
+transport only receive successfully serialized requests; they cannot recover an
+earlier validation or serialization failure. Use `extensions.body` or the relevant
+location extension for unsupported encodings, then optionally patch the final
+request. Required and undeclared input checks still apply in strict mode.
 
 ## Error modes
 

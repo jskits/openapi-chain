@@ -87,7 +87,7 @@ The implementation prefers an explicit error over a request with a plausible but
 - advanced multipart behavior unavailable through native Fetch primitives;
 - compound cookie values with legacy `style: form`, whose RFC6570 `&` delimiter is not a faithful `Cookie` header representation.
 
-The intended progression is: tiny default -> operation-local typed extension -> strict metadata runtime -> custom transport. Rare behavior never needs to inflate the default core.
+The intended progression is: tiny default -> operation-local typed extension -> strict metadata runtime -> custom transport. Rare behavior never needs to inflate the default core. Final request extensions and transports run only after input validation and location/body serialization; use those earlier extension points when serialization itself needs replacing.
 
 Serialization inference tracks active schema references through `allOf` and `items`.
 Ordinary recursive object properties can still be represented as JSON parts. Cycles

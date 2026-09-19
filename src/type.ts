@@ -436,7 +436,7 @@ export type OperationExtensions<Item, Operation, InferSingleMedia extends boolea
   cookie?: (cookie: LocationParameters<Item, Operation, 'cookie'>) => string;
   body?: (input: PresentBodyInput<Operation, InferSingleMedia>) => BodyInit | undefined;
   response?: (response: Response) => MaybePromise<OperationResponseExtensionResult<Operation>>;
-  /** Final typed request escape hatch for vendor-specific wire behavior. */
+  /** Patches an already validated/serialized request; cannot bypass earlier failures. */
   request?: (
     request: TransportRequest,
     input: Readonly<OperationBaseInput<Item, Operation, InferSingleMedia>>,
