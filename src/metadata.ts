@@ -53,14 +53,31 @@ function decodePointerToken(token: string): string {
 }
 
 function resolvePointer(root: unknown, ref: string): unknown {
-  if (!ref.startsWith('#/')) {
+  if (!ref.startsWith('#')) {
     throw new TypeError(
       `External OpenAPI $ref is not supported by compileOpenAPIMetadata(): ${ref}. ` +
         'Bundle or dereference the document first.',
     );
   }
+  let pointer: string;
+  try {
+    // URI fragments are decoded before JSON Pointer tokenization/unescaping.
+    pointer = decodeURIComponent(ref.slice(1));
+  } catch {
+    throw new TypeError(`Invalid URI encoding in OpenAPI $ref: ${ref}`);
+  }
+  if (pointer === '') return root;
+  if (!pointer.startsWith('/')) {
+    throw new TypeError(`Unsupported local OpenAPI $ref (expected JSON Pointer): ${ref}`);
+  }
+  if (/~(?:[^01]|$)/.test(pointer)) {
+    throw new TypeError(`Invalid JSON Pointer escape in OpenAPI $ref: ${ref}`);
+  }
   let value: unknown = root;
-  for (const token of ref.slice(2).split('/').map(decodePointerToken)) {
+  for (const token of pointer.slice(1).split('/').map(decodePointerToken)) {
+    if (Array.isArray(value) && !/^(?:0|[1-9][0-9]*)$/.test(token)) {
+      throw new TypeError(`Invalid JSON Pointer array index in OpenAPI $ref: ${ref}`);
+    }
     if (typeof value !== 'object' || value === null || !Object.hasOwn(value, token)) {
       throw new TypeError(`Unresolvable OpenAPI $ref: ${ref}`);
     }
