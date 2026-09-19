@@ -17,6 +17,7 @@ type Analysis = 'kind' | 'content' | 'properties' | 'encoding';
 type CachedAnalysis = { value: unknown; height: number };
 type CompilationContext = {
   document: AnyRecord;
+  version: OasMinor;
   work: number;
   caches: Record<Analysis, Map<unknown, CachedAnalysis>>;
   stack: { height: number }[];
@@ -98,17 +99,31 @@ function resolvePointer(root: CompilationContext, ref: string): unknown {
   return value;
 }
 
-function dereference(value: unknown, root: CompilationContext, seen = new Set<string>()): unknown {
+function dereference(
+  value: unknown,
+  root: CompilationContext,
+  context: 'reference' | 'schema' | 'path' = 'reference',
+  seen = new Set<string>(),
+): unknown {
   spendWork(root);
   if (!isRecord(value) || typeof value.$ref !== 'string') return value;
   const ref = value.$ref;
   if (seen.has(ref)) throw new TypeError(`Circular OpenAPI $ref: ${ref}`);
   if (seen.size >= 128) throw new TypeError('OpenAPI reference depth exceeds 128.');
   seen.add(ref);
-  const target = dereference(resolvePointer(root, ref), root, seen);
+  const target = dereference(resolvePointer(root, ref), root, context, seen);
   seen.delete(ref);
-  if (!isRecord(target)) return target;
+  // Reference Object siblings never override serialization fields. OAS 3.0
+  // also uses Reference Objects in schema positions; 3.1+ has schema applicators.
+  if (context === 'reference' || (context === 'schema' && root.version === '3.0')) return target;
   const siblings = Object.fromEntries(Object.entries(value).filter(([key]) => key !== '$ref'));
+  if (!Object.keys(siblings).length) return target;
+  if (context === 'schema') return { allOf: [target, siblings] };
+  if (!isRecord(target)) return target;
+  const overlap = Object.keys(siblings).find((key) => Object.hasOwn(target, key));
+  if (overlap !== undefined) {
+    throw new TypeError(`Ambiguous Path Item $ref sibling field: ${overlap}.`);
+  }
   return { ...target, ...siblings };
 }
 
@@ -170,7 +185,7 @@ function schemaKind(
   active = new Set<unknown>(),
 ): 'primitive' | 'object' | 'array' | 'binary' | 'unknown' {
   return visitSchema(schemaValue, active, root, 'kind', () => {
-    const schema = dereference(schemaValue, root);
+    const schema = dereference(schemaValue, root, 'schema');
     if (!isRecord(schema)) return 'unknown';
     if (Array.isArray(schema.allOf)) {
       const kinds = schema.allOf.map((item) => schemaKind(item, root, version, active));
@@ -213,7 +228,7 @@ function inferContentType(
   active = new Set<unknown>(),
 ): string | undefined {
   return visitSchema(schemaValue, active, root, 'content', () => {
-    const schema = dereference(schemaValue, root);
+    const schema = dereference(schemaValue, root, 'schema');
     if (!isRecord(schema)) return undefined;
     const type = Array.isArray(schema.type)
       ? schema.type.find((item) => item !== 'null')
@@ -254,7 +269,7 @@ function collectPropertySchemas(
 ): Record<string, unknown> {
   return visitSchema(schemaValue, active, root, 'properties', () => {
     const target: Record<string, unknown> = dictionary();
-    const schema = dereference(schemaValue, root);
+    const schema = dereference(schemaValue, root, 'schema');
     if (!isRecord(schema)) return target;
     if (isRecord(schema.properties)) {
       for (const [name, property] of Object.entries(schema.properties)) target[name] = property;
@@ -281,7 +296,7 @@ function schemaUsesContentEncoding(
   active = new Set<unknown>(),
 ): boolean {
   return visitSchema(schemaValue, active, root, 'encoding', () => {
-    const schema = dereference(schemaValue, root);
+    const schema = dereference(schemaValue, root, 'schema');
     if (!isRecord(schema)) return false;
     if (typeof schema.contentEncoding === 'string') return true;
     if (Array.isArray(schema.allOf)) {
@@ -713,6 +728,7 @@ export function compileOpenAPIMetadata(document: unknown): CompiledOpenAPIMetada
   const version = openapiMinor(source);
   const root: CompilationContext = {
     document: source,
+    version,
     work: 0,
     stack: [],
     caches: { kind: new Map(), content: new Map(), properties: new Map(), encoding: new Map() },
@@ -735,7 +751,7 @@ export function compileOpenAPIMetadata(document: unknown): CompiledOpenAPIMetada
     }
     seenTemplates.set(normalized, path);
 
-    const pathItem = asRecord(dereference(rawPathItem, root), `Path item ${path}`);
+    const pathItem = asRecord(dereference(rawPathItem, root, 'path'), `Path item ${path}`);
     if (
       version === '3.2' &&
       isRecord(pathItem.additionalOperations) &&

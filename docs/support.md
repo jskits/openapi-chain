@@ -61,3 +61,11 @@ in the CI matrix; local success does not establish that those remote jobs passed
 This is a serialization support matrix, not a certification of every OpenAPI
 feature. Links, callbacks, webhooks, security-scheme execution, automatic auth,
 retry policy and complete schema validation are outside the client's built-in scope.
+
+## Reference contexts
+
+Reference Objects cannot override serialization fields through sibling keys.
+OAS 3.0 schema references follow that same rule; OAS 3.1/3.2 Schema Object
+`$ref` siblings are combined conjunctively. Path Item references preserve disjoint
+fields and reject overlapping fields, whose behavior OpenAPI leaves undefined.
+Summary/description annotations do not affect the compiled serialization metadata.
