@@ -716,7 +716,7 @@ function buildTemplatePath(
   }
   let index = 0;
   return template.replace(/\{([^{}]+)\}/g, (_match, name: string) => {
-    if (!params || !(name in params)) {
+    if (!params || !Object.hasOwn(params, name)) {
       throw new TypeError(`Missing path parameter: ${name}`);
     }
     return customPath

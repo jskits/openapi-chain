@@ -13,6 +13,10 @@ import type {
 } from './type.js';
 
 type AnyRecord = Record<string, unknown>;
+
+function dictionary<T>(): Record<string, T> {
+  return Object.create(null) as Record<string, T>;
+}
 type OasMinor = '3.0' | '3.1' | '3.2';
 
 const BASE_STYLES: Record<Exclude<ParameterLocation, 'querystring'>, readonly ParameterStyle[]> = {
@@ -57,10 +61,10 @@ function resolvePointer(root: unknown, ref: string): unknown {
   }
   let value: unknown = root;
   for (const token of ref.slice(2).split('/').map(decodePointerToken)) {
-    if (!isRecord(value) || !(token in value)) {
+    if (typeof value !== 'object' || value === null || !Object.hasOwn(value, token)) {
       throw new TypeError(`Unresolvable OpenAPI $ref: ${ref}`);
     }
-    value = value[token];
+    value = (value as AnyRecord)[token];
   }
   return value;
 }
@@ -175,7 +179,7 @@ function defaultContentTypeForSchema(
 function collectPropertySchemas(
   schemaValue: unknown,
   root: unknown,
-  target: Record<string, unknown> = {},
+  target: Record<string, unknown> = dictionary(),
   active = new Set<unknown>(),
 ): Record<string, unknown> {
   return visitSchema(schemaValue, active, () => {
@@ -221,8 +225,8 @@ function propertyMetadataForSchema(
 } {
   const schemas = collectPropertySchemas(schemaValue, root);
   if (!Object.keys(schemas).length) return { schemas };
-  const kinds: Record<string, ReturnType<typeof schemaKind>> = {};
-  const contentTypes: Record<string, string> = {};
+  const kinds: Record<string, ReturnType<typeof schemaKind>> = dictionary();
+  const contentTypes: Record<string, string> = dictionary();
   for (const [name, propertySchema] of Object.entries(schemas)) {
     kinds[name] = schemaKind(propertySchema, root, version);
     contentTypes[name] = defaultContentTypeForSchema(propertySchema, root, version);
@@ -236,7 +240,7 @@ function compileEncoding(
 ): { encoding?: Record<string, EncodingMetadata>; requiresCustomSerializer?: string } {
   if (raw === undefined) return {};
   const record = asRecord(raw, 'OpenAPI encoding');
-  const result: Record<string, EncodingMetadata> = {};
+  const result: Record<string, EncodingMetadata> = dictionary();
   let customReason: string | undefined;
 
   for (const [name, value] of Object.entries(record)) {
@@ -372,7 +376,7 @@ function compileMediaType(
 
   if (compiledEncoding.encoding && Object.keys(properties.schemas).length) {
     for (const name of Object.keys(compiledEncoding.encoding)) {
-      if (!(name in properties.schemas)) {
+      if (!Object.hasOwn(properties.schemas, name)) {
         throw new TypeError(`Encoding key ${name} is not a request-body schema property.`);
       }
     }
@@ -546,7 +550,7 @@ function compileRequestBody(
   }
   const content = asRecord(value.content, 'OpenAPI requestBody.content');
   const mediaTypes = Object.keys(content);
-  const media: Record<string, MediaTypeMetadata> = {};
+  const media: Record<string, MediaTypeMetadata> = dictionary();
   for (const [contentType, rawMedia] of Object.entries(content)) {
     const compiled = compileMediaType(rawMedia, root, version, contentType);
     if (compiled) media[contentType] = compiled;
@@ -574,7 +578,10 @@ function compileOperation(
   const byLocation: OperationMetadata['parameters'] = {};
   for (const parameter of parameters.values()) {
     const location = parameter.in;
-    const current = (byLocation[location] ?? {}) as Record<string, ParameterMetadata>;
+    const current = (byLocation[location] ?? dictionary<ParameterMetadata>()) as Record<
+      string,
+      ParameterMetadata
+    >;
     current[parameter.name] = parameter;
     byLocation[location] = current;
   }
@@ -589,7 +596,7 @@ function compileOperation(
   const templateNames = [...path.matchAll(/\{([^{}]+)\}/g)].map((match) => match[1]!);
   const pathParameters = byLocation.path ?? {};
   for (const name of templateNames) {
-    if (!(name in pathParameters)) {
+    if (!Object.hasOwn(pathParameters, name)) {
       throw new TypeError(`Path ${path} is missing parameter definition for {${name}}.`);
     }
   }
@@ -621,7 +628,7 @@ export function compileOpenAPIMetadata(document: unknown): CompiledOpenAPIMetada
   const root = asRecord(document, 'OpenAPI document');
   const version = openapiMinor(root);
   const paths = asRecord(root.paths ?? {}, 'OpenAPI paths');
-  const operations: Record<string, Partial<Record<HttpMethod, OperationMetadata>>> = {};
+  const operations: Record<string, Partial<Record<HttpMethod, OperationMetadata>>> = dictionary();
   const seenTemplates = new Map<string, string>();
 
   for (const [path, rawPathItem] of Object.entries(paths)) {

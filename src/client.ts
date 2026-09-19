@@ -64,7 +64,7 @@ function render(s: State, f?: Ext['path']) {
   const e = (v: unknown) => (f ? f(v, { index: i++ }) : enc(v));
   if ('t' in s)
     return s.t.replace(/\{([^{}]+)\}/g, (_m, k: string) => {
-      if (!s.p || !(k in s.p)) throw new TypeError(`Missing path: ${k}`);
+      if (!s.p || !Object.hasOwn(s.p, k)) throw new TypeError(`Missing path: ${k}`);
       return e(s.p[k]);
     });
   return s.c.length ? `/${s.c.map((x) => (x.d ? e(x.v) : x.v)).join('/')}` : '/';
