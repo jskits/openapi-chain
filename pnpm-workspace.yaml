@@ -1,0 +1,6 @@
+packages:
+  - .
+
+strictPeerDependencies: true
+saveExact: true
+onlyBuiltDependencies: []
