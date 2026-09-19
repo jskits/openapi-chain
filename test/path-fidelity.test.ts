@@ -39,3 +39,29 @@ test.each([false, true])(
     ]);
   },
 );
+
+test.each(['', '/', '?existing=1', '#fragment', '/?existing=1#fragment'])(
+  'core preserves replacement tokens in paths with base suffix %s',
+  async (suffix) => {
+    type DollarPaths = {
+      '/price/$$': Operation;
+      '/price/$&': Operation;
+      '/price/{id}': { parameters: { path: { id: string } } } & Operation;
+    };
+    const urls: string[] = [];
+    const api = createClient<DollarPaths>({
+      baseUrl: `https://example.test/api${suffix}`,
+      transport: async ({ url }) => {
+        urls.push(url);
+        return new Response(null, { status: 204 });
+      },
+    });
+    await api.price['$$'].get();
+    await api.$path('/price/$&').get();
+    await api.price('x').get({ extensions: { path: () => "$'" } });
+    const tail = suffix.replace(/^\//, '');
+    expect(urls).toEqual(
+      ['$$', '$&', "$'"].map((value) => `https://example.test/api/price/${value}${tail}`),
+    );
+  },
+);

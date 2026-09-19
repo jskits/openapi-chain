@@ -151,8 +151,7 @@ async function executeRequest(
       if (cookies.length) headers.set('cookie', cookies.join('; '));
     }
   }
-  let url = runtime.options.baseUrl.replace(
-    /\/?(?=[?#]|$)/,
+  let url = runtime.options.baseUrl.replace(/\/?(?=[?#]|$)/, () =>
     safePath(renderPath(state, extensions?.path)),
   );
   if (input?.query)
