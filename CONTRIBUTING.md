@@ -41,3 +41,18 @@ publication; it is a real publishing command and requires registry authenticatio
 The CI workflow instead packs verified artifacts and publishes them in a separate
 job using Trusted Publishing. Builds and local checks alone do not prove npm
 publication or remote CI success.
+
+## Compatibility and integration checks
+
+`pnpm test:generated` compares freshly generated Petstore and onboarding fixtures
+with their checked-in declarations. Update schemas via `pnpm generate:example`
+and format them before committing; do not hand-edit generated declarations.
+
+`pnpm check` includes type-scale instantiation/memory budgets. Deterministic URL
+corpus and local HTTP tests run with the normal Vitest suite. For transport-facing
+changes also run `pnpm build`, `pnpm exec playwright install chromium`, then
+`pnpm test:browser`. CI runs Chromium separately from the Node/OS matrix.
+
+Use `pnpm benchmark` for repeatable performance evidence. Report the environment,
+scenario and measurement method; see [performance.md](docs/performance.md). Neither
+coverage percentages nor microbenchmarks replace real generator and wire tests.

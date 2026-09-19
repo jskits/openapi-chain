@@ -20,7 +20,9 @@ The package deliberately separates two runtime budgets:
 - **core** (`openapi-chain`) is schema-free and guarded at **<= 2048 bytes gzip**. It covers the mainstream HTTP/OpenAPI path, query, header, cookie, JSON/text/native-body, transport and response flow while refusing to guess erased runtime metadata.
 - **strict** (`openapi-chain/strict`) is opt-in. It consumes compiled OpenAPI metadata and implements exact `style`, `explode`, `allowReserved`, Parameter `content`, Encoding Object, multipart/form encoding, and OpenAPI 3.2 wire semantics.
 
-This keeps the default client tiny without removing the long tail of the OpenAPI specification.
+This keeps the default client tiny while making supported metadata-driven serialization opt-in. See the [support matrix](docs/support.md) for explicit limits.
+
+Start with the [complete generated-schema example](docs/getting-started.md), or read the [reproducible performance comparison](docs/performance.md).
 
 ## Tiny core
 
@@ -254,22 +256,25 @@ pnpm check
 If your Node.js installation does not include Corepack, install pnpm 10.34.5 using
 the [pnpm installation guide](https://pnpm.io/installation).
 
-| Command                                     | Purpose                                                                 |
-| ------------------------------------------- | ----------------------------------------------------------------------- |
-| `pnpm dev`                                  | Rebuild the library on changes                                          |
-| `pnpm build`                                | Build ESM, CommonJS, declarations and source maps; run publint and attw |
-| `pnpm lint` / `pnpm lint:fix`               | Oxlint checks, including type-aware rules; optional fixes               |
-| `pnpm format` / `pnpm format:check`         | Format or check using Oxfmt                                             |
-| `pnpm typecheck`                            | Strict TypeScript checks for source, tests, examples and TS configs     |
-| `pnpm test` / `pnpm test:watch`             | Run Vitest once or in watch mode                                        |
-| `pnpm test:coverage`                        | Run tests with V8 coverage and 90% thresholds                           |
-| `pnpm test:package` / `pnpm verify:package` | Verify all three entries in an isolated tarball consumer                |
-| `pnpm size:check`                           | Enforce the 2048-byte transitive core gzip limit after building         |
-| `pnpm check`                                | Run the complete local quality gate, including a fresh build            |
-| `pnpm commit`                               | Create a Conventional Commit using Commitizen                           |
-| `pnpm changeset`                            | Describe a user-facing change and its version impact                    |
-| `pnpm version:packages`                     | Apply changesets and update the lockfile                                |
-| `pnpm clean`                                | Remove build and coverage output                                        |
+| Command                                     | Purpose                                                                      |
+| ------------------------------------------- | ---------------------------------------------------------------------------- |
+| `pnpm dev`                                  | Rebuild the library on changes                                               |
+| `pnpm build`                                | Build ESM, CommonJS, declarations and source maps; run publint and attw      |
+| `pnpm lint` / `pnpm lint:fix`               | Oxlint checks, including type-aware rules; optional fixes                    |
+| `pnpm format` / `pnpm format:check`         | Format or check using Oxfmt                                                  |
+| `pnpm typecheck`                            | Strict TypeScript checks for source, tests, examples and TS configs          |
+| `pnpm test` / `pnpm test:watch`             | Run Vitest once or in watch mode                                             |
+| `pnpm test:coverage`                        | Run tests with V8 coverage and 90% thresholds                                |
+| `pnpm test:package` / `pnpm verify:package` | Verify all three entries in an isolated tarball consumer                     |
+| `pnpm size:check`                           | Enforce the 2048-byte transitive core gzip limit after building              |
+| `pnpm check`                                | Run the complete local quality gate, including a fresh build                 |
+| `pnpm commit`                               | Create a Conventional Commit using Commitizen                                |
+| `pnpm changeset`                            | Describe a user-facing change and its version impact                         |
+| `pnpm version:packages`                     | Apply changesets and update the lockfile                                     |
+| `pnpm test:generated`                       | Regenerate and compare the pinned OpenAPI fixtures                           |
+| `pnpm test:browser`                         | Run Chromium integration after building and installing its browser           |
+| `pnpm benchmark`                            | Rebuild and measure type scale, runtime overhead and comparable bundle sizes |
+| `pnpm clean`                                | Remove build and coverage output                                             |
 
 `test:package` needs `pnpm build` first. It packs and installs the package in a
 temporary directory, verifies the file allowlist, and checks ESM/CJS imports plus

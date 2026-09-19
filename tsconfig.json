@@ -16,7 +16,8 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "types": ["node"]
+    "types": ["node"],
+    "resolveJsonModule": true
   },
   "include": ["src/**/*.ts", "test/**/*.ts", "examples/**/*.ts", "*.config.ts"]
 }
