@@ -62,3 +62,42 @@ test.each(['text/csv', 'application/octet-stream', ''])(
     });
   },
 );
+
+test.each([
+  'text/plain; charset=UTF-8',
+  'text/plain; charset="utf-8"',
+  'application/json; charset=utf-8',
+])('preserves declared media parameters and UTF-8 bytes for %s', async (contentType) => {
+  await multipart('café😀', contentType, async (request) => {
+    const bytes = new Uint8Array(await request.arrayBuffer());
+    const wire = new TextDecoder().decode(bytes);
+    expect(wire).toContain(`Content-Type: ${contentType.toLowerCase()}\r\n`);
+    expect(Buffer.from(bytes).includes(Buffer.from('café😀', 'utf8'))).toBe(true);
+  });
+});
+
+test.each([
+  'text/plain; charset=iso-8859-1',
+  'text/html; charset="UTF-16"',
+  'application/json; charset=ascii',
+])('rejects unsupported generated text charset before transport: %s', async (contentType) => {
+  let calls = 0;
+  await expect(
+    multipart('café', contentType, async () => {
+      calls++;
+    }),
+  ).rejects.toThrow(/charset.*not supported/);
+  expect(calls).toBe(0);
+});
+
+test('pre-encoded parts keep their bytes with a non-UTF-8 charset', async () => {
+  await multipart(
+    new Uint8Array([0x63, 0x61, 0x66, 0xe9]),
+    'text/plain; charset=iso-8859-1',
+    async (request) => {
+      const bytes = Buffer.from(await request.arrayBuffer());
+      expect(bytes.includes(Buffer.from([0x63, 0x61, 0x66, 0xe9]))).toBe(true);
+      expect(bytes.toString()).toContain('Content-Type: text/plain; charset=iso-8859-1');
+    },
+  );
+});

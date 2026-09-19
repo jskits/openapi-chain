@@ -883,6 +883,20 @@ function selectMultipartContentType(contentTypes: string): string {
   );
 }
 
+/** Generated textual parts use Fetch/Blob UTF-8 encoding; byte bodies are already encoded. */
+function validateMultipartTextCharset(contentType: string): void {
+  const parameters = /;\s*([^=;\s]+)\s*=\s*("(?:[^"\\]|\\.)*"|[^;]*)/g;
+  for (const match of contentType.matchAll(parameters)) {
+    if (match[1]!.toLowerCase() !== 'charset') continue;
+    const charset = match[2]!.trim().replace(/^"|"$/g, '').toLowerCase();
+    if (charset !== 'utf-8') {
+      throw new TypeError(
+        `Multipart text charset ${charset} is not supported; provide pre-encoded bytes or an operation body extension.`,
+      );
+    }
+  }
+}
+
 function appendMultipartContentPart(
   form: FormData,
   name: string,
@@ -902,12 +916,14 @@ function appendMultipartContentPart(
     return;
   }
   if (normalized === 'application/json' || normalized.endsWith('+json')) {
+    validateMultipartTextCharset(contentType);
     form.append(name, new Blob([JSON.stringify(value)], { type: contentType }));
     return;
   }
   if (normalized.startsWith('text/')) {
+    validateMultipartTextCharset(contentType);
     const text = primitive(value, `multipart field ${name}`);
-    if (normalized === 'text/plain') form.append(name, text);
+    if (contentType.trim().toLowerCase() === 'text/plain') form.append(name, text);
     else form.append(name, new Blob([text], { type: contentType }));
     return;
   }
