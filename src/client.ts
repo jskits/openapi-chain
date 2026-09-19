@@ -1,4 +1,5 @@
 /* oxlint-disable typescript/no-base-to-string -- Core scalar coercion intentionally follows String(); structured serialization uses typed extensions. */
+import { safePath } from './path.js';
 import { httpMethods } from './constant.js';
 import {
   HttpError,
@@ -126,7 +127,7 @@ async function exec(r: R, s: State, m: HttpMethod, i?: RequestInput) {
       if (a.length) h.set('cookie', a.join('; '));
     }
   }
-  let url = r.o.baseUrl.replace(/\/?(?=[?#]|$)/, render(s, x?.path));
+  let url = r.o.baseUrl.replace(/\/?(?=[?#]|$)/, safePath(render(s, x?.path)));
   if (i?.query) url = add(url, x?.query ? text(x.query(i.query)) : query(i.query));
   let req: TransportRequest = {
     url,

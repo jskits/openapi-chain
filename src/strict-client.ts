@@ -1,3 +1,4 @@
+import { safePath } from './path.js';
 import { httpMethods } from './constant.js';
 import {
   HttpError,
@@ -1257,7 +1258,7 @@ async function execute(
     localBodySerializer,
   );
 
-  let url = joinUrl(runtime.options.baseUrl, path);
+  let url = joinUrl(runtime.options.baseUrl, safePath(path));
   if (input?.query && input?.querystring) {
     throw new TypeError('OpenAPI query and querystring parameters cannot be used together.');
   }

@@ -94,3 +94,8 @@ Ordinary recursive object properties can still be represented as JSON parts. Cyc
 that prevent determining a part's kind or media type throw a descriptive `TypeError`;
 inference is also bounded to 128 nested schema visits. Simplify the serialization
 schema in these cases rather than relying on unbounded recursive inference.
+
+Rendered paths containing whole `.` or `..` segments (including `%2e` spellings)
+are rejected before transport. Fetch normalizes these segments, so encoding a dot
+is insufficient to preserve the intended endpoint. This check also applies to
+operation path extensions; filenames such as `file.txt` remain valid.
