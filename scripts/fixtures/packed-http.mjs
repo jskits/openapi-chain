@@ -20,6 +20,7 @@ const server = createServer((request, response) => {
       JSON.stringify({
         url: request.url,
         body: Buffer.concat(chunks).toString('utf8'),
+        bytes: Buffer.concat(chunks).toJSON().data,
         contentType: request.headers['content-type'] ?? '',
       }),
     );
@@ -47,6 +48,59 @@ try {
     headers: { 'content-type': uploaded.contentType },
   }).formData();
   assert.equal(form.get('value'), 'hello');
+  const binaryDocument = {
+    openapi: '3.1.1',
+    paths: {
+      '/parts': {
+        post: {
+          requestBody: {
+            content: {
+              'multipart/form-data': {
+                schema: { properties: { file: {}, text: { type: 'string' }, raw: {} } },
+                encoding: {
+                  file: { contentType: 'application/octet-stream' },
+                  text: { contentType: 'text/plain; charset=utf-8' },
+                  raw: { contentType: 'text/plain; charset=iso-8859-1' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+  const upload = createStrictClient({ baseUrl, metadata: compileOpenAPIMetadata(binaryDocument) });
+  const received = await upload.parts.post({
+    body: {
+      file: [new File(['A'], 'one.csv', { type: 'text/csv' }), new File(['B'], 'two.csv')],
+      text: 'café😀',
+      raw: new Uint8Array([99, 0xe9, 98]).subarray(1, 2),
+    },
+  });
+  const bytes = Buffer.from(received.bytes);
+  assert.ok(bytes.includes(Buffer.from('Content-Type: text/plain; charset=utf-8')));
+  assert.ok(bytes.includes(Buffer.from('café😀')));
+  assert.ok(bytes.includes(Buffer.from([13, 10, 13, 10, 0xe9, 13, 10])));
+  const parsed = await new Response(new Uint8Array(received.bytes), {
+    headers: { 'content-type': received.contentType },
+  }).formData();
+  assert.deepEqual(
+    parsed.getAll('file').map((file) => [file.name, file.type]),
+    [
+      ['one.csv', 'application/octet-stream'],
+      ['two.csv', 'application/octet-stream'],
+    ],
+  );
+  for (const body of [
+    new Uint8Array([99, 65, 66, 98]).subarray(1, 3),
+    new DataView(new Uint8Array([99, 65, 66, 98]).buffer, 1, 2),
+  ]) {
+    const echoed = await createClient({ baseUrl }).binary.post({
+      contentType: 'application/octet-stream',
+      body,
+    });
+    assert.deepEqual(echoed.bytes, [65, 66]);
+  }
 } finally {
   server.closeAllConnections();
   await new Promise((resolve, reject) =>

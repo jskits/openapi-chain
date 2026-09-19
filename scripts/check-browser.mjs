@@ -67,6 +67,7 @@ async function handle(request, response) {
   response.end(
     JSON.stringify({
       field,
+      bytes: [...body],
       contentType,
       cookie: request.headers.cookie ?? '',
       query: url.searchParams.get('q'),
@@ -174,8 +175,73 @@ try {
       abort: 'AbortError',
       chunks: ['A', 'B'],
     });
+
+  const parts = await page.evaluate(
+    async ({ origin, crossOrigin }) => {
+      const { createClient } = await import(`${origin}/dist/index.js`);
+      const { createStrictClient } = await import(`${origin}/dist/strict.js`);
+      const { compileOpenAPIMetadata } = await import(`${origin}/dist/metadata.js`);
+      const metadata = compileOpenAPIMetadata({
+        openapi: '3.1.1',
+        paths: {
+          '/upload': {
+            post: {
+              requestBody: {
+                content: {
+                  'multipart/form-data': {
+                    schema: { properties: { files: {}, text: { type: 'string' } } },
+                    encoding: {
+                      files: { contentType: 'image/*' },
+                      text: { contentType: 'text/plain; charset=utf-8' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+      const api = createStrictClient({ baseUrl: crossOrigin, metadata });
+      const received = await api.upload.post({
+        body: {
+          files: [
+            new File(['A'], 'one.png', { type: 'image/png' }),
+            new File(['B'], 'two.jpg', { type: 'image/jpeg' }),
+          ],
+          text: 'café😀',
+        },
+      });
+      const bytes = new Uint8Array(received.bytes);
+      const wire = new TextDecoder().decode(bytes);
+      const parsed = await new Response(bytes, {
+        headers: { 'content-type': received.contentType },
+      }).formData();
+      const binary = await createClient({ baseUrl: crossOrigin }).binary.post({
+        contentType: 'application/octet-stream',
+        body: new Uint8Array([99, 65, 66, 98]).subarray(1, 3),
+      });
+      return {
+        files: parsed.getAll('files').map((file) => [file.name, file.type]),
+        text: await parsed.get('text').text(),
+        explicitCharset: wire.includes('Content-Type: text/plain; charset=utf-8'),
+        hasWildcard: wire.includes('Content-Type: image/*'),
+        binary: binary.bytes,
+      };
+    },
+    { origin, crossOrigin },
+  );
+  assert.deepEqual(parts, {
+    files: [
+      ['one.png', 'image/png'],
+      ['two.jpg', 'image/jpeg'],
+    ],
+    text: 'café😀',
+    explicitCharset: true,
+    hasWildcard: false,
+    binary: [65, 66],
+  });
   console.log(
-    'Chromium: core/strict ESM, multipart, Unicode, credentialed CORS, cookie omission, abort and streaming passed.',
+    'Chromium: core/strict ESM, multipart, Unicode, credentialed CORS, cookie omission, abort, streaming, multipart part fidelity and binary slices passed.',
   );
 } finally {
   await browser?.close();
