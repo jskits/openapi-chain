@@ -18,9 +18,10 @@ await api.pets.post({
 The package deliberately separates two runtime budgets:
 
 - **core** (`openapi-chain`) is schema-free and guarded at **<= 2048 bytes gzip**. It covers the mainstream HTTP/OpenAPI path, query, header, cookie, JSON/text/native-body, transport and response flow while refusing to guess erased runtime metadata.
-- **strict** (`openapi-chain/strict`) is opt-in. It consumes compiled OpenAPI metadata and implements exact `style`, `explode`, `allowReserved`, Parameter `content`, Encoding Object, multipart/form encoding, and OpenAPI 3.2 wire semantics.
+- **strict** (`openapi-chain/strict`) is opt-in. It consumes compiled OpenAPI metadata and supports metadata-driven `style`, `explode`, `allowReserved`, Parameter `content`, Encoding Object, multipart/form encoding, and OpenAPI 3.2 wire semantics.
 
-This keeps the default client tiny while making supported metadata-driven serialization opt-in. See the [support matrix](docs/support.md) for explicit limits.
+This keeps the default client tiny while making supported metadata-driven serialization opt-in. See the [support matrix](docs/support.md) for explicit limits and the
+[conformance qualification](docs/conformance-qualification.md) for verified behavior.
 
 Start with the [complete generated-schema example](docs/getting-started.md), or read the [reproducible performance comparison](docs/performance.md).
 
@@ -131,7 +132,7 @@ const api = createStrictClient<paths>({
 await api.pets.post({ body: { name: 'Mochi' } });
 ```
 
-`compileOpenAPIMetadata()` supports OpenAPI 3.0, 3.1, and 3.2 documents. Local JSON Pointer `$ref`s are resolved. External `$ref`s fail closed; bundle or dereference the document first.
+`compileOpenAPIMetadata()` supports OpenAPI 3.0, 3.1, and 3.2 documents. Local JSON Pointer `$ref`s are resolved, including URI fragment percent-encoding. External `$ref`s fail closed; bundle or dereference the document first.
 
 ### What strict mode validates
 

@@ -2,7 +2,7 @@
 
 Run `pnpm benchmark` to build fresh artifacts and reproduce all measurements.
 The pinned reference client is `openapi-fetch` 0.17.0; TypeScript and tsdown use
-the versions in `package.json`. The numbers below are an illustrative local run (see [qualification](qualification.md))
+the versions in `package.json`. The numbers below are an illustrative local run (see [qualification](conformance-qualification.md))
 on macOS arm64 / Node 24.16.0, not a cross-platform throughput guarantee.
 
 ## Runtime
@@ -14,9 +14,9 @@ path selection on each iteration. There is no network, JSON parsing or server wo
 
 | Routes | Core | Strict chain | Strict `$path()` | openapi-fetch |
 | ------ | ---: | -----------: | ---------------: | ------------: |
-| 10     | 1.40 |         2.11 |             1.50 |          2.55 |
-| 1000   | 1.00 |         1.52 |             1.31 |          2.44 |
-| 10000  | 1.16 |         1.65 |             1.33 |          2.18 |
+| 10     | 1.60 |         2.16 |             1.49 |          2.53 |
+| 1000   | 1.07 |         1.43 |             1.26 |          2.37 |
+| 10000  | 1.20 |         1.62 |             1.25 |          2.16 |
 
 The 10000-route metadata compile took about 10 ms and strict indexing about 14 ms.
 This setup cost is paid at client construction. Runtime figures include different
@@ -32,9 +32,9 @@ response type; negative assertions retain required-query and path constraints.
 
 | Routes | Instantiations | Compiler memory | Check time |
 | ------ | -------------: | --------------: | ---------: |
-| 100    |          70099 |         ~97 MiB |     0.18 s |
-| 1000   |         401299 |        ~131 MiB |     0.61 s |
-| 5000   |        1873299 |        ~877 MiB |     2.53 s |
+| 100    |          70399 |         ~97 MiB |     0.18 s |
+| 1000   |         404299 |        ~140 MiB |     0.58 s |
+| 5000   |        1888299 |        ~854 MiB |     2.49 s |
 
 The check runs in `pnpm check` and CI. Each scenario must stay below 3 million
 instantiations and 1200000 KB compiler memory. Wall-clock times are reported but
@@ -51,8 +51,8 @@ Dependencies are bundled and each result must be a single file.
 | Entry         | Minified bytes | Gzip bytes |
 | ------------- | -------------: | ---------: |
 | core          |           4221 |       1850 |
-| strict        |          20930 |       6475 |
-| metadata      |          11993 |       3867 |
+| strict        |          20988 |       6495 |
+| metadata      |          12804 |       4136 |
 | openapi-fetch |           7418 |       2833 |
 
 These entries have different feature sets. Strict is an alternative to core;

@@ -1,5 +1,8 @@
 # Hardening qualification
 
+This is the earlier hardening snapshot. See the [conformance follow-up](conformance-qualification.md)
+for the subsequent fixes and current local/remote qualification.
+
 Implementation snapshot: `98c9387`. This report and release-note commit follows the
 18 independent implementation, contract, test and documentation commits below.
 All results are local, on macOS arm64 / Node 24.16.0 / pnpm 10.34.5.
