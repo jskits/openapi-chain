@@ -156,7 +156,9 @@ type UnionToIntersection<U> = (U extends unknown ? (value: U) => void : never) e
 type SplitSegments<S extends string> = S extends ''
   ? []
   : S extends `${infer Head}/${infer Tail}`
-    ? [Head, ...SplitSegments<Tail>]
+    ? Tail extends ''
+      ? [Head, '']
+      : [Head, ...SplitSegments<Tail>]
     : [S];
 
 type RemoveLeadingSlash<S extends string> = S extends `/${infer Rest}`
@@ -172,7 +174,7 @@ type OperationEntryForPath<Path extends string, Item> = Item extends object
             item: Item;
             operation: Defined<Item[Method]>;
             method: Method;
-            segments: SplitSegments<RemoveLeadingSlash<Path>>;
+            segments: Path extends `//${string}` ? [''] : SplitSegments<RemoveLeadingSlash<Path>>;
           };
     }[Extract<keyof Item, HttpMethod>]
   : never;

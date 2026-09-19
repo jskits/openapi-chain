@@ -336,3 +336,22 @@ const dynamicClient = createClient<Paths>({
   transport: async () => new Response(),
 });
 void dynamicClient;
+
+// Paths with significant outer slashes must use the lossless template escape.
+type SlashPaths = {
+  '/items/': { get: { responses: { 204: { content: never } } } };
+  '//other': { get: { responses: { 204: { content: never } } } };
+};
+const slashCore = createClient<SlashPaths>({ baseUrl: 'https://example.test' });
+const slashStrict = createStrictClient<SlashPaths>({
+  baseUrl: 'https://example.test',
+  metadata: {} as CompiledOpenAPIMetadata,
+});
+// @ts-expect-error trailing slash is not representable by a chain
+slashCore.items.get();
+// @ts-expect-error trailing slash is not representable by a chain
+slashStrict.items.get();
+// @ts-expect-error repeated leading slash is not representable by a chain
+slashCore.other.get();
+void slashCore.$path('/items/').get();
+void slashStrict.$path('//other').get();

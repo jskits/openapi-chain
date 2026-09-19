@@ -29,7 +29,9 @@ server-set cookies for browser sessions.
 
 Paths containing whole literal or encoded dot segments are rejected. Native Fetch
 would normalize them and change the endpoint. Other structural limitations of the
-chain, including `then`, HTTP method names and mixed templates, use `$path()`.
+chain, including `then`, HTTP method names, mixed templates, trailing slashes
+(except the root `/`) and repeated leading slashes, use `$path()`. These slash
+structures remain exact and are excluded from chain routing and chain types.
 
 Generated binary types and actual parser values must agree. Use an operation
 response extension for binary/stream/vendor formats and configure your generator's

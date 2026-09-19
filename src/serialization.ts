@@ -114,7 +114,7 @@ export function joinUrl(baseUrl: string, path: string): string {
   const { base, suffix } = splitUrlSuffix(baseUrl);
   const normalizedBase = base.replace(/\/+$/, '');
   if (path === '/') return `${normalizedBase}/${suffix}`;
-  const normalizedPath = path.replace(/^\/+/, '');
+  const normalizedPath = path.replace(/^\//, '');
   if (!normalizedPath) return `${normalizedBase}${suffix}`;
   return `${normalizedBase}/${normalizedPath}${suffix}`;
 }
