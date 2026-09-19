@@ -25,7 +25,9 @@ Coverage includes all `src/**/*.ts` files, including unimported modules.
 `pnpm check` covers formatting, linting, type checking, tests with coverage, build
 validation and an installed-tarball smoke test. Do not replace these checks with
 tests that only import source files: exports and declaration paths can fail only
-after packing. The empty scaffold currently has no behavior to qualify.
+after packing. Package checks exercise all three entry points in ESM and CommonJS, including typed operations and mocked requests.
+
+Keep the default runtime dependency-free and at or below 2048 bytes transitive gzip. Runtime OpenAPI serialization metadata belongs in `/strict`; prefer operation-derived extensions or a custom transport for vendor behavior. See [architecture](docs/architecture.md).
 
 ## Releases
 

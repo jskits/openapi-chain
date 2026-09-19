@@ -37,10 +37,9 @@ try {
   );
   const files = packed.files.map(({ path }) => path);
   for (const required of [
-    'dist/index.js',
-    'dist/index.cjs',
-    'dist/index.d.ts',
-    'dist/index.d.cts',
+    ...['index', 'strict', 'metadata'].flatMap((entry) =>
+      ['js', 'cjs', 'd.ts', 'd.cts'].map((extension) => `dist/${entry}.${extension}`),
+    ),
     'README.md',
     'LICENSE',
   ]) {
@@ -70,24 +69,61 @@ try {
     env,
   );
   const specifier = JSON.stringify(manifest.name);
-  run(process.execPath, [
-    '--input-type=module',
-    '-e',
-    `import * as library from ${specifier}; if (!library) throw new Error('ESM import failed');`,
-  ]);
-  run(process.execPath, [
-    '--input-type=commonjs',
-    '-e',
-    `const library = require(${specifier}); if (!library) throw new Error('CJS require failed');`,
-  ]);
-  writeFileSync(
-    join(consumer, 'consumer.mts'),
-    `import * as library from ${specifier};\nvoid library;\n`,
-  );
-  writeFileSync(
-    join(consumer, 'consumer.cts'),
-    `import library = require(${specifier});\nvoid library;\n`,
-  );
+  const strictSpecifier = JSON.stringify(`${manifest.name}/strict`);
+  const metadataSpecifier = JSON.stringify(`${manifest.name}/metadata`);
+  const behavior = `
+const assert = require('node:assert/strict');
+async function main() {
+  const document = {openapi:'3.2.1', paths:{'/x/{id}':{
+    parameters:[{name:'id',in:'path',required:true,schema:{type:'string'}}],
+    get:{responses:{200:{description:'ok'}}}
+  }}};
+  const metadata = compileOpenAPIMetadata(document);
+  for (const factory of [createClient, createStrictClient]) {
+    const api = factory({baseUrl:'https://example.test',metadata,transport:async request => {
+      assert.equal(request.url, 'https://example.test/x/a%20b');
+      assert.equal(request.init.method, 'GET');
+      return new Response('{"ok":true}', {headers:{'content-type':'application/json'}});
+    }});
+    assert.deepEqual(await api.x('a b').get(), {ok:true});
+  }
+}
+main().catch(error => { console.error(error); process.exitCode = 1; });
+`;
+  for (const mode of ['esm', 'cjs']) {
+    const imports =
+      mode === 'esm'
+        ? `import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+import { createClient } from ${specifier};
+import { createStrictClient } from ${strictSpecifier};
+import { compileOpenAPIMetadata } from ${metadataSpecifier};
+`
+        : `const { createClient } = require(${specifier});
+const { createStrictClient } = require(${strictSpecifier});
+const { compileOpenAPIMetadata } = require(${metadataSpecifier});
+`;
+    const filename = mode === 'esm' ? 'smoke.mjs' : 'smoke.cjs';
+    writeFileSync(join(consumer, filename), imports + behavior);
+    run(process.execPath, [filename]);
+  }
+  const typeConsumer = `import { createClient, type OperationExtensionsFor } from ${specifier};
+import { createStrictClient } from ${strictSpecifier};
+import { compileOpenAPIMetadata } from ${metadataSpecifier};
+type Paths = {'/x/{id}': {parameters:{path:{id:string}}, get:{responses:{200:{content:{'application/json':{ok:true}}}}}}};
+const metadata = compileOpenAPIMetadata({openapi:'3.2.1',paths:{}});
+const core = createClient<Paths>({baseUrl:'https://example.test'});
+const strict = createStrictClient<Paths>({baseUrl:'https://example.test',metadata});
+const extension = {path: value => value.toUpperCase()} satisfies OperationExtensionsFor<Paths, '/x/{id}', 'get'>;
+const result: Promise<{ok:true}> = core.x('id').get({extensions:extension});
+const strictResult: Promise<{ok:true}> = strict.x('id').get();
+// @ts-expect-error path arguments preserve the schema type
+core.x(123);
+void result; void strictResult;
+`;
+  for (const extension of ['mts', 'cts']) {
+    writeFileSync(join(consumer, `consumer.${extension}`), typeConsumer);
+  }
   run(process.execPath, [
     join(root, 'node_modules/typescript/bin/tsc'),
     '--noEmit',

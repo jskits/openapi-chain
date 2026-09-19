@@ -1,2 +1,35 @@
-/** Public exports will be added here as the new client API is implemented. */
-export {};
+export { createClient } from './client.js';
+export { httpMethods } from './constant.js';
+export {
+  HttpError,
+  type API,
+  type ApiResult,
+  type ClientOptions,
+  type CoreClientOptions,
+  type CompiledOpenAPIMetadata,
+  type EncodingMetadata,
+  type ErrorResult,
+  type HttpMethod,
+  type MediaTypeMetadata,
+  type Middleware,
+  type OperationExtensions,
+  type OperationExtensionsFor,
+  type OperationInput,
+  type OperationInputFor,
+  type OperationResponseData,
+  type OperationResponseExtensionResult,
+  type StrictClientOptions,
+  type OpenAPIMetadata,
+  type OpenAPIPaths,
+  type OperationMetadata,
+  type ParameterLocation,
+  type ParameterMetadata,
+  type ParameterStyle,
+  type PathValue,
+  type RequestBodyMetadata,
+  type RequestInput,
+  type SuccessData,
+  type SuccessResult,
+  type Transport,
+  type TransportRequest,
+} from './type.js';

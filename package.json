@@ -1,7 +1,7 @@
 {
   "name": "openapi-chain",
   "version": "0.0.0",
-  "description": "A TypeScript library for chainable OpenAPI clients (under development).",
+  "description": "A tiny OpenAPI-typed fluent client with zero client codegen and opt-in exact-wire serialization.",
   "keywords": [
     "client",
     "openapi",
@@ -36,7 +36,27 @@
         "default": "./dist/index.cjs"
       }
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./strict": {
+      "import": {
+        "types": "./dist/strict.d.ts",
+        "default": "./dist/strict.js"
+      },
+      "require": {
+        "types": "./dist/strict.d.cts",
+        "default": "./dist/strict.cjs"
+      }
+    },
+    "./metadata": {
+      "import": {
+        "types": "./dist/metadata.d.ts",
+        "default": "./dist/metadata.js"
+      },
+      "require": {
+        "types": "./dist/metadata.d.cts",
+        "default": "./dist/metadata.cjs"
+      }
+    }
   },
   "publishConfig": {
     "access": "public",
@@ -55,7 +75,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:package": "node scripts/check-package.mjs",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm build && pnpm test:package",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm build && pnpm test:package && pnpm size:check",
     "commit": "cz",
     "commitlint": "commitlint",
     "changeset": "changeset",
@@ -63,7 +83,9 @@
     "release": "pnpm check && changeset publish",
     "prepack": "pnpm build",
     "prepublishOnly": "pnpm check",
-    "prepare": "husky"
+    "prepare": "husky",
+    "verify:package": "pnpm test:package",
+    "size:check": "node scripts/check-size.mjs"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",
