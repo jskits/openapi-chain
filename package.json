@@ -87,7 +87,8 @@
     "verify:package": "pnpm test:package",
     "size:check": "node scripts/check-size.mjs",
     "generate:example": "openapi-typescript examples/example.yaml -o examples/schema.d.ts",
-    "test:generated": "node scripts/check-generated.mjs"
+    "test:generated": "node scripts/check-generated.mjs",
+    "test:browser": "node scripts/check-browser.mjs"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",
@@ -105,6 +106,7 @@
     "oxfmt": "0.68.0",
     "oxlint": "1.83.0",
     "oxlint-tsgolint": "7.0.2002",
+    "playwright": "1.63.0",
     "publint": "0.3.24",
     "tsdown": "0.23.0",
     "typescript": "6.0.3",
