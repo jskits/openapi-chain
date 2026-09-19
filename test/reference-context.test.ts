@@ -124,3 +124,17 @@ test('Path Item refs preserve disjoint fields and reject ambiguous overlaps', ()
     }),
   ).toThrow(/Ambiguous Path Item/);
 });
+
+test.each(['3.1.1', '3.2.1'])('nested repeated references are acyclic in %s', (openapi) => {
+  const ref = { $ref: '#/components/schemas/Base' };
+  for (const schema of [
+    { ...ref, allOf: [{ ...ref, description: 'same target' }] },
+    { allOf: [ref, { ...ref, description: 'same target' }] },
+  ]) {
+    expect(
+      schemaMetadata(openapi, schema).operations['/x']?.post?.requestBody?.media?.[
+        'multipart/form-data'
+      ]?.propertyContentTypes,
+    ).toEqual({ value: 'text/plain' });
+  }
+});

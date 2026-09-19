@@ -153,7 +153,9 @@ function visitSchema<T>(
 ): T {
   spendWork(root);
   const key = isRecord(value) && typeof value.$ref === 'string' ? value.$ref : value;
-  if (active.has(key))
+  // Reference spelling identifies reusable results, not the node being visited.
+  // Distinct schema objects may legally apply the same reference in siblings.
+  if (active.has(value))
     throw new TypeError('Recursive OpenAPI schema serialization metadata cannot be inferred.');
   const cacheKey = isRecord(value) && Object.keys(value).length === 1 ? key : value;
   const cached = root.caches[analysis].get(cacheKey);
@@ -166,14 +168,14 @@ function visitSchema<T>(
   }
   const frame = { height: 1 };
   root.stack.push(frame);
-  active.add(key);
+  active.add(value);
   try {
     const result = visit();
     root.caches[analysis].set(cacheKey, { value: result, height: frame.height });
     if (parent) parent.height = Math.max(parent.height, frame.height + 1);
     return result;
   } finally {
-    active.delete(key);
+    active.delete(value);
     root.stack.pop();
   }
 }
