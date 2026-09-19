@@ -151,20 +151,27 @@ function defaultContentTypeForSchema(
   schemaValue: unknown,
   root: unknown,
   version: OasMinor,
-  active = new Set<unknown>(),
 ): string {
+  return inferContentType(schemaValue, root, version) ?? 'application/octet-stream';
+}
+
+function inferContentType(
+  schemaValue: unknown,
+  root: unknown,
+  version: OasMinor,
+  active = new Set<unknown>(),
+): string | undefined {
   return visitSchema(schemaValue, active, () => {
     const schema = dereference(schemaValue, root);
-    if (!isRecord(schema)) return 'application/octet-stream';
+    if (!isRecord(schema)) return undefined;
     const type = Array.isArray(schema.type)
       ? schema.type.find((item) => item !== 'null')
       : schema.type;
+    // An explicit type determines the default; applicators do not imply object.
     if (type === 'array' || 'items' in schema) {
-      return defaultContentTypeForSchema(schema.items, root, version, active);
+      return inferContentType(schema.items, root, version, active);
     }
-    if (type === 'object' || isRecord(schema.properties) || Array.isArray(schema.allOf)) {
-      return 'application/json';
-    }
+    if (type === 'object' || isRecord(schema.properties)) return 'application/json';
     if (type === 'string') {
       const binary =
         (version === '3.0' && schema.format === 'binary') ||
@@ -172,7 +179,20 @@ function defaultContentTypeForSchema(
       return binary ? 'application/octet-stream' : 'text/plain';
     }
     if (type === 'number' || type === 'integer' || type === 'boolean') return 'text/plain';
-    return 'application/octet-stream';
+    if (Array.isArray(schema.allOf)) {
+      const types = new Set(
+        schema.allOf
+          .map((item) => inferContentType(item, root, version, active))
+          .filter((value) => value !== undefined),
+      );
+      if (types.size > 1) {
+        throw new TypeError(
+          'Conflicting allOf serialization content types; provide an explicit schema type.',
+        );
+      }
+      return types.values().next().value;
+    }
+    return undefined;
   });
 }
 
