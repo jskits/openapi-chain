@@ -13,6 +13,18 @@ import type {
 } from './type.js';
 
 type AnyRecord = Record<string, unknown>;
+type Analysis = 'kind' | 'content' | 'properties' | 'encoding';
+type CachedAnalysis = { value: unknown; height: number };
+type CompilationContext = {
+  document: AnyRecord;
+  work: number;
+  caches: Record<Analysis, Map<unknown, CachedAnalysis>>;
+  stack: { height: number }[];
+};
+
+function spendWork(root: CompilationContext): void {
+  if (++root.work > 1_000_000) throw new TypeError('OpenAPI compilation work budget exceeded.');
+}
 
 function dictionary<T>(): Record<string, T> {
   return Object.create(null) as Record<string, T>;
@@ -52,7 +64,7 @@ function decodePointerToken(token: string): string {
   return token.replace(/~1/g, '/').replace(/~0/g, '~');
 }
 
-function resolvePointer(root: unknown, ref: string): unknown {
+function resolvePointer(root: CompilationContext, ref: string): unknown {
   if (!ref.startsWith('#')) {
     throw new TypeError(
       `External OpenAPI $ref is not supported by compileOpenAPIMetadata(): ${ref}. ` +
@@ -66,14 +78,14 @@ function resolvePointer(root: unknown, ref: string): unknown {
   } catch {
     throw new TypeError(`Invalid URI encoding in OpenAPI $ref: ${ref}`);
   }
-  if (pointer === '') return root;
+  if (pointer === '') return root.document;
   if (!pointer.startsWith('/')) {
     throw new TypeError(`Unsupported local OpenAPI $ref (expected JSON Pointer): ${ref}`);
   }
   if (/~(?:[^01]|$)/.test(pointer)) {
     throw new TypeError(`Invalid JSON Pointer escape in OpenAPI $ref: ${ref}`);
   }
-  let value: unknown = root;
+  let value: unknown = root.document;
   for (const token of pointer.slice(1).split('/').map(decodePointerToken)) {
     if (Array.isArray(value) && !/^(?:0|[1-9][0-9]*)$/.test(token)) {
       throw new TypeError(`Invalid JSON Pointer array index in OpenAPI $ref: ${ref}`);
@@ -86,7 +98,8 @@ function resolvePointer(root: unknown, ref: string): unknown {
   return value;
 }
 
-function dereference(value: unknown, root: unknown, seen = new Set<string>()): unknown {
+function dereference(value: unknown, root: CompilationContext, seen = new Set<string>()): unknown {
+  spendWork(root);
   if (!isRecord(value) || typeof value.$ref !== 'string') return value;
   const ref = value.$ref;
   if (seen.has(ref)) throw new TypeError(`Circular OpenAPI $ref: ${ref}`);
@@ -116,26 +129,47 @@ function allowedStyles(
 }
 
 // Track traversal across schema applicators, not only adjacent $ref chains.
-function visitSchema<T>(value: unknown, active: Set<unknown>, visit: () => T): T {
+function visitSchema<T>(
+  value: unknown,
+  active: Set<unknown>,
+  root: CompilationContext,
+  analysis: Analysis,
+  visit: () => T,
+): T {
+  spendWork(root);
   const key = isRecord(value) && typeof value.$ref === 'string' ? value.$ref : value;
   if (active.has(key))
     throw new TypeError('Recursive OpenAPI schema serialization metadata cannot be inferred.');
-  if (active.size >= 128) throw new TypeError('OpenAPI schema serialization depth exceeds 128.');
+  const cacheKey = isRecord(value) && Object.keys(value).length === 1 ? key : value;
+  const cached = root.caches[analysis].get(cacheKey);
+  if (active.size + (cached?.height ?? 1) > 128)
+    throw new TypeError('OpenAPI schema serialization depth exceeds 128.');
+  const parent = root.stack.at(-1);
+  if (cached) {
+    if (parent) parent.height = Math.max(parent.height, cached.height + 1);
+    return cached.value as T;
+  }
+  const frame = { height: 1 };
+  root.stack.push(frame);
   active.add(key);
   try {
-    return visit();
+    const result = visit();
+    root.caches[analysis].set(cacheKey, { value: result, height: frame.height });
+    if (parent) parent.height = Math.max(parent.height, frame.height + 1);
+    return result;
   } finally {
     active.delete(key);
+    root.stack.pop();
   }
 }
 
 function schemaKind(
   schemaValue: unknown,
-  root: unknown,
+  root: CompilationContext,
   version: OasMinor,
   active = new Set<unknown>(),
 ): 'primitive' | 'object' | 'array' | 'binary' | 'unknown' {
-  return visitSchema(schemaValue, active, () => {
+  return visitSchema(schemaValue, active, root, 'kind', () => {
     const schema = dereference(schemaValue, root);
     if (!isRecord(schema)) return 'unknown';
     if (Array.isArray(schema.allOf)) {
@@ -166,7 +200,7 @@ function schemaKind(
 
 function defaultContentTypeForSchema(
   schemaValue: unknown,
-  root: unknown,
+  root: CompilationContext,
   version: OasMinor,
 ): string {
   return inferContentType(schemaValue, root, version) ?? 'application/octet-stream';
@@ -174,11 +208,11 @@ function defaultContentTypeForSchema(
 
 function inferContentType(
   schemaValue: unknown,
-  root: unknown,
+  root: CompilationContext,
   version: OasMinor,
   active = new Set<unknown>(),
 ): string | undefined {
-  return visitSchema(schemaValue, active, () => {
+  return visitSchema(schemaValue, active, root, 'content', () => {
     const schema = dereference(schemaValue, root);
     if (!isRecord(schema)) return undefined;
     const type = Array.isArray(schema.type)
@@ -215,18 +249,23 @@ function inferContentType(
 
 function collectPropertySchemas(
   schemaValue: unknown,
-  root: unknown,
-  target: Record<string, unknown> = dictionary(),
+  root: CompilationContext,
   active = new Set<unknown>(),
 ): Record<string, unknown> {
-  return visitSchema(schemaValue, active, () => {
+  return visitSchema(schemaValue, active, root, 'properties', () => {
+    const target: Record<string, unknown> = dictionary();
     const schema = dereference(schemaValue, root);
     if (!isRecord(schema)) return target;
     if (isRecord(schema.properties)) {
       for (const [name, property] of Object.entries(schema.properties)) target[name] = property;
     }
     if (Array.isArray(schema.allOf)) {
-      for (const item of schema.allOf) collectPropertySchemas(item, root, target, active);
+      for (const item of schema.allOf) {
+        for (const [name, property] of Object.entries(collectPropertySchemas(item, root, active))) {
+          spendWork(root);
+          target[name] = property;
+        }
+      }
     }
     return target;
   });
@@ -234,10 +273,10 @@ function collectPropertySchemas(
 
 function schemaUsesContentEncoding(
   schemaValue: unknown,
-  root: unknown,
+  root: CompilationContext,
   active = new Set<unknown>(),
 ): boolean {
-  return visitSchema(schemaValue, active, () => {
+  return visitSchema(schemaValue, active, root, 'encoding', () => {
     const schema = dereference(schemaValue, root);
     if (!isRecord(schema)) return false;
     if (typeof schema.contentEncoding === 'string') return true;
@@ -253,7 +292,7 @@ function schemaUsesContentEncoding(
 
 function propertyMetadataForSchema(
   schemaValue: unknown,
-  root: unknown,
+  root: CompilationContext,
   version: OasMinor,
 ): {
   kinds?: Record<string, ReturnType<typeof schemaKind>>;
@@ -366,7 +405,7 @@ function normalizeMediaTypeForCompiler(contentType: string): string {
 
 function compileMediaType(
   rawMedia: unknown,
-  root: unknown,
+  root: CompilationContext,
   version: OasMinor,
   contentType: string,
 ): MediaTypeMetadata | undefined {
@@ -436,7 +475,11 @@ function compileMediaType(
   };
 }
 
-function compileParameter(rawValue: unknown, root: unknown, version: OasMinor): ParameterMetadata {
+function compileParameter(
+  rawValue: unknown,
+  root: CompilationContext,
+  version: OasMinor,
+): ParameterMetadata {
   const value = asRecord(dereference(rawValue, root), 'OpenAPI parameter');
   const name = value.name;
   const location = value.in;
@@ -544,7 +587,7 @@ function compileParameter(rawValue: unknown, root: unknown, version: OasMinor): 
 
 function compileParameterList(
   raw: unknown,
-  root: unknown,
+  root: CompilationContext,
   version: OasMinor,
 ): Map<string, ParameterMetadata> {
   const result = new Map<string, ParameterMetadata>();
@@ -574,7 +617,7 @@ function compileParameterList(
 
 function compileRequestBody(
   rawValue: unknown,
-  root: unknown,
+  root: CompilationContext,
   version: OasMinor,
 ): RequestBodyMetadata | undefined {
   if (rawValue === undefined) return undefined;
@@ -603,7 +646,7 @@ function compileOperation(
   path: string,
   pathItem: AnyRecord,
   operationValue: unknown,
-  root: unknown,
+  root: CompilationContext,
   version: OasMinor,
 ): OperationMetadata {
   const operation = asRecord(dereference(operationValue, root), 'OpenAPI operation');
@@ -662,9 +705,15 @@ function normalizedTemplate(path: string): string {
  * features fail closed or are marked for an operation body extension.
  */
 export function compileOpenAPIMetadata(document: unknown): CompiledOpenAPIMetadata {
-  const root = asRecord(document, 'OpenAPI document');
-  const version = openapiMinor(root);
-  const paths = asRecord(root.paths ?? {}, 'OpenAPI paths');
+  const source = asRecord(document, 'OpenAPI document');
+  const version = openapiMinor(source);
+  const root: CompilationContext = {
+    document: source,
+    work: 0,
+    stack: [],
+    caches: { kind: new Map(), content: new Map(), properties: new Map(), encoding: new Map() },
+  };
+  const paths = asRecord(source.paths ?? {}, 'OpenAPI paths');
   const operations: Record<string, Partial<Record<HttpMethod, OperationMetadata>>> = dictionary();
   const seenTemplates = new Map<string, string>();
 

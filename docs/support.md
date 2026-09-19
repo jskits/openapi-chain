@@ -37,6 +37,11 @@ Generated binary types and actual parser values must agree. Use an operation
 response extension for binary/stream/vendor formats and configure your generator's
 type mapping accordingly. A generic `paths` parameter is not runtime validation.
 
+Metadata analysis caches shared schema subgraphs within each compilation. A
+1,000,000-step work budget bounds traversal in addition to the 128-level depth
+limit; exceeding either fails explicitly. Compile large documents at build time.
+Caches are discarded between compilations.
+
 Compiled metadata and `paths` must come from the same schema revision. Treat
 metadata as immutable while a client is alive. Strict routing is indexed at client
 construction; replace the client when the routing document changes.
