@@ -263,7 +263,11 @@ function collectPropertySchemas(
       for (const item of schema.allOf) {
         for (const [name, property] of Object.entries(collectPropertySchemas(item, root, active))) {
           spendWork(root);
-          target[name] = property;
+          // allOf is conjunction, not a last-write-wins object merge.
+          target[name] =
+            Object.hasOwn(target, name) && target[name] !== property
+              ? { allOf: [target[name], property] }
+              : property;
         }
       }
     }
