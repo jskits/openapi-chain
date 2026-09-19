@@ -92,7 +92,8 @@
     "benchmark:types": "node scripts/benchmark-types.mjs",
     "benchmark:runtime": "node scripts/benchmark-runtime.mjs",
     "benchmark:size": "node scripts/benchmark-size.mjs",
-    "benchmark": "pnpm build && pnpm benchmark:types && pnpm benchmark:runtime && pnpm benchmark:size"
+    "benchmark": "pnpm build && pnpm benchmark:types && pnpm benchmark:runtime && pnpm benchmark:size && pnpm benchmark:metadata",
+    "benchmark:metadata": "node scripts/benchmark-metadata.mjs"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",

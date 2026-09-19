@@ -30,3 +30,10 @@ OpenAPI conformance certification or a substitute for real application schemas.
 The pinned generator emits `string & unknown` for constraint-only allOf. Only the
 redundant-type-constituents lint rule is disabled for this generated declaration;
 typechecking and byte-for-byte generator freshness checks remain enabled.
+
+`schema-properties.test.ts` asserts invariant native multipart output for 180
+combinations of scalar/array/object values, inline/referenced schemas, composition
+order, repeated references and broader media declarations across OAS 3.0/3.1/3.2.
+Expected text/file parts are literal fixtures, independent of the metadata compiler.
+`schema-work.test.ts` bounds observed expansion work without timing thresholds;
+`pnpm benchmark:metadata` reports shared-DAG compilation times separately.
