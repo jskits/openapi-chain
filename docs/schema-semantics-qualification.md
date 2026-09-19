@@ -1,5 +1,8 @@
 # Schema semantics qualification
 
+For the subsequent fixes and current local results, see the
+[path and reference qualification](path-reference-qualification.md).
+
 Implementation snapshot: `cd6d13f`, following review of `3bd8b48`.
 Local verification: 2026-09-20 (Asia/Shanghai), macOS arm64, Node 24.16.0,
 pnpm 10.34.5. This documentation and Changeset commit follows the implementation.
