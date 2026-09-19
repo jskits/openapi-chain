@@ -1,5 +1,8 @@
 # Conformance follow-up qualification
 
+See the subsequent [schema semantics qualification](schema-semantics-qualification.md)
+for newer implementation and verification results.
+
 Implementation snapshot: `6367587`, following the prior `a39ea6f` review.
 Verified locally on 2026-09-20 (Asia/Shanghai), macOS arm64, Node 24.16.0,
 pnpm 10.34.5. The documentation/release-note commit follows this snapshot.

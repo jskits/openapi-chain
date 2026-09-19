@@ -2,7 +2,7 @@
 
 Run `pnpm benchmark` to build fresh artifacts and reproduce all measurements.
 The pinned reference client is `openapi-fetch` 0.17.0; TypeScript and tsdown use
-the versions in `package.json`. The numbers below are an illustrative local run (see [qualification](conformance-qualification.md))
+the versions in `package.json`. The numbers below are an illustrative local run (see [qualification](schema-semantics-qualification.md))
 on macOS arm64 / Node 24.16.0, not a cross-platform throughput guarantee.
 
 ## Runtime
@@ -14,11 +14,11 @@ path selection on each iteration. There is no network, JSON parsing or server wo
 
 | Routes | Core | Strict chain | Strict `$path()` | openapi-fetch |
 | ------ | ---: | -----------: | ---------------: | ------------: |
-| 10     | 1.60 |         2.16 |             1.49 |          2.53 |
-| 1000   | 1.07 |         1.43 |             1.26 |          2.37 |
-| 10000  | 1.20 |         1.62 |             1.25 |          2.16 |
+| 10     | 1.45 |         2.27 |             1.65 |          2.72 |
+| 1000   | 1.06 |         1.69 |             1.26 |          2.55 |
+| 10000  | 1.16 |         1.81 |             1.26 |          2.11 |
 
-The 10000-route metadata compile took about 10 ms and strict indexing about 14 ms.
+The 10000-route metadata compile took about 10 ms and strict indexing about 16 ms.
 This setup cost is paid at client construction. Runtime figures include different
 client response wrappers and Request construction choices; they do not establish
 which library is faster for real applications. `test/routes.test.ts` guards against
@@ -32,9 +32,9 @@ response type; negative assertions retain required-query and path constraints.
 
 | Routes | Instantiations | Compiler memory | Check time |
 | ------ | -------------: | --------------: | ---------: |
-| 100    |          70399 |         ~97 MiB |     0.18 s |
-| 1000   |         404299 |        ~140 MiB |     0.58 s |
-| 5000   |        1888299 |        ~854 MiB |     2.49 s |
+| 100    |          70400 |         ~98 MiB |     0.18 s |
+| 1000   |         404300 |        ~141 MiB |     0.58 s |
+| 5000   |        1888300 |        ~857 MiB |     2.50 s |
 
 The check runs in `pnpm check` and CI. Each scenario must stay below 3 million
 instantiations and 1200000 KB compiler memory. Wall-clock times are reported but
@@ -51,8 +51,8 @@ Dependencies are bundled and each result must be a single file.
 | Entry         | Minified bytes | Gzip bytes |
 | ------------- | -------------: | ---------: |
 | core          |           4221 |       1850 |
-| strict        |          20988 |       6495 |
-| metadata      |          12804 |       4136 |
+| strict        |          21046 |       6519 |
+| metadata      |          13867 |       4517 |
 | openapi-fetch |           7418 |       2833 |
 
 These entries have different feature sets. Strict is an alternative to core;
@@ -63,3 +63,21 @@ The separate `pnpm size:check` release gate uses a different stable metric: it
 concatenates reachable emitted core ESM chunks and gzips that text, including their
 source-map comments, with a 2048-byte limit. Neither metric equals the sum of
 separately compressed HTTP assets; compare like-for-like when publishing results.
+
+## Shared schema graphs
+
+`pnpm benchmark:metadata` measures complete small documents whose allOf branches
+reuse the same referenced subtree. Per-compilation memoization prevents repeated
+expansion; regression tests count observed reads instead of gating noisy timings.
+
+| Shared-reference depth | Document bytes | Compile time |
+| ---------------------- | -------------: | -----------: |
+| 8                      |           1020 |      1.09 ms |
+| 12                     |           1376 |      0.20 ms |
+| 16                     |           1736 |      0.20 ms |
+| 20                     |           2096 |      0.61 ms |
+| 28                     |           2816 |      0.32 ms |
+
+These individual samples include warmup/scheduling effects; deeper cases need not
+be slower. A 1,000,000-step traversal budget and 128-level depth limit remain
+active, including when subgraphs are cached. Compile large schemas at build time.
