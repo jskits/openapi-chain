@@ -81,3 +81,27 @@ expansion; regression tests count observed reads instead of gating noisy timings
 These individual samples include warmup/scheduling effects; deeper cases need not
 be slower. A 1,000,000-step traversal budget and 128-level depth limit remain
 active, including when subgraphs are cached. Compile large schemas at build time.
+
+## Shared prefixes, response unions and incremental edits
+
+The type benchmark also checks a 1000-route project with shared
+`/orgs/{org}/resources/rN/{id}` prefixes, 200 used operations, nested response
+objects and success-response unions. Negative assertions retain required inputs,
+path argument types and response-union safety. This runs in `pnpm check` with the
+same 3 million instantiation / 1200000 KB memory budgets.
+
+A local Node 24.16.0 / TypeScript 6.0.3 run produced:
+
+| Project phase          | Used operations | Instantiations | Memory KB | Check time | Total time |
+| ---------------------- | --------------: | -------------: | --------: | ---------: | ---------: |
+| Cold incremental build |             200 |        2580745 |    345360 |     3.07 s |     3.27 s |
+| Unchanged build        |             200 |              0 |     82526 |     Cached |     0.20 s |
+| Added operation call   |             201 |        2598785 |    309187 |     3.06 s |     3.27 s |
+
+The edit adds a new checked operation call to the consumer module. Unchanged
+build caching is effective, but editing this module still requires substantial
+checking. These are CLI incremental-build measurements, not language-server
+completion latency or a guarantee for a real application's schema. Large users
+should measure their generated schemas and can partition clients by service or
+route subset to limit each type tree. The earlier 5000-route scenario remains a
+separate scale gate; this project scenario does not replace it.
