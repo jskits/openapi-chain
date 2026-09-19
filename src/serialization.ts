@@ -871,12 +871,27 @@ function mediaTypeRangeMatches(range: string, actual: string): boolean {
   return slash > 0 && expected.endsWith('/*') && value.startsWith(`${expected.slice(0, slash)}/`);
 }
 
-function selectMultipartContentType(contentTypes: string): string {
+function selectMultipartContentType(contentTypes: string, value: unknown): string {
   const choices = contentTypes
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean);
-  if (choices.length <= 1) return choices[0] ?? 'application/octet-stream';
+  if (choices.length <= 1) {
+    const declared = choices[0] ?? 'application/octet-stream';
+    if (isConcreteMediaType(declared)) return declared;
+    // A range is a constraint, not a Content-Type that can be sent on the wire.
+    // Parameterized ranges need explicit application selection to avoid losing parameters.
+    if (
+      !declared.includes(';') &&
+      isBlob(value) &&
+      /^[^/;\s*]+\/[^/;\s*]+$/.test(normalizeMediaType(value.type)) &&
+      mediaTypeRangeMatches(declared, value.type)
+    )
+      return value.type;
+    throw new TypeError(
+      `Multipart media range ${declared} needs a matching concrete Blob/File type or an operation body extension.`,
+    );
+  }
   throw new TypeError(
     `Multipart part declares multiple content types (${contentTypes}); ` +
       'provide an operation body extension to choose the intended media type explicitly.',
@@ -903,7 +918,7 @@ function appendMultipartContentPart(
   value: unknown,
   contentType: string,
 ): void {
-  contentType = selectMultipartContentType(contentType);
+  contentType = selectMultipartContentType(contentType, value);
   const normalized = normalizeMediaType(contentType);
   if (isBlob(value)) {
     const part = value.type === contentType ? value : new Blob([value], { type: contentType });

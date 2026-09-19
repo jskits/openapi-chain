@@ -101,3 +101,50 @@ test('pre-encoded parts keep their bytes with a non-UTF-8 charset', async () => 
     },
   );
 });
+
+test.each(['image/*', '*/*'])(
+  'resolves multipart range %s independently for each file',
+  async (contentType) => {
+    await multipart(
+      [
+        new File(['png'], 'one.png', { type: 'image/png' }),
+        new File(['jpeg'], 'two.jpg', { type: 'image/jpeg' }),
+      ],
+      contentType,
+      async (request) => {
+        const wire = await request.clone().text();
+        expect(wire).not.toContain('Content-Type: image/*');
+        expect(wire).not.toContain('Content-Type: */*');
+        const parts = (await request.formData()).getAll('value') as File[];
+        expect(parts.map((part) => [part.name, part.type])).toEqual([
+          ['one.png', 'image/png'],
+          ['two.jpg', 'image/jpeg'],
+        ]);
+      },
+    );
+  },
+);
+
+test.each([
+  new Blob(['x']),
+  new Blob(['x'], { type: 'text/plain' }),
+  new Blob(['x'], { type: 'image/*' }),
+  new Uint8Array([1]),
+  'text',
+])('rejects unresolved multipart ranges before transport', async (value) => {
+  let calls = 0;
+  await expect(
+    multipart(value, 'image/*', async () => {
+      calls++;
+    }),
+  ).rejects.toThrow(/matching concrete/);
+  expect(calls).toBe(0);
+});
+
+test('does not silently discard parameters on multipart ranges', async () => {
+  await expect(
+    multipart(new Blob(['x'], { type: 'image/png' }), 'image/*; profile=custom', async () => {
+      throw new Error('transport must not run');
+    }),
+  ).rejects.toThrow(/matching concrete/);
+});
