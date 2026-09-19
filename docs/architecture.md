@@ -88,3 +88,9 @@ The implementation prefers an explicit error over a request with a plausible but
 - compound cookie values with legacy `style: form`, whose RFC6570 `&` delimiter is not a faithful `Cookie` header representation.
 
 The intended progression is: tiny default -> operation-local typed extension -> strict metadata runtime -> custom transport. Rare behavior never needs to inflate the default core.
+
+Serialization inference tracks active schema references through `allOf` and `items`.
+Ordinary recursive object properties can still be represented as JSON parts. Cycles
+that prevent determining a part's kind or media type throw a descriptive `TypeError`;
+inference is also bounded to 128 nested schema visits. Simplify the serialization
+schema in these cases rather than relying on unbounded recursive inference.

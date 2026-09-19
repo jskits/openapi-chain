@@ -69,6 +69,7 @@ function dereference(value: unknown, root: unknown, seen = new Set<string>()): u
   if (!isRecord(value) || typeof value.$ref !== 'string') return value;
   const ref = value.$ref;
   if (seen.has(ref)) throw new TypeError(`Circular OpenAPI $ref: ${ref}`);
+  if (seen.size >= 128) throw new TypeError('OpenAPI reference depth exceeds 128.');
   seen.add(ref);
   const target = dereference(resolvePointer(root, ref), root, seen);
   seen.delete(ref);
@@ -93,91 +94,120 @@ function allowedStyles(
   return BASE_STYLES[location];
 }
 
+// Track traversal across schema applicators, not only adjacent $ref chains.
+function visitSchema<T>(value: unknown, active: Set<unknown>, visit: () => T): T {
+  const key = isRecord(value) && typeof value.$ref === 'string' ? value.$ref : value;
+  if (active.has(key))
+    throw new TypeError('Recursive OpenAPI schema serialization metadata cannot be inferred.');
+  if (active.size >= 128) throw new TypeError('OpenAPI schema serialization depth exceeds 128.');
+  active.add(key);
+  try {
+    return visit();
+  } finally {
+    active.delete(key);
+  }
+}
+
 function schemaKind(
   schemaValue: unknown,
   root: unknown,
   version: OasMinor,
+  active = new Set<unknown>(),
 ): 'primitive' | 'object' | 'array' | 'binary' | 'unknown' {
-  const schema = dereference(schemaValue, root);
-  if (!isRecord(schema)) return 'unknown';
-  if (Array.isArray(schema.allOf)) {
-    const kinds = schema.allOf.map((item) => schemaKind(item, root, version));
-    if (kinds.includes('object')) return 'object';
-    if (kinds.includes('array')) return 'array';
-    if (kinds.includes('binary')) return 'binary';
-    if (kinds.includes('primitive')) return 'primitive';
-  }
-  const type = Array.isArray(schema.type)
-    ? schema.type.find((item) => item !== 'null')
-    : schema.type;
-  if (type === 'object' || isRecord(schema.properties)) return 'object';
-  if (type === 'array' || 'items' in schema) return 'array';
-  if (
-    type === 'string' &&
-    ((version === '3.0' && schema.format === 'binary') ||
-      (version !== '3.0' && typeof schema.contentEncoding === 'string'))
-  ) {
-    return 'binary';
-  }
-  if (type === 'string' || type === 'number' || type === 'integer' || type === 'boolean') {
-    return 'primitive';
-  }
-  return 'unknown';
+  return visitSchema(schemaValue, active, () => {
+    const schema = dereference(schemaValue, root);
+    if (!isRecord(schema)) return 'unknown';
+    if (Array.isArray(schema.allOf)) {
+      const kinds = schema.allOf.map((item) => schemaKind(item, root, version, active));
+      if (kinds.includes('object')) return 'object';
+      if (kinds.includes('array')) return 'array';
+      if (kinds.includes('binary')) return 'binary';
+      if (kinds.includes('primitive')) return 'primitive';
+    }
+    const type = Array.isArray(schema.type)
+      ? schema.type.find((item) => item !== 'null')
+      : schema.type;
+    if (type === 'object' || isRecord(schema.properties)) return 'object';
+    if (type === 'array' || 'items' in schema) return 'array';
+    if (
+      type === 'string' &&
+      ((version === '3.0' && schema.format === 'binary') ||
+        (version !== '3.0' && typeof schema.contentEncoding === 'string'))
+    ) {
+      return 'binary';
+    }
+    if (type === 'string' || type === 'number' || type === 'integer' || type === 'boolean') {
+      return 'primitive';
+    }
+    return 'unknown';
+  });
 }
 
 function defaultContentTypeForSchema(
   schemaValue: unknown,
   root: unknown,
   version: OasMinor,
+  active = new Set<unknown>(),
 ): string {
-  const schema = dereference(schemaValue, root);
-  if (!isRecord(schema)) return 'application/octet-stream';
-  const type = Array.isArray(schema.type)
-    ? schema.type.find((item) => item !== 'null')
-    : schema.type;
-  if (type === 'array' || 'items' in schema) {
-    return defaultContentTypeForSchema(schema.items, root, version);
-  }
-  if (type === 'object' || isRecord(schema.properties) || Array.isArray(schema.allOf)) {
-    return 'application/json';
-  }
-  if (type === 'string') {
-    const binary =
-      (version === '3.0' && schema.format === 'binary') ||
-      (version !== '3.0' && typeof schema.contentEncoding === 'string');
-    return binary ? 'application/octet-stream' : 'text/plain';
-  }
-  if (type === 'number' || type === 'integer' || type === 'boolean') return 'text/plain';
-  return 'application/octet-stream';
+  return visitSchema(schemaValue, active, () => {
+    const schema = dereference(schemaValue, root);
+    if (!isRecord(schema)) return 'application/octet-stream';
+    const type = Array.isArray(schema.type)
+      ? schema.type.find((item) => item !== 'null')
+      : schema.type;
+    if (type === 'array' || 'items' in schema) {
+      return defaultContentTypeForSchema(schema.items, root, version, active);
+    }
+    if (type === 'object' || isRecord(schema.properties) || Array.isArray(schema.allOf)) {
+      return 'application/json';
+    }
+    if (type === 'string') {
+      const binary =
+        (version === '3.0' && schema.format === 'binary') ||
+        (version !== '3.0' && typeof schema.contentEncoding === 'string');
+      return binary ? 'application/octet-stream' : 'text/plain';
+    }
+    if (type === 'number' || type === 'integer' || type === 'boolean') return 'text/plain';
+    return 'application/octet-stream';
+  });
 }
 
 function collectPropertySchemas(
   schemaValue: unknown,
   root: unknown,
   target: Record<string, unknown> = {},
+  active = new Set<unknown>(),
 ): Record<string, unknown> {
-  const schema = dereference(schemaValue, root);
-  if (!isRecord(schema)) return target;
-  if (isRecord(schema.properties)) {
-    for (const [name, property] of Object.entries(schema.properties)) target[name] = property;
-  }
-  if (Array.isArray(schema.allOf)) {
-    for (const item of schema.allOf) collectPropertySchemas(item, root, target);
-  }
-  return target;
+  return visitSchema(schemaValue, active, () => {
+    const schema = dereference(schemaValue, root);
+    if (!isRecord(schema)) return target;
+    if (isRecord(schema.properties)) {
+      for (const [name, property] of Object.entries(schema.properties)) target[name] = property;
+    }
+    if (Array.isArray(schema.allOf)) {
+      for (const item of schema.allOf) collectPropertySchemas(item, root, target, active);
+    }
+    return target;
+  });
 }
 
-function schemaUsesContentEncoding(schemaValue: unknown, root: unknown): boolean {
-  const schema = dereference(schemaValue, root);
-  if (!isRecord(schema)) return false;
-  if (typeof schema.contentEncoding === 'string') return true;
-  if (Array.isArray(schema.allOf)) {
-    return schema.allOf.some((item) => schemaUsesContentEncoding(item, root));
-  }
-  if ((schema.type === 'array' || 'items' in schema) && schema.items !== undefined) {
-    return schemaUsesContentEncoding(schema.items, root);
-  }
-  return false;
+function schemaUsesContentEncoding(
+  schemaValue: unknown,
+  root: unknown,
+  active = new Set<unknown>(),
+): boolean {
+  return visitSchema(schemaValue, active, () => {
+    const schema = dereference(schemaValue, root);
+    if (!isRecord(schema)) return false;
+    if (typeof schema.contentEncoding === 'string') return true;
+    if (Array.isArray(schema.allOf)) {
+      return schema.allOf.some((item) => schemaUsesContentEncoding(item, root, active));
+    }
+    if ((schema.type === 'array' || 'items' in schema) && schema.items !== undefined) {
+      return schemaUsesContentEncoding(schema.items, root, active);
+    }
+    return false;
+  });
 }
 
 function propertyMetadataForSchema(
