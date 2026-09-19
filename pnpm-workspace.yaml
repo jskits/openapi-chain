@@ -4,3 +4,9 @@ packages:
 strictPeerDependencies: true
 saveExact: true
 onlyBuiltDependencies: []
+
+# The generator's TS 5 peer range lags our compiler; test:generated and typecheck
+# qualify this exact pairing rather than relaxing peer checks globally.
+peerDependencyRules:
+  allowedVersions:
+    'openapi-typescript>typescript': '6.0.3'

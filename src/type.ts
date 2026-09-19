@@ -261,6 +261,8 @@ type ParameterLocationRecord<Params, Location extends PropertyKey> = Location ex
   ? Defined<Params[Location]>
   : {};
 
+type PresentRecord<T> = [T] extends [never] ? {} : T;
+
 type MergeRecords<Base, Override> = Base extends object
   ? Override extends object
     ? Simplify<Omit<Base, keyof Override> & Override>
@@ -270,8 +272,8 @@ type MergeRecords<Base, Override> = Base extends object
     : {};
 
 type LocationParameters<Item, Operation, Location extends PropertyKey> = MergeRecords<
-  ParameterLocationRecord<ParametersOf<Item>, Location>,
-  ParameterLocationRecord<ParametersOf<Operation>, Location>
+  PresentRecord<ParameterLocationRecord<ParametersOf<Item>, Location>>,
+  PresentRecord<ParameterLocationRecord<ParametersOf<Operation>, Location>>
 >;
 
 type RequiredKeys<T> = T extends object
