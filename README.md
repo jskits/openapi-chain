@@ -308,3 +308,26 @@ Reference: [Changesets automation](https://changesets.dev/guide/automating),
 ## License
 
 [MIT](./LICENSE)
+
+## Response parsing contract
+
+The default parsers differ intentionally to keep the core small:
+
+| Response                             | Core default                  | Strict default                         |
+| ------------------------------------ | ----------------------------- | -------------------------------------- |
+| 204, 205, 304 or `Content-Length: 0` | `undefined`                   | `undefined`                            |
+| JSON media                           | Parsed JSON                   | Parsed JSON                            |
+| Text media                           | Text, or `undefined` if empty | Text, or `undefined` if empty          |
+| Other media                          | Text, or `undefined` if empty | `ArrayBuffer`, or `undefined` if empty |
+
+Strict also treats XML and form-urlencoded response media as text. Both parsers
+buffer the body and consume the original `Response`; `result.response` is still
+useful for status and headers but its body is usually already read. For binary,
+streaming, or vendor responses, supply an operation `extensions.response` and
+align the generated schema's data type with that parser's output. The library does
+not transform a generated binary `string` type into `Blob` or `ArrayBuffer`.
+
+A response extension receives the unread Response and returns `{ status, data }`.
+Check the actual status before selecting its corresponding data shape. It may
+return a stream without buffering when that stream is the operation's declared
+data type. Use the same extension in both modes when migrating between clients.
