@@ -652,6 +652,10 @@ export function compileOpenAPIMetadata(document: unknown): CompiledOpenAPIMetada
   const seenTemplates = new Map<string, string>();
 
   for (const [path, rawPathItem] of Object.entries(paths)) {
+    if (path.startsWith('x-')) continue;
+    if (!path.startsWith('/')) {
+      throw new TypeError(`OpenAPI path must begin with /: ${path}`);
+    }
     const normalized = normalizedTemplate(path);
     const prior = seenTemplates.get(normalized);
     if (prior && prior !== path) {
