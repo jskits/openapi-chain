@@ -89,7 +89,8 @@ function requestBody(v: unknown, ct: string | undefined, h: Headers, f?: Ext['bo
     return String(v);
   }
   if (native(v)) {
-    if (!(typeof FormData !== 'undefined' && v instanceof FormData)) h.set('content-type', ct);
+    if (typeof FormData !== 'undefined' && v instanceof FormData) h.delete('content-type');
+    else h.set('content-type', ct);
     return v;
   }
   throw new TypeError(`Structured ${ct} needs body extension.`);
