@@ -107,6 +107,14 @@ const { compileOpenAPIMetadata } = require(${metadataSpecifier});
     writeFileSync(join(consumer, filename), imports + behavior);
     run(process.execPath, [filename]);
   }
+  for (const fixture of ['conformance.openapi.json', 'conformance-schema.d.ts']) {
+    writeFileSync(join(consumer, fixture), readFileSync(join(root, 'test/fixtures', fixture)));
+  }
+  writeFileSync(
+    join(consumer, 'packed-http.mjs'),
+    readFileSync(join(root, 'scripts/fixtures/packed-http.mjs')),
+  );
+  run(process.execPath, ['packed-http.mjs']);
   const typeConsumer = `import { createClient, type OperationExtensionsFor } from ${specifier};
 import { createStrictClient } from ${strictSpecifier};
 import { compileOpenAPIMetadata } from ${metadataSpecifier};
@@ -120,6 +128,14 @@ const strictResult: Promise<{ok:true}> = strict.x('id').get();
 // @ts-expect-error path arguments preserve the schema type
 core.x(123);
 void result; void strictResult;
+import type { paths as CorpusPaths } from './conformance-schema.js';
+const corpus = createClient<CorpusPaths>({baseUrl:'https://example.test'});
+void corpus.$path('/echo/{id}/', {id:'a/b'}).get();
+// @ts-expect-error generated query remains required in installed declarations
+void corpus.search.get();
+// @ts-expect-error significant trailing slash cannot expose a chain method
+const trailing = createClient<{'/items/': CorpusPaths['/echo/{id}/']}>({baseUrl:'https://example.test'}).items.get;
+void trailing;
 `;
   for (const extension of ['mts', 'cts']) {
     writeFileSync(join(consumer, `consumer.${extension}`), typeConsumer);
@@ -138,7 +154,7 @@ void result; void strictResult;
     'consumer.cts',
   ]);
   console.log(
-    `Package verified: ${packed.filename}; ${files.length} files; ESM, CommonJS and NodeNext declarations resolve.`,
+    `Package verified: ${packed.filename}; ${files.length} files; ESM, CommonJS, generated NodeNext consumers and real HTTP passed.`,
   );
 } finally {
   rmSync(consumer, { recursive: true, force: true });
