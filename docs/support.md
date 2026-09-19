@@ -102,3 +102,32 @@ it does not turn unsupported schema constructs into a validator or bypass compil
 errors. When inference is uncertain, verify the actual request body against the
 server's expected wire format. Whole-body extensions run after strict input
 validation and take responsibility for the complete body representation.
+
+## Binary bodies and multipart parts
+
+Core and strict accept ArrayBuffer views (including Uint8Array, DataView and Node
+Buffer) for binary bodies. The view's byte offset and length are preserved; bytes
+outside a slice are not sent. Streaming request bodies still require an operation
+body extension and an appropriate Fetch implementation or transport.
+
+Structured strict multipart bodies preserve File names when a declared part type
+requires replacing the File's media type. Arrays retain a separate part and name
+for each File. Anonymous Blob parts retain native FormData's default filename.
+
+An Encoding Object's single unparameterized media range, such as `image/*` or
+`*/*`, is resolved from each Blob/File's matching concrete type. Missing,
+nonmatching or wildcard Blob types, parameterized ranges and multiple declared
+choices require explicit application serialization. Ranges are never emitted as
+part Content-Type values.
+
+Generated textual multipart parts use UTF-8. Explicit `charset=utf-8` (including
+quoted, case-insensitive spelling) is supported and retained; other charsets fail
+before transport. Pre-encoded Blob/ArrayBuffer/view values can carry another
+charset without re-encoding their bytes. The application is responsible for that
+encoding. A whole-body extension can also implement another character encoding.
+
+Plain `text/plain` string parts remain normal form fields. Explicit media
+parameters require a Blob-backed part to retain its Content-Type; native FormData
+adds a filename to such parts. If the server requires a parameterized text part
+without a filename, use a whole-body extension to supply that exact representation.
+Style-based encodings follow their separate OpenAPI rules and ignore contentType.

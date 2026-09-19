@@ -1,5 +1,8 @@
 # Path and reference qualification
 
+For the subsequent multipart fixes and current local results, see the
+[multipart qualification](multipart-qualification.md).
+
 Implementation snapshot: `6efd6dc`, following review of `839d30a`.
 Local verification: 2026-09-20 (Asia/Shanghai), macOS arm64, Node 24.16.0,
 pnpm 10.34.5. This report and Changeset follow five independent commits.
