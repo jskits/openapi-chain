@@ -174,7 +174,7 @@ By default, non-2xx responses throw `HttpError` and successful response data is 
 const value = await api.users(42).get();
 ```
 
-Set `throwOnError: false` for a discriminated result union:
+Set `throwOnError: false` for a discriminated result union for successfully parsed HTTP responses:
 
 ```ts
 const api = createClient<paths>({ baseUrl, throwOnError: false });
@@ -186,6 +186,12 @@ if (result.ok) {
   console.error(result.status, result.data);
 }
 ```
+
+`throwOnError` controls HTTP status handling only. Network/transport failures,
+AbortSignal cancellation, invalid JSON, serialization errors and extension errors
+still reject the promise in either mode. Parsing happens before HTTP status
+handling, so a malformed JSON error response rejects with its parsing error rather
+than `HttpError`. Catch these failures separately from checking `result.ok`.
 
 Response typing follows OpenAPI precedence: exact status > `nXX` wildcard > `default`. Empty `content` / `content: never` responses are typed as `undefined`.
 
