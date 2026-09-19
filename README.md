@@ -131,6 +131,22 @@ await api.pets.post({ body: { name: 'Mochi' } });
 
 `compileOpenAPIMetadata()` supports OpenAPI 3.0, 3.1, and 3.2 documents. Local JSON Pointer `$ref`s are resolved. External `$ref`s fail closed; bundle or dereference the document first.
 
+### What strict mode validates
+
+Strict mode checks declared routes, required parameter locations, request-body
+presence/media and supported serialization rules. It is not a JSON Schema data
+validator: enum/range constraints, response data, and undocumented response statuses
+are not validated at runtime. TypeScript types assume the server follows its schema.
+Use a response extension with an application validator when data must be checked.
+
+Generate `paths` and compile metadata from the same version of the same document.
+The compiled brand allows single-media inference; it does not prove that metadata
+matches the `paths` generic. `defineOpenAPIMetadata` only labels an explicitly
+partial table and does not grant the compiled brand required by `createStrictClient`.
+Treat metadata as immutable after creating a client. Cookie headers are subject to
+Fetch platform restrictions; browser authentication cookies use `init.credentials`
+and server cookie policy rather than a manually authored Cookie header.
+
 ### Strict serialization coverage
 
 | Surface                  | Supported behavior                                                                                     |
