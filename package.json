@@ -86,7 +86,7 @@
     "prepare": "husky",
     "verify:package": "pnpm test:package",
     "size:check": "node scripts/check-size.mjs",
-    "generate:example": "openapi-typescript examples/example.yaml -o examples/schema.d.ts && openapi-typescript examples/service.openapi.json -o examples/service-schema.d.ts",
+    "generate:example": "openapi-typescript examples/example.yaml -o examples/schema.d.ts && openapi-typescript examples/service.openapi.json -o examples/service-schema.d.ts && openapi-typescript test/fixtures/conformance.openapi.json -o test/fixtures/conformance-schema.d.ts",
     "test:generated": "node scripts/check-generated.mjs",
     "test:browser": "node scripts/check-browser.mjs",
     "benchmark:types": "node scripts/benchmark-types.mjs",

@@ -1,9 +1,16 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["typescript", "unicorn", "oxc", "import", "vitest"],
-  "categories": { "correctness": "error" },
-  "options": { "typeAware": true },
-  "env": { "builtin": true, "node": true },
+  "categories": {
+    "correctness": "error"
+  },
+  "options": {
+    "typeAware": true
+  },
+  "env": {
+    "builtin": true,
+    "node": true
+  },
   "ignorePatterns": ["dist/**", "coverage/**", "node_modules/**"],
   "rules": {
     "typescript/consistent-type-imports": "error",
@@ -12,5 +19,13 @@
     "typescript/no-misused-promises": "error",
     "vitest/no-focused-tests": "error",
     "vitest/no-disabled-tests": "error"
-  }
+  },
+  "overrides": [
+    {
+      "files": ["test/fixtures/conformance-schema.d.ts"],
+      "rules": {
+        "typescript/no-redundant-type-constituents": "off"
+      }
+    }
+  ]
 }
