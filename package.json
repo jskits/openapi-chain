@@ -75,7 +75,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:package": "node scripts/check-package.mjs",
-    "check": "pnpm format:check && pnpm lint && pnpm test:generated && pnpm typecheck && pnpm test:coverage && pnpm build && pnpm test:package && pnpm size:check",
+    "check": "pnpm format:check && pnpm lint && pnpm test:generated && pnpm typecheck && pnpm test:coverage && pnpm build && pnpm test:package && pnpm size:check && pnpm benchmark:types",
     "commit": "cz",
     "commitlint": "commitlint",
     "changeset": "changeset",
@@ -88,7 +88,11 @@
     "size:check": "node scripts/check-size.mjs",
     "generate:example": "openapi-typescript examples/example.yaml -o examples/schema.d.ts",
     "test:generated": "node scripts/check-generated.mjs",
-    "test:browser": "node scripts/check-browser.mjs"
+    "test:browser": "node scripts/check-browser.mjs",
+    "benchmark:types": "node scripts/benchmark-types.mjs",
+    "benchmark:runtime": "node scripts/benchmark-runtime.mjs",
+    "benchmark:size": "node scripts/benchmark-size.mjs",
+    "benchmark": "pnpm build && pnpm benchmark:types && pnpm benchmark:runtime && pnpm benchmark:size"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",
@@ -102,6 +106,7 @@
     "cz-conventional-changelog": "3.3.0",
     "husky": "9.1.7",
     "lint-staged": "17.5.1",
+    "openapi-fetch": "0.17.0",
     "openapi-typescript": "7.13.0",
     "oxfmt": "0.68.0",
     "oxlint": "1.83.0",
