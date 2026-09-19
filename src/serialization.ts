@@ -892,10 +892,9 @@ function appendMultipartContentPart(
   contentType = selectMultipartContentType(contentType);
   const normalized = normalizeMediaType(contentType);
   if (isBlob(value)) {
-    form.append(
-      name,
-      value.type === contentType ? value : new Blob([value], { type: contentType }),
-    );
+    const part = value.type === contentType ? value : new Blob([value], { type: contentType });
+    if (typeof File !== 'undefined' && value instanceof File) form.append(name, part, value.name);
+    else form.append(name, part);
     return;
   }
   if (isArrayBuffer(value) || (typeof ArrayBuffer !== 'undefined' && ArrayBuffer.isView(value))) {
