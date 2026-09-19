@@ -700,15 +700,18 @@ function normalizeMediaType(contentType: string): string {
 }
 
 function findMediaMetadata(operation: OperationMetadata | undefined, contentType: string) {
-  const media = operation?.requestBody?.media;
+  const body = operation?.requestBody;
+  const media = body?.media;
   if (!media) return undefined;
-  if (media[contentType]) return media[contentType];
+  // Select the declaration before looking up optional serialization metadata.
+  // An exact declaration with no extra rules must shadow a broader declaration.
+  const declarations = [...new Set([...(body?.mediaTypes ?? []), ...Object.keys(media)])];
   const normalized = normalizeMediaType(contentType);
-  const exact = Object.keys(media).find(
-    (candidate) => normalizeMediaType(candidate) === normalized,
-  );
-  if (exact) return media[exact];
-  const ranges = Object.keys(media)
+  const exact =
+    declarations.find((candidate) => candidate === contentType) ??
+    declarations.find((candidate) => normalizeMediaType(candidate) === normalized);
+  if (exact !== undefined) return media[exact];
+  const ranges = declarations
     .filter((candidate) => mediaTypeRangeMatches(candidate, contentType))
     .sort((a, b) => mediaTypeRangeSpecificity(b) - mediaTypeRangeSpecificity(a));
   return ranges.length ? media[ranges[0]!] : undefined;
