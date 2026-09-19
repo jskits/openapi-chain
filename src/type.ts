@@ -210,9 +210,9 @@ type Advance<E, Segment extends string> = E extends {
 type IsExactTemplate<S extends string> = S extends `{${infer Name}}`
   ? Name extends ''
     ? false
-    : S extends `{${Name}}`
-      ? true
-      : false
+    : Name extends `${string}{${string}` | `${string}}${string}`
+      ? false
+      : true
   : false;
 
 type TemplateEntries<E> = E extends {

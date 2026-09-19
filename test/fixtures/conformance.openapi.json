@@ -173,6 +173,52 @@
           }
         }
       }
+    },
+    "/reports/{year}-{month}": {
+      "parameters": [
+        {
+          "name": "year",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        },
+        {
+          "name": "month",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ],
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Observed HTTP request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["url", "body", "contentType"],
+                  "properties": {
+                    "url": {
+                      "type": "string"
+                    },
+                    "body": {
+                      "type": "string"
+                    },
+                    "contentType": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

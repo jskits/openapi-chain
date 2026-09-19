@@ -10,6 +10,11 @@ const strict = createStrictClient<paths>({
 });
 for (const api of [core, strict]) {
   void api.echo('a/b').get();
+  void api.$path('/reports/{year}-{month}', { year: 2026, month: 9 }).get();
+  // @ts-expect-error mixed templates do not expose a callable chain
+  void api.reports('not-two-integers').get();
+  // @ts-expect-error template arguments retain generated integer types
+  void api.$path('/reports/{year}-{month}', { year: '2026', month: 9 }).get();
   void api.$path('/echo/{id}/', { id: 'a/b' }).get();
   // @ts-expect-error generated path parameter stays required
   void api.$path('/echo/{id}/').get();
