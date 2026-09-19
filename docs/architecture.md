@@ -99,3 +99,8 @@ Rendered paths containing whole `.` or `..` segments (including `%2e` spellings)
 are rejected before transport. Fetch normalizes these segments, so encoding a dot
 is insufficient to preserve the intended endpoint. This check also applies to
 operation path extensions; filenames such as `file.txt` remain valid.
+
+Strict clients index route shapes and HTTP methods at creation. Both chain and
+`$path()` routing use that snapshot; changing the routing table requires creating
+a new client. Request matching is proportional to path depth rather than total
+schema route count. Metadata records must remain immutable for the client's lifetime.

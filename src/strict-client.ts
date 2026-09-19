@@ -1,3 +1,4 @@
+import { createOperationResolver, splitPath, type ProxyState } from './routes.js';
 import { safePath } from './path.js';
 import { httpMethods } from './constant.js';
 import {
@@ -9,7 +10,6 @@ import {
   type EncodingMetadata,
   type HttpMethod,
   type Middleware,
-  type OpenAPIMetadata,
   type OpenAPIPaths,
   type OperationMetadata,
   type ParameterContentSerializer,
@@ -25,24 +25,10 @@ function isHttpMethod(value: string): value is HttpMethod {
   return httpMethods.includes(value as HttpMethod);
 }
 
-type ChainSegment = { kind: 'static'; value: string } | { kind: 'dynamic'; value: unknown };
-
-type ProxyState =
-  | { kind: 'chain'; segments: readonly ChainSegment[] }
-  | {
-      kind: 'template';
-      template: string;
-      params: Record<string, unknown> | undefined;
-    };
-
 type Runtime = {
   options: ClientOptions;
   transport: Transport;
-};
-
-type ResolvedOperation = {
-  template?: string;
-  metadata?: OperationMetadata | undefined;
+  resolveOperation: ReturnType<typeof createOperationResolver>;
 };
 
 type RuntimeOperationExtensions = {
@@ -148,11 +134,6 @@ function encodeFormComponent(value: unknown, allowReserved = false): string {
     else result += encodeChar(char);
   }
   return result;
-}
-
-function splitPath(path: string): string[] {
-  const normalized = path.replace(/^\/+|\/+$/g, '');
-  return normalized ? normalized.split('/') : [];
 }
 
 function splitUrlSuffix(url: string): { base: string; suffix: string } {
@@ -640,57 +621,6 @@ function appendCookieHeader(
     parts.push(...cookieParts(name, value, metadata, customContent));
   }
   if (parts.length) headers.set('cookie', parts.join('; '));
-}
-
-function templateMatchesChain(template: string, segments: readonly ChainSegment[]): boolean {
-  const templateSegments = splitPath(template);
-  if (templateSegments.length !== segments.length) return false;
-  for (let index = 0; index < templateSegments.length; index += 1) {
-    const expected = templateSegments[index]!;
-    const actual = segments[index]!;
-    const isTemplate = /^\{[^{}]+\}$/.test(expected);
-    if (isTemplate !== (actual.kind === 'dynamic')) return false;
-    if (!isTemplate && expected !== actual.value) return false;
-  }
-  return true;
-}
-
-function resolveOperation(
-  metadata: OpenAPIMetadata | undefined,
-  state: ProxyState,
-  method: HttpMethod,
-): ResolvedOperation {
-  if (!metadata) return {};
-
-  if (state.kind === 'template') {
-    const operation = metadata.operations[state.template]?.[method];
-    if (!operation && metadata.complete) {
-      throw new TypeError(
-        `Compiled OpenAPI metadata does not contain ${method.toUpperCase()} ${state.template}.`,
-      );
-    }
-    return { template: state.template, metadata: operation };
-  }
-
-  const matches = Object.entries(metadata.operations).filter(
-    ([template, methods]) =>
-      methods[method] !== undefined && templateMatchesChain(template, state.segments),
-  );
-  if (matches.length > 1) {
-    throw new TypeError(
-      `Ambiguous OpenAPI runtime metadata for ${method.toUpperCase()} chain path.`,
-    );
-  }
-  if (matches.length === 1) {
-    const [template, methods] = matches[0]!;
-    return { template, metadata: methods[method] };
-  }
-  if (metadata.complete) {
-    throw new TypeError(
-      `Compiled OpenAPI metadata does not match the ${method.toUpperCase()} chain path.`,
-    );
-  }
-  return {};
 }
 
 function buildTemplatePath(
@@ -1221,7 +1151,7 @@ async function execute(
   input: RequestInput | undefined,
 ): Promise<unknown> {
   const extensions = input?.extensions as RuntimeOperationExtensions | undefined;
-  const resolved = resolveOperation(runtime.options.metadata, state, method);
+  const resolved = runtime.resolveOperation(state, method);
   const operation = resolved.metadata;
   const completeMetadata = runtime.options.metadata?.complete === true;
   validateRuntimeInput(input, operation, completeMetadata);
@@ -1378,6 +1308,7 @@ function createRuntime(options: ClientOptions): Runtime {
   const baseTransport = options.transport ?? createDefaultTransport(fetchImpl);
   return {
     options,
+    resolveOperation: createOperationResolver(options.metadata),
     transport: composeMiddleware(options.middleware ?? [], baseTransport),
   };
 }
