@@ -90,7 +90,8 @@ function encodeQueryComponent(value: unknown, allowReserved = false): string {
   if (!allowReserved) return encodeValue(text);
   let result = '';
   for (let index = 0; index < text.length; index += 1) {
-    const char = text[index]!;
+    const char = String.fromCodePoint(text.codePointAt(index)!);
+    index += char.length - 1;
     if (char === '%' && /^[0-9A-Fa-f]{2}$/.test(text.slice(index + 1, index + 3))) {
       result += text.slice(index, index + 3);
       index += 2;
@@ -109,7 +110,8 @@ function encodePathComponent(value: unknown, allowReserved = false): string {
   if (!allowReserved) return encodeValue(text);
   let result = '';
   for (let index = 0; index < text.length; index += 1) {
-    const char = text[index]!;
+    const char = String.fromCodePoint(text.codePointAt(index)!);
+    index += char.length - 1;
     if (char === '%' && /^[0-9A-Fa-f]{2}$/.test(text.slice(index + 1, index + 3))) {
       result += text.slice(index, index + 3);
       index += 2;
@@ -130,7 +132,8 @@ function encodeFormComponent(value: unknown, allowReserved = false): string {
   }
   let result = '';
   for (let index = 0; index < text.length; index += 1) {
-    const char = text[index]!;
+    const char = String.fromCodePoint(text.codePointAt(index)!);
+    index += char.length - 1;
     if (char === ' ') {
       result += '+';
       continue;
