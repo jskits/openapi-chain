@@ -65,3 +65,34 @@ test.each(['', '/', '?existing=1', '#fragment', '/?existing=1#fragment'])(
     );
   },
 );
+
+test.each(['3.0.4', '3.1.1', '3.2.1'])('static path wire invariance in %s', async (openapi) => {
+  const paths = ['/price/$$', '/price/$&', "/price/$'", '/price/a&b', '/price/%24'] as const;
+  type StaticPaths = { [P in (typeof paths)[number]]: Operation };
+  const compiled = compileOpenAPIMetadata({
+    openapi,
+    paths: Object.fromEntries(paths.map((path) => [path, { get: {} }])),
+  });
+  for (const baseUrl of ['https://example.test', 'https://example.test/api/?q=1#anchor']) {
+    for (const strict of [false, true]) {
+      const urls: string[] = [];
+      const transport: Transport = async ({ url, init }) => {
+        urls.push(new Request(url, init).url);
+        return new Response(null, { status: 204 });
+      };
+      const options = { baseUrl, transport };
+      const api = strict
+        ? createStrictClient<StaticPaths>({ ...options, metadata: compiled })
+        : createClient<StaticPaths>(options);
+      for (const path of paths) await api.$path(path).get();
+      await api.price['$$'].get();
+      await api.price['$&'].get();
+      const expected = [...paths, '/price/$$', '/price/$&'].map((path) => {
+        const url = new URL(baseUrl);
+        url.pathname = url.pathname.replace(/\/$/, '') + path;
+        return url.href;
+      });
+      expect(urls).toEqual(expected);
+    }
+  }
+});

@@ -56,6 +56,15 @@ for (const openapi of ['3.0.4', '3.1.1', '3.2.1']) {
       };
       const variants = [
         base,
+        {
+          properties: {
+            value: {
+              $ref: '#/components/schemas/Leaf',
+              allOf: [{ $ref: '#/components/schemas/Leaf', description: 'repeated leaf' }],
+            },
+          },
+        },
+        { $ref: '#/components/schemas/Base', allOf: [{ $ref: '#/components/schemas/Base' }] },
         { $ref: '#/components/schemas/Base' },
         { allOf: [base, annotation] },
         { allOf: [annotation, base] },
@@ -78,7 +87,7 @@ for (const openapi of ['3.0.4', '3.1.1', '3.2.1']) {
           };
           const metadata = compileOpenAPIMetadata({
             openapi,
-            components: { schemas: { Base: base } },
+            components: { schemas: { Base: base, Leaf: schema } },
             paths: { '/upload': { post: { requestBody: { content } } } },
           });
           const api = createStrictClient<Paths>({
