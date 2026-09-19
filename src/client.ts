@@ -38,7 +38,7 @@ const isNativeBody = (v: unknown): v is BodyInit =>
   (typeof Blob !== 'undefined' && v instanceof Blob) ||
   (typeof FormData !== 'undefined' && v instanceof FormData) ||
   (typeof URLSearchParams !== 'undefined' && v instanceof URLSearchParams) ||
-  (typeof ArrayBuffer !== 'undefined' && v instanceof ArrayBuffer);
+  (typeof ArrayBuffer !== 'undefined' && (v instanceof ArrayBuffer || ArrayBuffer.isView(v)));
 
 function serializeQuery(input: Record<string, unknown>) {
   const query = new URLSearchParams();
