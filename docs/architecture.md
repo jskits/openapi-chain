@@ -1,5 +1,7 @@
 # Architecture
 
+[Documentation index](README.md) · [API reference](api.md) · [Support matrix](support.md)
+
 The package separates compile-time API structure, the tiny schema-free runtime, and the opt-in exact-wire runtime.
 
 ## Type layer
@@ -36,21 +38,7 @@ The transitive ESM core is gzip-gated at 2048 bytes. The size script recursively
 
 Extensions live on a method call rather than only in global client options:
 
-```ts
-api.users(id).post({
-  body,
-  contentType: 'application/json',
-  extensions: {
-    query,
-    header,
-    cookie,
-    path,
-    body,
-    response,
-    request,
-  },
-});
-```
+See the [typed extension example](api.md#extensions) for a complete call using a checked-in schema.
 
 The callback types are computed from the selected OpenAPI item/operation:
 
@@ -62,7 +50,7 @@ The callback types are computed from the selected OpenAPI item/operation:
 
 At runtime these callbacks are ordinary functions. Their safety exists entirely at compile time and therefore adds no generated endpoint code.
 
-Local extensions have precedence over built-in serialization in both core and strict clients. A body extension takes ownership of the entire body; nested strict serializers either handle their field/part exactly or fail closed so a typed whole-body extension/request extension can take over. This makes the long tail composable instead of forcing rare OpenAPI/vendor semantics into the 2KB core.
+When invoked, local extensions have precedence over built-in serialization in both core and strict clients. Invocation conditions differ: core invokes a query extension for `query: {}`, while strict skips query/querystring extensions for empty records. See the [invocation contract](api.md#extension-invocation-conditions). A body extension takes ownership of the entire body; nested strict serializers either handle their field/part exactly or fail closed so a typed whole-body extension can take over before final request construction. This makes the long tail composable instead of forcing rare OpenAPI/vendor semantics into the 2KB core.
 
 ## Strict serialization model
 
@@ -89,21 +77,11 @@ The implementation prefers an explicit error over a request with a plausible but
 
 The intended progression is: tiny default -> operation-local typed extension -> strict metadata runtime -> custom transport. Rare behavior never needs to inflate the default core. Final request extensions and transports run only after input validation and location/body serialization; use those earlier extension points when serialization itself needs replacing.
 
-Serialization inference tracks active schema references through `allOf` and `items`.
-Ordinary recursive object properties can still be represented as JSON parts. Cycles
-that prevent determining a part's kind or media type throw a descriptive `TypeError`;
-inference is also bounded to 128 nested schema visits. Simplify the serialization
-schema in these cases rather than relying on unbounded recursive inference.
+Serialization inference tracks active schema references through `allOf` and `items`. Ordinary recursive object properties can still be represented as JSON parts. Cycles that prevent determining a part's kind or media type throw a descriptive `TypeError`; inference is also bounded to 128 nested schema visits. Simplify the serialization schema in these cases rather than relying on unbounded recursive inference.
 
-Rendered paths containing whole `.` or `..` segments (including `%2e` spellings)
-are rejected before transport. Fetch normalizes these segments, so encoding a dot
-is insufficient to preserve the intended endpoint. This check also applies to
-operation path extensions; filenames such as `file.txt` remain valid.
+Rendered paths containing whole `.` or `..` segments (including `%2e` spellings) are rejected before transport. Fetch normalizes these segments, so encoding a dot is insufficient to preserve the intended endpoint. This check also applies to operation path extensions; filenames such as `file.txt` remain valid.
 
-Strict clients index route shapes and HTTP methods at creation. Both chain and
-`$path()` routing use that snapshot; changing the routing table requires creating
-a new client. Request matching is proportional to path depth rather than total
-schema route count. Metadata records must remain immutable for the client's lifetime.
+Strict clients index route shapes and HTTP methods at creation. Both chain and `$path()` routing use that snapshot; changing the routing table requires creating a new client. Request matching is proportional to path depth rather than total schema route count. Metadata records must remain immutable for the client's lifetime.
 
 ## Implementation map
 
@@ -112,8 +90,9 @@ schema route count. Metadata records must remain immutable for the client's life
 - `serialization.ts`: strict wire encodings and request validation, without transport I/O.
 - `routes.ts`: the strict routing snapshot and lookups.
 - `path.ts`: shared dot-segment policy.
+- `media.ts`: shared media classification and generated-text charset checks.
+- `constant.ts`: the fixed supported HTTP method names.
 - `metadata.ts`: OpenAPI serialization metadata compiler.
 - `type.ts`: public contracts and operation-derived type computation.
 
-Shared behavior is qualified through core/strict contract tests rather than merging
-the whole strict serializer into the core dependency graph.
+Shared behavior is qualified through core/strict contract tests rather than merging the whole strict serializer into the core dependency graph.

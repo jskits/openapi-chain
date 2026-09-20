@@ -1,7 +1,6 @@
 # Legacy implementation changelog
 
-These notes belong to the predecessor `openapi-client-codegen` implementation.
-They are preserved for migration history, not as published `openapi-chain` versions.
+These notes belong to the predecessor `openapi-client-codegen` implementation. They are preserved for migration history, not as published `openapi-chain` versions.
 
 ## Unreleased
 

@@ -4,5 +4,13 @@
   "semi": true,
   "trailingComma": "all",
   "printWidth": 100,
-  "ignorePatterns": ["dist/**", "coverage/**", "pnpm-lock.yaml", ".changeset/*.md", "CHANGELOG.md"]
+  "ignorePatterns": ["dist/**", "coverage/**", "pnpm-lock.yaml", ".changeset/*.md", "CHANGELOG.md"],
+  "overrides": [
+    {
+      "files": ["*.md", "**/*.md", "*.mdx", "**/*.mdx"],
+      "options": {
+        "proseWrap": "never"
+      }
+    }
+  ]
 }
