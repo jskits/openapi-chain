@@ -1,5 +1,6 @@
 /* oxlint-disable typescript/no-base-to-string -- Core scalar coercion intentionally follows String(); structured serialization uses typed extensions. */
 import { safePath } from './path.js';
+import { mediaType, isJsonMediaType } from './media.js';
 import { httpMethods } from './constant.js';
 import {
   HttpError,
@@ -92,8 +93,8 @@ function requestBody(
     else headers.set('content-type', contentType);
     return serialized;
   }
-  const media = contentType.split(';', 1)[0]!.trim().toLowerCase();
-  if (media === 'application/json' || media.endsWith('+json')) {
+  const media = mediaType(contentType);
+  if (isJsonMediaType(media)) {
     headers.set('content-type', contentType);
     return JSON.stringify(body);
   }
@@ -114,7 +115,7 @@ async function parse(response: Response) {
     return undefined;
   const text = await response.text();
   if (!text) return undefined;
-  return (response.headers.get('content-type') ?? '').toLowerCase().includes('json')
+  return isJsonMediaType(mediaType(response.headers.get('content-type') ?? ''))
     ? JSON.parse(text)
     : text;
 }

@@ -12,6 +12,7 @@ import {
 } from './serialization.js';
 import { createOperationResolver, type ProxyState } from './routes.js';
 import { safePath } from './path.js';
+import { mediaType, isJsonMediaType } from './media.js';
 import { httpMethods } from './constant.js';
 import {
   HttpError,
@@ -58,15 +59,16 @@ async function defaultResponseParser(response: Response): Promise<unknown> {
     return undefined;
   }
   if (response.headers.get('content-length') === '0') return undefined;
-  const contentType = response.headers.get('content-type')?.toLowerCase() ?? '';
-  if (contentType.includes('application/json') || contentType.includes('+json')) {
+  const contentType = mediaType(response.headers.get('content-type') ?? '');
+  if (isJsonMediaType(contentType)) {
     const text = await response.text();
     return text ? JSON.parse(text) : undefined;
   }
   if (
     contentType.startsWith('text/') ||
-    contentType.includes('xml') ||
-    contentType.includes('x-www-form-urlencoded')
+    contentType === 'application/xml' ||
+    contentType.endsWith('+xml') ||
+    contentType === 'application/x-www-form-urlencoded'
   ) {
     const text = await response.text();
     return text || undefined;
