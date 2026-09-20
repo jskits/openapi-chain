@@ -1,6 +1,6 @@
 {
   "name": "openapi-chain",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "A tiny OpenAPI-typed fluent client with zero client codegen and opt-in exact-wire serialization.",
   "keywords": [
     "client",
