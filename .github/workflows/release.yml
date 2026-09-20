@@ -3,12 +3,18 @@ name: Release
 on:
   push:
     branches: [main]
+    tags: ['v*']
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Existing v<version> tag to publish (empty keeps the Changesets flow)'
+        type: string
+        required: false
 
 permissions: {}
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release
   cancel-in-progress: false
 
 env:
@@ -18,18 +24,38 @@ env:
 jobs:
   select:
     # Trusted Publishing is configured; RELEASE_ENABLED=false is an emergency stop.
-    if: github.repository == 'jskits/openapi-chain' && github.ref == 'refs/heads/main' && vars.RELEASE_ENABLED != 'false'
+    if: github.repository == 'jskits/openapi-chain' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && vars.RELEASE_ENABLED != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: read
     outputs:
-      mode: ${{ steps.select.outputs.mode }}
+      mode: ${{ steps.source.outputs.tag && 'publish' || steps.select.outputs.mode }}
+      ref: ${{ steps.source.outputs.ref }}
+      tag: ${{ steps.source.outputs.tag }}
       publish-plan: ${{ steps.select.outputs.publish-plan-artifact-id }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
+          fetch-depth: 0
+      - name: Resolve and validate release source
+        id: source
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag || (github.ref_type == 'tag' && github.ref_name) || '' }}
+        shell: bash
+        run: |
+          if [[ -n "$RELEASE_TAG" ]]; then
+            [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] || { echo "Invalid release tag"; exit 1; }
+            sha=$(git rev-parse --verify "refs/tags/$RELEASE_TAG^{commit}")
+            git merge-base --is-ancestor "$sha" origin/main
+            version=$(git show "$sha:package.json" | node -p "JSON.parse(require('fs').readFileSync(0, 'utf8')).version")
+            [[ "$RELEASE_TAG" == "v$version" ]] || { echo "Tag/package version mismatch"; exit 1; }
+            echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          else
+            sha=$(git rev-parse HEAD)
+          fi
+          echo "ref=$sha" >> "$GITHUB_OUTPUT"
       - uses: pnpm/action-setup@f520eceda224fe1a4aed5a2a27a194379a409996 # v6
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
@@ -38,6 +64,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - uses: changesets/action/select-mode@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
         id: select
+        if: steps.source.outputs.tag == ''
 
   version:
     needs: select
@@ -85,6 +112,8 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/ci.yml
+    with:
+      ref: ${{ needs.select.outputs.ref }}
 
   pack:
     needs: [select, verify]
@@ -98,6 +127,7 @@ jobs:
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
+          ref: ${{ needs.select.outputs.ref }}
           persist-credentials: false
       - uses: pnpm/action-setup@f520eceda224fe1a4aed5a2a27a194379a409996 # v6
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
@@ -107,6 +137,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - name: Require the selected publish plan
+        if: needs.select.outputs.tag == ''
         run: test -n "$PUBLISH_PLAN_ARTIFACT_ID"
         env:
           PUBLISH_PLAN_ARTIFACT_ID: ${{ needs.select.outputs.publish-plan }}
@@ -116,7 +147,7 @@ jobs:
           publish-plan-artifact-id: ${{ needs.select.outputs.publish-plan }}
 
   publish:
-    needs: pack
+    needs: [select, pack]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -130,6 +161,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
+          ref: ${{ needs.select.outputs.ref }}
           persist-credentials: false
       - uses: pnpm/action-setup@f520eceda224fe1a4aed5a2a27a194379a409996 # v6
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
@@ -160,8 +192,18 @@ jobs:
         id: publish
         with:
           pack-dir-artifact-id: ${{ needs.pack.outputs.packed }}
-          create-github-releases: true
-          push-git-tags: true
+          create-github-releases: ${{ needs.select.outputs.tag == '' }}
+          push-git-tags: ${{ needs.select.outputs.tag == '' }}
+      - name: Create release for the existing tag
+        if: needs.select.outputs.tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.select.outputs.tag }}
+        shell: bash
+        run: |
+          if ! gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY"; then
+            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes
+          fi
       - name: Summarize publication
         if: always() && steps.publish.outcome != 'skipped'
         env:

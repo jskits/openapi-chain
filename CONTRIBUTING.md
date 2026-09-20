@@ -40,3 +40,9 @@ Use `pnpm benchmark` for repeatable performance evidence. Report the environment
 Keep README focused on the package's purpose, installation, first request and navigation. Put detailed contracts in [API reference](docs/api.md), support limits in [support](docs/support.md), and contributor commands in [development](docs/development.md). Update the [documentation index](docs/README.md) when adding a guide.
 
 Use concrete schemas for code examples and verify their types with the pinned generator. Preserve status/media correlation and distinguish HTTP results from rejected promises. Check relative links and heading anchors after moving sections. Keep user guides free of commit hashes; use release versions for compatibility changes. Place historical verification reports in `docs/archive/qualification/`, with one baseline commit link at the top and sections describing changes, verification and limitations. Preserve recorded dates, environments and results; do not present historical measurements as current results. Link reports through the archive index rather than adding commit tables to the main navigation. Add release notes when documentation describes a user-visible behavior change; navigation or wording-only changes need no changeset.
+
+### Tagged releases and recovery
+
+Pushing a `v<package.json version>` tag publishes that exact commit after CI passes. Tags must point to commits on `main`; tag/version mismatches fail before publishing. The release workflow serializes publication to avoid overlapping branch and tag runs.
+
+For a tag created before tag publishing was configured, run the **Release** workflow on `main` and set `release_tag` to the existing tag (for example, `v0.3.0`). This uses the current workflow while verifying, packing and publishing the immutable tagged source. Do not move an existing public tag. Leave the input empty for the usual Changesets version-PR flow; pending changesets select versioning rather than publication.
