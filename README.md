@@ -21,7 +21,7 @@ The package deliberately separates two runtime budgets:
 - **strict** (`openapi-chain/strict`) is opt-in. It consumes compiled OpenAPI metadata and supports metadata-driven `style`, `explode`, `allowReserved`, Parameter `content`, Encoding Object, multipart/form encoding, and OpenAPI 3.2 wire semantics.
 
 This keeps the default client tiny while making supported metadata-driven serialization opt-in. See the [support matrix](docs/support.md) for explicit limits and the
-[latest qualification](docs/multipart-qualification.md) for verified behavior.
+[latest qualification](docs/media-qualification.md) for verified behavior.
 
 Start with the [complete generated-schema example](docs/getting-started.md), or read the [reproducible performance comparison](docs/performance.md).
 

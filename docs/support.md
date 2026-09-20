@@ -131,3 +131,25 @@ parameters require a Blob-backed part to retain its Content-Type; native FormDat
 adds a filename to such parts. If the server requires a parameterized text part
 without a filename, use a whole-body extension to supply that exact representation.
 Style-based encodings follow their separate OpenAPI rules and ignore contentType.
+
+## Media recognition and text encodings
+
+Default response parsing classifies the normalized media type before its
+semicolon-separated parameters. JSON parsing applies to `application/json` and
+`+json` suffix types; parameter values containing `json` or `xml` do not select a
+parser. Strict uses text for `text/*`, `application/xml`, `+xml` and
+`application/x-www-form-urlencoded`, and ArrayBuffer for other nonempty bodies.
+Core retains its text fallback. JSON sequences and other streaming formats need a
+response extension. Default text decoding follows Fetch's UTF-8 `text()` behavior;
+use a response extension for another response encoding.
+
+Automatically generated request strings use UTF-8 across core, strict, JSON,
+text, form encoding and supported parameter-content serialization. A declared
+non-UTF-8 charset is rejected before transport. Quoted and case-insensitive UTF-8
+labels are accepted; unrelated quoted parameters do not select a charset.
+Pre-encoded Blob/ArrayBuffer/view bodies remain byte-preserving, including under
+text media types. Body and location extensions retain responsibility for their
+chosen encoding. Merely changing a Content-Type header never transcodes bytes.
+
+Core assumes the standard Fetch body classes supplied by supported Node versions
+and modern browsers, including when an application replaces the transport.

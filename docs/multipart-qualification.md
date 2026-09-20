@@ -1,5 +1,7 @@
 # Multipart and binary qualification
 
+See the [media follow-up](media-qualification.md) for the subsequent changes.
+
 Implementation snapshot: `85e8f96`, following review of `916acc9`.
 Local verification: 2026-09-20 (Asia/Shanghai), macOS arm64, Node 24.16.0,
 pnpm 10.34.5. This report and Changeset follow five focused implementation/test
