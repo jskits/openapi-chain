@@ -15,6 +15,16 @@ const server = createServer((request, response) => {
   const chunks = [];
   request.on('data', (chunk) => chunks.push(chunk));
   request.on('end', () => {
+    if (request.url === '/misleading-text') {
+      response.setHeader('content-type', 'text/plain; note="application/json"');
+      response.end('hello');
+      return;
+    }
+    if (request.url === '/misleading-binary') {
+      response.setHeader('content-type', 'application/octet-stream; note="xml"');
+      response.end(Buffer.from([255, 0, 65]));
+      return;
+    }
     response.setHeader('content-type', 'application/json');
     response.end(
       JSON.stringify({
@@ -101,6 +111,41 @@ try {
     });
     assert.deepEqual(echoed.bytes, [65, 66]);
   }
+  const mediaMetadata = compileOpenAPIMetadata({
+    openapi: '3.1.1',
+    paths: {
+      '/misleading-text': { get: {} },
+      '/misleading-binary': { get: {} },
+      '/text': { post: { requestBody: { content: { 'text/plain': {} } } } },
+    },
+  });
+  for (const api of [
+    createClient({ baseUrl }),
+    createStrictClient({ baseUrl, metadata: mediaMetadata }),
+  ]) {
+    assert.equal(await api.$path('/misleading-text').get(), 'hello');
+    const echoed = await api.text.post({ body: 'café', contentType: 'text/plain; charset=utf-8' });
+    assert.deepEqual(echoed.bytes, [99, 97, 102, 195, 169]);
+    await assert.rejects(
+      api.text.post({ body: 'café', contentType: 'text/plain; charset=iso-8859-1' }),
+      /charset/,
+    );
+    const encoded = await api.text.post({
+      body: new Uint8Array([99, 97, 102, 233]),
+      contentType: 'text/plain; charset=iso-8859-1',
+    });
+    assert.deepEqual(encoded.bytes, [99, 97, 102, 233]);
+  }
+  assert.deepEqual(
+    [
+      ...new Uint8Array(
+        await createStrictClient({ baseUrl, metadata: mediaMetadata })
+          .$path('/misleading-binary')
+          .get(),
+      ),
+    ],
+    [255, 0, 65],
+  );
 } finally {
   server.closeAllConnections();
   await new Promise((resolve, reject) =>

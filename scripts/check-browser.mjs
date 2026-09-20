@@ -28,6 +28,11 @@ async function handle(request, response) {
     response.end('<!doctype html><title>openapi-chain browser qualification</title>');
     return;
   }
+  if (url.pathname === '/misleading-text') {
+    response.setHeader('content-type', 'text/plain; note="application/json"');
+    response.end('hello');
+    return;
+  }
   if (url.pathname === '/session') {
     response.setHeader('set-cookie', 'session=browser; HttpOnly; SameSite=Lax; Path=/');
   }
@@ -240,8 +245,43 @@ try {
     hasWildcard: false,
     binary: [65, 66],
   });
+
+  const mediaResults = await page.evaluate(
+    async ({ origin, crossOrigin }) => {
+      const { createClient } = await import(`${origin}/dist/index.js`);
+      const { createStrictClient } = await import(`${origin}/dist/strict.js`);
+      const { compileOpenAPIMetadata } = await import(`${origin}/dist/metadata.js`);
+      const metadata = compileOpenAPIMetadata({
+        openapi: '3.1.1',
+        paths: {
+          '/misleading-text': { get: {} },
+          '/text': { post: { requestBody: { content: { 'text/plain': {} } } } },
+        },
+      });
+      const results = [];
+      for (const create of [createClient, createStrictClient]) {
+        const api = create({ baseUrl: crossOrigin, metadata });
+        const text = await api.$path('/misleading-text').get();
+        const encoded = await api.text.post({
+          body: 'café',
+          contentType: 'text/plain; charset=utf-8',
+        });
+        const rejection = await api.text
+          .post({ body: 'café', contentType: 'text/plain; charset=iso-8859-1' })
+          .then(
+            () => false,
+            (error) => error instanceof TypeError,
+          );
+        results.push({ text, bytes: encoded.bytes, rejection });
+      }
+      return results;
+    },
+    { origin, crossOrigin },
+  );
+  for (const result of mediaResults)
+    assert.deepEqual(result, { text: 'hello', bytes: [99, 97, 102, 195, 169], rejection: true });
   console.log(
-    'Chromium: core/strict ESM, multipart, Unicode, credentialed CORS, cookie omission, abort, streaming, multipart part fidelity and binary slices passed.',
+    'Chromium: core/strict ESM, multipart, Unicode, credentialed CORS, cookie omission, abort, streaming, multipart part fidelity, binary slices, response media and text charsets passed.',
   );
 } finally {
   await browser?.close();
