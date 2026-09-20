@@ -1,5 +1,7 @@
 # openapi-chain
 
+[![npm version](https://img.shields.io/npm/v/openapi-chain.svg)](https://www.npmjs.com/package/openapi-chain) [![npm downloads](https://img.shields.io/npm/dm/openapi-chain.svg)](https://www.npmjs.com/package/openapi-chain) [![CI](https://github.com/jskits/openapi-chain/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jskits/openapi-chain/actions/workflows/ci.yml) [![TypeScript](https://img.shields.io/badge/TypeScript-typed-3178C6?logo=typescript&logoColor=white)](docs/api.md) [![Modules](https://img.shields.io/badge/modules-ESM%20%2B%20CommonJS-blue)](docs/api.md#entry-points) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A TypeScript OpenAPI client with a fluent path API, zero generated client code, and no runtime dependencies. Generate a `paths` type, then call your API through typed properties and functions:
 
 ```ts
