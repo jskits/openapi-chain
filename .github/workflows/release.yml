@@ -13,10 +13,12 @@ concurrency:
 
 env:
   HUSKY: '0'
+  NPM_CONFIG_REGISTRY: https://registry.npmjs.org
 
 jobs:
   select:
-    if: github.ref == 'refs/heads/main' && vars.RELEASE_ENABLED == 'true'
+    # Trusted Publishing is configured; RELEASE_ENABLED=false is an emergency stop.
+    if: github.repository == 'jskits/openapi-chain' && github.ref == 'refs/heads/main' && vars.RELEASE_ENABLED != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -48,6 +50,7 @@ jobs:
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
+          fetch-depth: 0
           persist-credentials: false
       - uses: pnpm/action-setup@f520eceda224fe1a4aed5a2a27a194379a409996 # v6
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
@@ -70,6 +73,7 @@ jobs:
 
   pack:
     needs: [select, verify]
+    if: needs.select.outputs.mode == 'publish'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -87,6 +91,10 @@ jobs:
           package-manager-cache: false
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
+      - name: Require the selected publish plan
+        run: test -n "$PUBLISH_PLAN_ARTIFACT_ID"
+        env:
+          PUBLISH_PLAN_ARTIFACT_ID: ${{ needs.select.outputs.publish-plan }}
       - uses: changesets/action/pack@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
         id: pack
         with:
@@ -99,16 +107,54 @@ jobs:
     permissions:
       contents: write
       id-token: write
+    env:
+      # Publish the packed artifact without running package lifecycle scripts.
+      NPM_CONFIG_IGNORE_SCRIPTS: 'true'
+      NPM_CONFIG_PROVENANCE: 'true'
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
+          fetch-depth: 0
           persist-credentials: false
       - uses: pnpm/action-setup@f520eceda224fe1a4aed5a2a27a194379a409996 # v6
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version-file: .node-version
+          # Do not set registry-url: OIDC needs no token-based .npmrc.
           package-manager-cache: false
+      - name: Verify Trusted Publishing prerequisites
+        shell: bash
+        run: |
+          # pnpm 10 delegates publishing tarballs to the npm CLI on PATH.
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          const version = execFileSync('npm', ['--version'], { encoding: 'utf8' }).trim();
+          const [major, minor, patch] = version.split('.').map(Number);
+          if (!(major > 11 || (major === 11 && (minor > 5 || (minor === 5 && patch >= 1))))) {
+            throw new Error(`npm >=11.5.1 is required for Trusted Publishing; found ${version}`);
+          }
+          for (const key of ['ACTIONS_ID_TOKEN_REQUEST_URL', 'ACTIONS_ID_TOKEN_REQUEST_TOKEN', 'PACK_ARTIFACT_ID']) {
+            if (!process.env[key]) throw new Error(`Missing ${key}`);
+          }
+          console.log(`Trusted Publishing prerequisites passed (npm ${version}).`);
+          NODE
+        env:
+          PACK_ARTIFACT_ID: ${{ needs.pack.outputs.packed }}
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - uses: changesets/action/publish@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+        id: publish
         with:
           pack-dir-artifact-id: ${{ needs.pack.outputs.packed }}
+          create-github-releases: true
+          push-git-tags: true
+      - name: Summarize publication
+        if: always() && steps.publish.outcome != 'skipped'
+        env:
+          PUBLISH_OUTCOME: ${{ steps.publish.outcome }}
+          PUBLISHED_PACKAGES: ${{ steps.publish.outputs.published-packages }}
+        run: |
+          {
+            printf '### npm publication\n\n'
+            printf 'Result: %s\n\n' "$PUBLISH_OUTCOME"
+            printf 'Packages reported by Changesets: `%s`\n' "$PUBLISHED_PACKAGES"
+          } >> "$GITHUB_STEP_SUMMARY"

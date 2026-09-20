@@ -70,14 +70,18 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md) for the contributor and release workfl
 
 Changesets v3 and its v2 GitHub Actions manage version PRs, changelogs, package artifacts, npm publication and GitHub releases. The workflow separates verification, packing and publication; only the publishing job has an OIDC permission.
 
-Before enabling [the release workflow](../.github/workflows/release.yml):
+The [release workflow](../.github/workflows/release.yml) runs automatically on `main` in `jskits/openapi-chain`, or manually with `workflow_dispatch` on `main`. Its setup requirements are:
 
-1. Review pending changesets and the resulting version/changelog. This checkout is `0.0.0`; verify the actual registry versions before choosing the release version, especially when a package name has historical releases.
+1. Review pending changesets and the resulting version/changelog. Verify the actual registry versions before choosing the release version, especially when a package name has historical releases.
 2. Confirm ownership of the npm package name `openapi-chain`. If the package does not exist, create its first release with an authenticated maintainer account. A local bootstrap publish requires maintainer authentication and a deliberate version choice; `npm publish --provenance=false` is a real publishing command, not a validation step. Run the full checks and review the packed files first.
 3. Configure an npm **Trusted Publisher** with organization/user `jskits`, repository `openapi-chain`, workflow `release.yml`, and no environment name.
-4. In GitHub Actions settings, enable **Allow GitHub Actions to create and approve pull requests**. Add a repository variable `RELEASE_ENABLED` with value `true`.
+4. In GitHub Actions settings, enable **Allow GitHub Actions to create and approve pull requests**. Releases are enabled by default; set the repository variable `RELEASE_ENABLED` to `false` to pause them. Remove it or set it to `true` to resume.
 
-Once enabled, pushing changesets to `main` creates or updates a release PR. Merging the release PR triggers the full CI matrix before packaging and publishing. Only the publish job receives `id-token: write`. No long-lived npm token is needed for this OIDC workflow. Enable releases only after package ownership and Trusted Publishing are configured.
+Pushing changesets to `main` creates or updates a release PR. Merging the release PR triggers the full CI matrix and Chromium integration before packaging and publishing. Only the publish job receives `id-token: write`. It publishes the packed artifact with lifecycle scripts disabled, then creates Git tags and GitHub releases. The workflow requires the publish-plan and package artifact IDs so a missing artifact cannot fall back to publishing from the checkout.
+
+The pinned Node.js version provides npm; the publish job checks npm is at least `11.5.1`, as required for Trusted Publishing. pnpm 10 delegates tarball publication to that npm CLI. Authentication uses OIDC, with no `NPM_TOKEN`, `NODE_AUTH_TOKEN`, or `setup-node` `registry-url` configuration. Provenance is enabled explicitly. If the npm Trusted Publisher uses an environment name, add the exact same `environment` to the publish job before running it.
+
+After a release, check the Actions publication summary, npm version/provenance, Git tag and GitHub release. If publication succeeds but tag or GitHub release creation fails, inspect those remote states before retrying; do not bump the version or replace an existing tag merely to retry a failed run.
 
 PRs created using GitHub's default token do not automatically start other workflows. If branch protection requires CI on the release PR, manually run CI on its branch using `workflow_dispatch`, or configure a GitHub App token for the version action.
 
