@@ -85,4 +85,14 @@ After a release, check the Actions publication summary, npm version/provenance, 
 
 PRs created using GitHub's default token do not automatically start other workflows. If branch protection requires CI on the release PR, manually run CI on its branch using `workflow_dispatch`, or configure a GitHub App token for the version action.
 
+### Recover a release PR permission failure
+
+If the Changesets version step reports `GitHub Actions is not permitted to create or approve pull requests`, version generation may already have succeeded and the release branch may already have been pushed. The failure is the repository policy for Actions-created PRs, not npm authentication or the package version.
+
+In **Settings → Actions → General → Workflow permissions**, enable **Allow GitHub Actions to create and approve pull requests**. Keep the default token permissions read-only: the `version` job already declares `contents: write` and `pull-requests: write`, but those declarations do not override the separate repository policy. An organization administrator must resolve an inherited restriction if the checkbox cannot be enabled.
+
+After correcting the setting, rerun the failed jobs and confirm that Changesets creates or updates the release PR. Do not bump the package version, delete the release branch, merge the release PR, or change npm credentials merely to retry this failure. A successful `version` job prepares a PR; publication follows only after the release PR is merged and the publish path passes verification.
+
+The workflow adds recovery guidance to the job summary when the version action fails, while preserving the original failure status. It does not query or change repository administration settings using `GITHUB_TOKEN`; that endpoint requires administration access beyond this job's permissions. See [GitHub's workflow-permissions API](https://docs.github.com/en/rest/actions/permissions#get-default-workflow-permissions-for-a-repository).
+
 Reference: [Changesets automation](https://changesets.dev/guide/automating), [npm Trusted Publishing](https://docs.npmjs.com/trusted-publishers/), [tsdown package validation](https://tsdown.dev/options/lint).

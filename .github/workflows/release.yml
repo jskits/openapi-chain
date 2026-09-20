@@ -58,11 +58,26 @@ jobs:
           node-version-file: .node-version
           package-manager-cache: false
       - run: pnpm install --frozen-lockfile
+      # The repository must also allow Actions to create pull requests;
+      # job-level pull-requests: write does not enable that repository policy.
       - uses: changesets/action/version@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+        id: version
         with:
           script: pnpm version:packages
           commit-message: 'chore(release): version packages'
           pr-title: 'chore(release): version packages'
+      - name: Explain release PR failure recovery
+        if: failure() && steps.version.outcome == 'failure'
+        env:
+          ACTIONS_SETTINGS_URL: ${{ github.server_url }}/${{ github.repository }}/settings/actions
+        run: |
+          {
+            printf '### Release PR creation failed\n\n'
+            printf 'Inspect the Changesets version step above for the original error.\n\n'
+            printf 'If GitHub reports "GitHub Actions is not permitted to create or approve pull requests", enable **Allow GitHub Actions to create and approve pull requests** in [Settings → Actions → General](%s).\n\n' "$ACTIONS_SETTINGS_URL"
+            printf 'Keep the default workflow token permissions read-only; this job already requests contents: write and pull-requests: write. If the setting is locked, an organization administrator must allow it.\n\n'
+            printf 'After correcting the setting, rerun the failed jobs. A version bump or an npm token will not fix this permission error. No npm publication occurs in the version job.\n'
+          } >> "$GITHUB_STEP_SUMMARY"
 
   verify:
     needs: select
