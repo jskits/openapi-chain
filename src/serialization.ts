@@ -1,3 +1,4 @@
+import { validateTextCharset } from './media.js';
 import { splitPath, type ProxyState } from './routes.js';
 import type {
   EncodingMetadata,
@@ -225,6 +226,7 @@ function serializeContentValue(
   const contentType = parameter.contentType;
   if (!contentType) throw new TypeError('Missing parameter content type.');
   const normalized = contentType.split(';', 1)[0]!.trim().toLowerCase();
+  validateTextCharset(contentType);
   if (normalized === 'application/json' || normalized.endsWith('+json')) {
     return JSON.stringify(value);
   }
@@ -749,6 +751,7 @@ function runtimeDefaultPartContentType(value: unknown): string {
 }
 
 function formContentString(value: unknown, contentType: string, context: string): string {
+  validateTextCharset(contentType);
   const normalized = normalizeMediaType(contentType);
   if (normalized === 'application/json' || normalized.endsWith('+json')) {
     return JSON.stringify(value);
@@ -828,6 +831,7 @@ function serializeUrlEncodedBody(
   contentType: string,
   mediaOverride?: MediaTypeMetadata,
 ): string {
+  validateTextCharset(contentType);
   if (isUrlSearchParams(body)) return body.toString();
   if (!isPlainRecord(body)) {
     throw new TypeError(`${contentType} request body must be an object or URLSearchParams.`);
@@ -898,20 +902,6 @@ function selectMultipartContentType(contentTypes: string, value: unknown): strin
   );
 }
 
-/** Generated textual parts use Fetch/Blob UTF-8 encoding; byte bodies are already encoded. */
-function validateMultipartTextCharset(contentType: string): void {
-  const parameters = /;\s*([^=;\s]+)\s*=\s*("(?:[^"\\]|\\.)*"|[^;]*)/g;
-  for (const match of contentType.matchAll(parameters)) {
-    if (match[1]!.toLowerCase() !== 'charset') continue;
-    const charset = match[2]!.trim().replace(/^"|"$/g, '').toLowerCase();
-    if (charset !== 'utf-8') {
-      throw new TypeError(
-        `Multipart text charset ${charset} is not supported; provide pre-encoded bytes or an operation body extension.`,
-      );
-    }
-  }
-}
-
 function appendMultipartContentPart(
   form: FormData,
   name: string,
@@ -931,12 +921,12 @@ function appendMultipartContentPart(
     return;
   }
   if (normalized === 'application/json' || normalized.endsWith('+json')) {
-    validateMultipartTextCharset(contentType);
+    validateTextCharset(contentType);
     form.append(name, new Blob([JSON.stringify(value)], { type: contentType }));
     return;
   }
   if (normalized.startsWith('text/')) {
-    validateMultipartTextCharset(contentType);
+    validateTextCharset(contentType);
     const text = primitive(value, `multipart field ${name}`);
     if (contentType.trim().toLowerCase() === 'text/plain') form.append(name, text);
     else form.append(name, new Blob([text], { type: contentType }));
@@ -1079,13 +1069,15 @@ export function serializeBody(
     return serializeUrlEncodedBody(body, operation, contentType);
   }
   if (normalized === 'application/json' || normalized.endsWith('+json')) {
+    validateTextCharset(contentType);
     headers.set('content-type', contentType);
     return JSON.stringify(body);
   }
   if (normalized.startsWith('text/')) {
     headers.set('content-type', contentType);
+    if (isBlob(body) || isArrayBuffer(body) || ArrayBuffer.isView(body)) return body as BodyInit;
+    validateTextCharset(contentType);
     if (typeof body === 'string') return body;
-    if (isBlob(body)) return body;
     if (typeof body === 'number' || typeof body === 'boolean' || typeof body === 'bigint') {
       return String(body);
     }
@@ -1093,6 +1085,7 @@ export function serializeBody(
   }
 
   if (isNativeBody(body)) {
+    if (typeof body === 'string' || isUrlSearchParams(body)) validateTextCharset(contentType);
     if (isFormData(body)) {
       throw new TypeError(`FormData cannot be sent as ${contentType}; use multipart/form-data.`);
     }

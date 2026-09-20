@@ -1,6 +1,6 @@
 /* oxlint-disable typescript/no-base-to-string -- Core scalar coercion intentionally follows String(); structured serialization uses typed extensions. */
 import { safePath } from './path.js';
-import { mediaType, isJsonMediaType } from './media.js';
+import { mediaType, isJsonMediaType, validateTextCharset } from './media.js';
 import { httpMethods } from './constant.js';
 import {
   HttpError,
@@ -30,16 +30,16 @@ type RuntimeExtensions = {
 };
 type Runtime = { options: CoreClientOptions; transport: Transport };
 
-const isMethod = (v: string): v is HttpMethod => httpMethods.includes(v as HttpMethod);
 const encodeScalar = (v: unknown) => encodeURIComponent(String(v));
-const normalizeQuery = (v: string | URLSearchParams) =>
-  (typeof v === 'string' ? v : v.toString()).replace(/^\?/, '');
+const normalizeQuery = (v: string | URLSearchParams) => String(v).replace(/^\?/, '');
+// Supported Node and browser runtimes provide the standard Fetch body classes.
 const isNativeBody = (v: unknown): v is BodyInit =>
   typeof v === 'string' ||
-  (typeof Blob !== 'undefined' && v instanceof Blob) ||
-  (typeof FormData !== 'undefined' && v instanceof FormData) ||
-  (typeof URLSearchParams !== 'undefined' && v instanceof URLSearchParams) ||
-  (typeof ArrayBuffer !== 'undefined' && (v instanceof ArrayBuffer || ArrayBuffer.isView(v)));
+  v instanceof Blob ||
+  v instanceof FormData ||
+  v instanceof URLSearchParams ||
+  v instanceof ArrayBuffer ||
+  ArrayBuffer.isView(v);
 
 function serializeQuery(input: Record<string, unknown>) {
   const query = new URLSearchParams();
@@ -57,10 +57,11 @@ function serializeQuery(input: Record<string, unknown>) {
 
 function appendQuery(url: string, query: string) {
   if (!query) return url;
-  const hashIndex = url.indexOf('#');
-  const hash = hashIndex < 0 ? '' : url.slice(hashIndex);
-  const base = hashIndex < 0 ? url : url.slice(0, hashIndex);
-  return `${base}${base.includes('?') ? '&' : '?'}${query}${hash}`;
+  return url.replace(
+    /^([^#]*)([\s\S]*)$/,
+    (_match, base: string, hash: string) =>
+      `${base}${base.includes('?') ? '&' : '?'}${query}${hash}`,
+  );
 }
 
 function renderPath(state: State, serialize?: RuntimeExtensions['path']) {
@@ -73,9 +74,7 @@ function renderPath(state: State, serialize?: RuntimeExtensions['path']) {
         throw new TypeError(`Missing path: ${name}`);
       return encode(state.params[name]);
     });
-  return state.segments.length
-    ? `/${state.segments.map((segment) => (segment.dynamic ? encode(segment.value) : segment.value)).join('/')}`
-    : '/';
+  return `/${state.segments.map((segment) => (segment.dynamic ? encode(segment.value) : segment.value)).join('/')}`;
 }
 
 function requestBody(
@@ -85,29 +84,21 @@ function requestBody(
   serialize?: RuntimeExtensions['body'],
 ) {
   if (body === undefined) return undefined;
-  if (!contentType) throw new TypeError('Schema-free body needs contentType.');
-  if (serialize) {
-    const serialized = serialize({ body: body, contentType: contentType });
-    if (typeof FormData !== 'undefined' && serialized instanceof FormData)
-      headers.delete('content-type');
-    else headers.set('content-type', contentType);
-    return serialized;
+  if (!contentType) throw new TypeError('Missing contentType.');
+  let serialized: BodyInit | undefined;
+  if (serialize) serialized = serialize({ body, contentType });
+  else {
+    const media = mediaType(contentType);
+    if (isJsonMediaType(media)) serialized = JSON.stringify(body);
+    else if (media.startsWith('text/') && typeof body !== 'object') serialized = String(body);
+    else if (isNativeBody(body)) serialized = body;
+    else throw new TypeError(`Need body extension: ${contentType}`);
+    if (typeof serialized === 'string' || serialized instanceof URLSearchParams)
+      validateTextCharset(contentType);
   }
-  const media = mediaType(contentType);
-  if (isJsonMediaType(media)) {
-    headers.set('content-type', contentType);
-    return JSON.stringify(body);
-  }
-  if (media.startsWith('text/') && typeof body !== 'object') {
-    headers.set('content-type', contentType);
-    return String(body);
-  }
-  if (isNativeBody(body)) {
-    if (typeof FormData !== 'undefined' && body instanceof FormData) headers.delete('content-type');
-    else headers.set('content-type', contentType);
-    return body;
-  }
-  throw new TypeError(`Structured ${contentType} needs body extension.`);
+  if (serialized instanceof FormData) headers.delete('content-type');
+  else headers.set('content-type', contentType);
+  return serialized;
 }
 
 async function parse(response: Response) {
@@ -128,26 +119,24 @@ async function executeRequest(
 ) {
   const extensions = input?.extensions as RuntimeExtensions | undefined;
   const headers = new Headers(runtime.options.headers);
+  const mergeHeaders = (value: HeadersInit) =>
+    new Headers(value).forEach((entry, name) => headers.set(name, entry));
   if (input?.header) {
-    if (extensions?.header)
-      new Headers(extensions.header(input.header)).forEach((value, name) =>
-        headers.set(name, value),
-      );
+    if (extensions?.header) mergeHeaders(extensions.header(input.header));
     else
       for (const [k, v] of Object.entries(input.header))
         if (v != null) headers.set(k, Array.isArray(v) ? v.join(',') : String(v));
   }
-  if (input?.init?.headers)
-    new Headers(input.init.headers).forEach((value, name) => headers.set(name, value));
+  if (input?.init?.headers) mergeHeaders(input.init.headers);
   if (input?.cookie) {
     if (extensions?.cookie) headers.set('cookie', extensions.cookie(input.cookie));
     else {
       const cookies: string[] = [];
       for (const [k, v] of Object.entries(input.cookie)) {
         if (v == null) continue;
-        if (Array.isArray(v))
-          v.forEach((item) => cookies.push(`${encodeScalar(k)}=${encodeScalar(item)}`));
-        else cookies.push(`${encodeScalar(k)}=${encodeScalar(v)}`);
+        (Array.isArray(v) ? v : [v]).forEach((item) =>
+          cookies.push(`${encodeScalar(k)}=${encodeScalar(item)}`),
+        );
       }
       if (cookies.length) headers.set('cookie', cookies.join('; '));
     }
@@ -172,7 +161,7 @@ async function executeRequest(
       body: requestBody(input?.body, input?.contentType, headers, extensions?.body) ?? null,
     },
   };
-  if (extensions?.request) request = await extensions.request(request, input ?? {});
+  if (extensions?.request) request = await extensions.request(request, input!);
   const response = await runtime.transport(request);
   let data: unknown;
   if (extensions?.response) {
@@ -195,8 +184,9 @@ function createNode(runtime: Runtime, state: State): unknown {
       if (property === '$path' && 'segments' in state && !state.segments.length)
         return (template: string, params?: Record<string, unknown>) =>
           createNode(runtime, { template, params: params });
-      if (isMethod(property))
-        return (input?: RequestInput) => executeRequest(runtime, state, property, input);
+      if (httpMethods.includes(property as HttpMethod))
+        return (input?: RequestInput) =>
+          executeRequest(runtime, state, property as HttpMethod, input);
       if (!('segments' in state)) throw new TypeError('$path() terminal.');
       return createNode(runtime, {
         segments: [...state.segments, { dynamic: false, value: property }],
@@ -204,7 +194,7 @@ function createNode(runtime: Runtime, state: State): unknown {
     },
     apply(_t, _a, args) {
       if (!('segments' in state) || args.length !== 1)
-        throw new TypeError('Path parameter needs 1 argument.');
+        throw new TypeError('Path needs 1 argument.');
       return createNode(runtime, {
         segments: [...state.segments, { dynamic: true, value: args[0] }],
       });
@@ -215,7 +205,7 @@ function createNode(runtime: Runtime, state: State): unknown {
 function createRuntime(options: CoreClientOptions): Runtime {
   const fetchImplementation = options.fetch ?? globalThis.fetch;
   if (!options.transport && typeof fetchImplementation !== 'function')
-    throw new TypeError('Need fetch/transport.');
+    throw new TypeError('Missing fetch.');
   return {
     options,
     transport: options.transport ?? ((request) => fetchImplementation(request.url, request.init)),
