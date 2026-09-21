@@ -728,6 +728,8 @@ function normalizedTemplate(path: string): string {
 export type CompileOpenAPIMetadataOptions = {
   /** Allow nonconforming duplicate template hierarchies; ambiguous chain calls still fail. */
   onAmbiguousTemplate?: 'throw' | 'allow';
+  /** Compile only these exact paths while resolving references against the full document. */
+  paths?: readonly string[];
 };
 
 export function compileOpenAPIMetadata(
@@ -752,9 +754,18 @@ export function compileOpenAPIMetadata(
   const paths = asRecord(source.paths ?? {}, 'OpenAPI paths');
   const operations: Record<string, Partial<Record<HttpMethod, OperationMetadata>>> = dictionary();
   const seenTemplates = new Map<string, string>();
+  let selected: Set<string> | undefined;
+  if (options.paths !== undefined) {
+    if (!Array.isArray(options.paths)) throw new TypeError('Metadata paths must be an array.');
+    selected = new Set(options.paths);
+    for (const path of selected) {
+      if (typeof path !== 'string' || !path.startsWith('/') || !Object.hasOwn(paths, path))
+        throw new TypeError(`Unknown selected OpenAPI path: ${String(path)}`);
+    }
+  }
 
   for (const [path, rawPathItem] of Object.entries(paths)) {
-    if (path.startsWith('x-')) continue;
+    if (path.startsWith('x-') || (selected && !selected.has(path))) continue;
     if (!path.startsWith('/')) {
       throw new TypeError(`OpenAPI path must begin with /: ${path}`);
     }
