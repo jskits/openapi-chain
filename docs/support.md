@@ -13,7 +13,7 @@ This is the maintained serialization contract. For usage, start with the [gettin
 | Headers/cookies | Basic serialization or extension | Metadata-driven styles/content; browser restrictions still apply |
 | JSON/text/native request bodies | Explicit contentType | Single-concrete-media inference when metadata proves it |
 | Structured URL-encoded/multipart body | Whole-body extension | Encoding Objects and supported native Fetch representations |
-| Vendor wire behavior | Location/body extensions, then final request/transport | Same order; metadata validation precedes serialization; empty query records skip query/querystring extensions |
+| Vendor wire behavior | Location/body extensions, then final request/transport | Same order; metadata validation precedes serialization |
 | Client headers | Static HeadersInit; functions rejected | Static or per-request sync/async function |
 | Middleware | Implement in transport | Middleware composition and transport |
 | Response parsing | JSON/text defaults | JSON/text/binary defaults |
@@ -119,4 +119,4 @@ Core rejects `middleware`, `metadata` and function-valued `headers` at construct
 
 Absence of non-default `style` or `explode` is not proof of core compatibility. Check parameter location and value shape as well: a default simple object header requires `a,b` for `{ a: 'b' }`, whereas core's schema-free coercion produces `[object Object]`. Scalar path encoding, compound cookies, body encoding and response parsing also need review. A keyword search is only an initial screen.
 
-When migrating, compile metadata from the same schema revision as the generated types, then check required/undeclared inputs, media selection, wire encodings and response consumers. Core requires explicit body contentType; strict can infer a single concrete declared media. Binary response consumers must account for strict's ArrayBuffer default instead of core's text fallback. Empty query records invoke core query extensions but skip strict query/querystring extensions. Changing entry points is not an unconditional behavior-preserving migration.
+When migrating, compile metadata from the same schema revision as the generated types, then check required/undeclared inputs, media selection, wire encodings and response consumers. Core requires explicit body contentType; strict can infer a single concrete declared media. Binary response consumers must account for strict's ArrayBuffer default instead of core's text fallback. Changing entry points is not an unconditional behavior-preserving migration.

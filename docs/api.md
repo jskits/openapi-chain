@@ -156,16 +156,16 @@ For valid typed inputs, a configured extension runs under the following conditio
 | Extension | Core | Strict |
 | --- | --- | --- |
 | `path` | Once per dynamic path value or template placeholder occurrence | Same |
-| `query` | When `query` is provided, including `{}` | Only when `query` has at least one own enumerable key |
-| `querystring` | Not supported | Only when `querystring` has at least one own enumerable key |
+| `query` | When `query` is provided, including `{}` | When `query` is provided, including `{}`, after strict input validation |
+| `querystring` | Not supported | When `querystring` is provided, including `{}`, after strict input validation |
 | `header`, `cookie` | When the corresponding record is provided, including `{}` | Same, after strict input validation |
 | `body` | When `body !== undefined` and a content type is supplied | When `body !== undefined`, after required-input and media checks |
 | `request` | After request serialization succeeds | Same, before middleware |
 | `response` | After transport returns a response | After middleware/transport returns a response |
 
-For example, with `query: {}` and a query extension returning `q=custom`, core appends `?q=custom`, while strict skips the extension and leaves the query unchanged. Omitting `query` skips that extension in both clients. In strict mode, `{ q: undefined }` still has a key and reaches the extension if `q` is declared and optional; the extension owns how it handles that value. Required and undeclared parameter checks run before strict extensions.
+For example, with `query: {}` and a query extension returning `q=custom`, both clients append `?q=custom`. Omitting `query` skips that extension in both clients. Required and undeclared parameter checks still run before strict extensions: an empty record cannot bypass a required parameter.
 
-When migrating to strict, supply the declared query values that the serializer needs rather than relying on an empty record to trigger it. Use `extensions.request` for a final URL adjustment that does not depend on a query record; it still cannot bypass earlier validation or serialization failures. See [troubleshooting](troubleshooting.md#an-extension-is-skipped-after-switching-to-strict).
+This aligns strict with core for explicitly supplied empty records. Applications upgrading from an earlier strict version must remove an empty input or its extension if they relied on the callback being skipped. For a URL adjustment independent of query input, use `extensions.request` after successful serialization; it cannot bypass earlier validation or serialization failures.
 
 Encoded strings are owned by the callback; do not expect a second escaping pass. The body callback always owns the entire body, never an inner form field or multipart part.
 

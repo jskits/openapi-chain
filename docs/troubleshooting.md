@@ -26,9 +26,9 @@ Check that the document declares the exact route, method, parameter locations an
 
 ## An extension is skipped after switching to strict
 
-Core invokes `extensions.query` when `query` is present, even if it is `{}`. Strict invokes query/querystring extensions only for records with at least one own enumerable key. Consequently, an extension that synthesizes a query from `query: {}` runs in core but is skipped in strict. Omitting the input skips it in both clients.
+Both clients invoke `extensions.query` when `query` is provided, including `{}`. Strict also invokes a configured querystring extension for `{}`. Omitting the input skips its extension. Earlier strict versions skipped empty query/querystring records; remove the input or callback when preserving that older behavior.
 
-Pass the operation's declared query values to the serializer. For a URL adjustment independent of query input, use `extensions.request` after successful serialization. Do not add an undeclared dummy parameter: strict rejects it before calling the extension. Empty header/cookie records still invoke their configured callbacks in both modes; see [the full invocation contract](api.md#extension-invocation-conditions).
+If a callback still does not run, check whether strict rejected required or undeclared inputs before serialization. Pass the operation's declared values; do not add an undeclared dummy parameter. For a URL adjustment independent of query input, use `extensions.request` after successful serialization. See [the full invocation contract](api.md#extension-invocation-conditions).
 
 ## Metadata compilation fails
 

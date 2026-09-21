@@ -142,7 +142,7 @@ async function execute(
   if (input?.query && input?.querystring) {
     throw new TypeError('OpenAPI query and querystring parameters cannot be used together.');
   }
-  if (input?.querystring && Object.keys(input.querystring).length) {
+  if (input?.querystring && (extensions?.querystring || Object.keys(input.querystring).length)) {
     if (extensions?.querystring) {
       const custom = extensions.querystring(input.querystring);
       url = appendRawQuery(
@@ -152,7 +152,7 @@ async function execute(
     } else {
       url = appendRawQuery(url, serializeQuerystring(input.querystring, operation, undefined));
     }
-  } else if (input?.query && Object.keys(input.query).length) {
+  } else if (input?.query) {
     const localQuery = extensions?.query;
     if (localQuery) {
       const custom = localQuery(input.query);

@@ -50,7 +50,7 @@ The callback types are computed from the selected OpenAPI item/operation:
 
 At runtime these callbacks are ordinary functions. Their safety exists entirely at compile time and therefore adds no generated endpoint code.
 
-When invoked, local extensions have precedence over built-in serialization in both core and strict clients. Invocation conditions differ: core invokes a query extension for `query: {}`, while strict skips query/querystring extensions for empty records. See the [invocation contract](api.md#extension-invocation-conditions). A body extension takes ownership of the entire body; nested strict serializers either handle their field/part exactly or fail closed so a typed whole-body extension can take over before final request construction. This makes the long tail composable instead of forcing rare OpenAPI/vendor semantics into the 2KB core.
+When invoked, local extensions have precedence over built-in serialization in both core and strict clients. Both clients invoke query extensions for explicitly supplied empty records; strict validates required and undeclared inputs first. See the [invocation contract](api.md#extension-invocation-conditions). A body extension takes ownership of the entire body; nested strict serializers either handle their field/part exactly or fail closed so a typed whole-body extension can take over before final request construction. This makes the long tail composable instead of forcing rare OpenAPI/vendor semantics into the 2KB core.
 
 ## Strict serialization model
 
