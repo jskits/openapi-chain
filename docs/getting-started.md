@@ -34,7 +34,7 @@ pnpm add openapi-chain
 pnpm add -D openapi-typescript@7.13.0
 ```
 
-The source checkout is currently `0.0.0`; these docs do not establish which API is available from the npm registry. Use the tarball route below to test this checkout. The generator is a development dependency, not a runtime requirement.
+See [package.json](../package.json) for the source checkout version; these docs do not establish which API is available from the npm registry. Use the tarball route below to test this checkout. The generator is a development dependency, not a runtime requirement.
 
 ## Install this checkout
 

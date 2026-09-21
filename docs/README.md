@@ -29,3 +29,5 @@
 The [qualification archive](archive/qualification/README.md) preserves dated verification reports, measurement environments and release limitations. Consult it for historical evidence; use the guides above for current behavior.
 
 For large schemas, follow the [runnable scope and build-time metadata workflow](large-schemas.md).
+
+See the [serializer-profile experiment and decision](serializer-profiles.md) for measured optional-runtime tradeoffs.

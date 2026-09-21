@@ -34,7 +34,7 @@ Pass the operation's declared query values to the serializer. For a URL adjustme
 
 Pass a parsed OpenAPI object, not a JSON/YAML string. Bundle or dereference external references first; local anchor fragments are not supported JSON Pointer references. Check the [reference and schema inference rules](support.md#reference-contexts).
 
-Ambiguous route templates, conflicting inferred part media, non-inferable schema cycles, depth over 128 and excessive traversal work fail explicitly. Simplify the serialization schema or preprocess unsupported constructs. `defineOpenAPIMetadata` and a TypeScript cast do not replace compilation or validation.
+Duplicate template hierarchies fail by default; see the [explicit compatibility option](#a-third-party-document-repeats-a-template-hierarchy). Conflicting inferred part media, non-inferable schema cycles, depth over 128 and excessive traversal work fail explicitly. Simplify the serialization schema or preprocess unsupported constructs. `defineOpenAPIMetadata` and a TypeScript cast do not replace compilation or validation.
 
 ## throwOnError: false still throws
 
@@ -58,7 +58,7 @@ Automatically serialized strings use UTF-8. For another charset, provide correct
 
 ## An installed package has a different API
 
-Check its installed version and entry exports against this checkout's `package.json`. The current source version is `0.0.0`; historical registry packages may use another API. Reproduce against a [locally built tarball](getting-started.md#install-this-checkout) before assuming a source example describes the version you installed.
+Check its installed version and entry exports against this checkout's `package.json`. The authoritative source version is in [package.json](../package.json); historical registry packages may use another API. Reproduce against a [locally built tarball](getting-started.md#install-this-checkout) before assuming a source example describes the version you installed.
 
 For repository failures, start with [development checks](development.md#choose-the-right-check). For a bug report, include the version, entry point, runtime, generator version, minimal synthetic schema and expected/actual request or response. Use [GitHub Issues](https://github.com/jskits/openapi-chain/issues) for ordinary bugs and the [security process](../SECURITY.md) for vulnerabilities.
 
