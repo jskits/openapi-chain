@@ -9,6 +9,7 @@
 | [Getting started](getting-started.md) | Install, generate types and run an offline example |
 | [API reference](api.md) | Options, path calls, request bodies, errors, extensions and transport |
 | [Support and boundaries](support.md) | Decide whether a wire format, schema feature or platform is supported |
+| [Offline migration checks](migration-check.md) | Compare core and strict requests and parsed values before switching |
 | [Troubleshooting](troubleshooting.md) | Diagnose type errors, serialization failures and Fetch behavior |
 | [Performance](performance.md) | Reproduce size, runtime and TypeScript measurements |
 
