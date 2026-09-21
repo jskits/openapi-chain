@@ -14,6 +14,7 @@ This is the maintained serialization contract. For usage, start with the [gettin
 | JSON/text/native request bodies | Explicit contentType | Single-concrete-media inference when metadata proves it |
 | Structured URL-encoded/multipart body | Whole-body extension | Encoding Objects and supported native Fetch representations |
 | Vendor wire behavior | Location/body extensions, then final request/transport | Same order; metadata validation precedes serialization; empty query records skip query/querystring extensions |
+| Client headers | Static HeadersInit; functions rejected | Static or per-request sync/async function |
 | Middleware | Implement in transport | Middleware composition and transport |
 | Response parsing | JSON/text defaults | JSON/text/binary defaults |
 | Streaming | Explicit response extension and matching declared data type | Same |
@@ -111,3 +112,11 @@ Core assumes the standard Fetch body classes supplied by supported Node versions
 Styles still impose value-shape constraints; this table does not promise arbitrary nested object encoding. Compound legacy cookie `form` values fail because the style's delimiter cannot faithfully represent a Cookie header. Invalid style/location combinations and unsupported representations fail explicitly. Use an operation-local extension where the application owns the exact wire format.
 
 Strict validates required parameter locations, body presence, declared inputs and supported media. It does not validate enum/range constraints, required properties inside body objects, response data or undocumented response statuses. A response extension can add application validation; see the [response contract](api.md#responses-and-errors).
+
+## Choosing core and migrating to strict
+
+Core rejects `middleware`, `metadata` and function-valued `headers` at construction, including JavaScript callers. Use `openapi-chain/strict` for these options; core applications can implement authentication and middleware in their transport. Explicit `undefined` is equivalent to omitting an option.
+
+Absence of non-default `style` or `explode` is not proof of core compatibility. Check parameter location and value shape as well: a default simple object header requires `a,b` for `{ a: 'b' }`, whereas core's schema-free coercion produces `[object Object]`. Scalar path encoding, compound cookies, body encoding and response parsing also need review. A keyword search is only an initial screen.
+
+When migrating, compile metadata from the same schema revision as the generated types, then check required/undeclared inputs, media selection, wire encodings and response consumers. Core requires explicit body contentType; strict can infer a single concrete declared media. Binary response consumers must account for strict's ArrayBuffer default instead of core's text fallback. Empty query records invoke core query extensions but skip strict query/querystring extensions. Changing entry points is not an unconditional behavior-preserving migration.
