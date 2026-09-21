@@ -1,0 +1,383 @@
+{
+  "recorded": "2026-09-21",
+  "node": "v24.16.0",
+  "platform": "macOS arm64",
+  "typescriptDefault": "6.0.3",
+  "typescriptComparison": "7.0.2",
+  "scope": "Synthetic fixtures only; not a real API corpus, popularity estimate, or published-consumer qualification.",
+  "runs": {
+    "scoping-ts6": [
+      {
+        "compiler": "Version 6.0.3",
+        "node": "v24.16.0",
+        "platform": "darwin",
+        "arch": "arm64"
+      },
+      {
+        "routes": 1000,
+        "selected": 1000,
+        "calls": 1,
+        "instantiations": 165193,
+        "memory": "171786K",
+        "checkTime": "0.27s"
+      },
+      {
+        "routes": 1000,
+        "selected": 1000,
+        "calls": 5,
+        "instantiations": 204809,
+        "memory": "136497K",
+        "checkTime": "0.33s"
+      },
+      {
+        "routes": 1000,
+        "selected": 1000,
+        "calls": 25,
+        "instantiations": 402889,
+        "memory": "190330K",
+        "checkTime": "0.57s"
+      },
+      {
+        "routes": 1000,
+        "selected": 1000,
+        "calls": 100,
+        "instantiations": 1145689,
+        "memory": "171497K",
+        "checkTime": "1.51s"
+      },
+      {
+        "routes": 5000,
+        "selected": 5000,
+        "calls": 25,
+        "instantiations": 1886889,
+        "memory": "871176K",
+        "checkTime": "2.46s"
+      },
+      {
+        "routes": 5000,
+        "selected": 250,
+        "calls": 25,
+        "instantiations": 125645,
+        "memory": "178035K",
+        "checkTime": "0.31s"
+      },
+      {
+        "scenario": "synthetic-metadata-delivery",
+        "routes": 1000,
+        "selected": 1000,
+        "documentGzip": 3816,
+        "metadataGzip": 3295
+      },
+      {
+        "scenario": "synthetic-metadata-delivery",
+        "routes": 1000,
+        "selected": 250,
+        "documentGzip": 3816,
+        "metadataGzip": 962
+      },
+      {
+        "scenario": "synthetic-metadata-delivery",
+        "routes": 1000,
+        "selected": 50,
+        "documentGzip": 3816,
+        "metadataGzip": 337
+      }
+    ],
+    "scoping-ts7": [
+      {
+        "compiler": "Version 7.0.2",
+        "node": "v24.16.0",
+        "platform": "darwin",
+        "arch": "arm64"
+      },
+      {
+        "routes": 1000,
+        "selected": 1000,
+        "calls": 1,
+        "instantiations": 165190,
+        "memory": "71185K",
+        "checkTime": "0.100s"
+      },
+      {
+        "routes": 1000,
+        "selected": 1000,
+        "calls": 5,
+        "instantiations": 204806,
+        "memory": "71385K",
+        "checkTime": "0.128s"
+      },
+      {
+        "routes": 1000,
+        "selected": 1000,
+        "calls": 25,
+        "instantiations": 402886,
+        "memory": "72687K",
+        "checkTime": "0.201s"
+      },
+      {
+        "routes": 1000,
+        "selected": 1000,
+        "calls": 100,
+        "instantiations": 1145686,
+        "memory": "78276K",
+        "checkTime": "0.551s"
+      },
+      {
+        "routes": 5000,
+        "selected": 5000,
+        "calls": 25,
+        "instantiations": 1886886,
+        "memory": "256573K",
+        "checkTime": "1.171s"
+      },
+      {
+        "routes": 5000,
+        "selected": 250,
+        "calls": 25,
+        "instantiations": 125642,
+        "memory": "100615K",
+        "checkTime": "0.113s"
+      },
+      {
+        "scenario": "synthetic-metadata-delivery",
+        "routes": 1000,
+        "selected": 1000,
+        "documentGzip": 3816,
+        "metadataGzip": 3295
+      },
+      {
+        "scenario": "synthetic-metadata-delivery",
+        "routes": 1000,
+        "selected": 250,
+        "documentGzip": 3816,
+        "metadataGzip": 962
+      },
+      {
+        "scenario": "synthetic-metadata-delivery",
+        "routes": 1000,
+        "selected": 50,
+        "documentGzip": 3816,
+        "metadataGzip": 337
+      }
+    ],
+    "editor-ts6": [
+      {
+        "protocol": "tsserver",
+        "compiler": "Version 6.0.3",
+        "node": "v24.16.0",
+        "platform": "darwin",
+        "arch": "arm64",
+        "samples": 3
+      },
+      {
+        "routes": 1000,
+        "selected": 1000,
+        "measurements": [
+          {
+            "cold": 502,
+            "unchanged": 5.1,
+            "edited": 214.3
+          },
+          {
+            "cold": 511.8,
+            "unchanged": 5,
+            "edited": 211
+          },
+          {
+            "cold": 511.8,
+            "unchanged": 5.1,
+            "edited": 210.3
+          }
+        ],
+        "medianMs": {
+          "cold": 511.8,
+          "unchanged": 5.1,
+          "edited": 211
+        }
+      },
+      {
+        "routes": 5000,
+        "selected": 5000,
+        "measurements": [
+          {
+            "cold": 1096.7,
+            "unchanged": 17.2,
+            "edited": 751.3
+          },
+          {
+            "cold": 1110.3,
+            "unchanged": 17.3,
+            "edited": 760.5
+          },
+          {
+            "cold": 1094.9,
+            "unchanged": 17.4,
+            "edited": 747.6
+          }
+        ],
+        "medianMs": {
+          "cold": 1096.7,
+          "unchanged": 17.3,
+          "edited": 751.3
+        }
+      },
+      {
+        "routes": 5000,
+        "selected": 250,
+        "measurements": [
+          {
+            "cold": 476,
+            "unchanged": 1.6,
+            "edited": 127.7
+          },
+          {
+            "cold": 498,
+            "unchanged": 1.9,
+            "edited": 134
+          },
+          {
+            "cold": 507.3,
+            "unchanged": 1.6,
+            "edited": 132.1
+          }
+        ],
+        "medianMs": {
+          "cold": 498,
+          "unchanged": 1.6,
+          "edited": 132.1
+        }
+      }
+    ],
+    "editor-ts7": [
+      {
+        "protocol": "native LSP",
+        "compiler": "Version 7.0.2",
+        "node": "v24.16.0",
+        "platform": "darwin",
+        "arch": "arm64",
+        "samples": 3
+      },
+      {
+        "routes": 1000,
+        "selected": 1000,
+        "measurements": [
+          {
+            "cold": 126.6,
+            "unchanged": 2.5,
+            "edited": 91
+          },
+          {
+            "cold": 110.5,
+            "unchanged": 2.7,
+            "edited": 88.3
+          },
+          {
+            "cold": 110.7,
+            "unchanged": 2.7,
+            "edited": 96.8
+          }
+        ],
+        "medianMs": {
+          "cold": 110.7,
+          "unchanged": 2.7,
+          "edited": 91
+        }
+      },
+      {
+        "routes": 5000,
+        "selected": 5000,
+        "measurements": [
+          {
+            "cold": 491.1,
+            "unchanged": 12.9,
+            "edited": 483.3
+          },
+          {
+            "cold": 484,
+            "unchanged": 11.6,
+            "edited": 474.1
+          },
+          {
+            "cold": 489.1,
+            "unchanged": 12.5,
+            "edited": 540.1
+          }
+        ],
+        "medianMs": {
+          "cold": 489.1,
+          "unchanged": 12.5,
+          "edited": 483.3
+        }
+      },
+      {
+        "routes": 5000,
+        "selected": 250,
+        "measurements": [
+          {
+            "cold": 83.2,
+            "unchanged": 1.1,
+            "edited": 75.3
+          },
+          {
+            "cold": 78.7,
+            "unchanged": 2.8,
+            "edited": 73.4
+          },
+          {
+            "cold": 83.2,
+            "unchanged": 1.2,
+            "edited": 73
+          }
+        ],
+        "medianMs": {
+          "cold": 83.2,
+          "unchanged": 1.2,
+          "edited": 73.4
+        }
+      }
+    ],
+    "delivery": [
+      {
+        "mode": "runtime-compile",
+        "routes": 1000,
+        "selected": 1000,
+        "documentGzip": 6602,
+        "metadataGzip": 2981,
+        "consumerGzip": 18665,
+        "compilerInBundle": true
+      },
+      {
+        "mode": "build-compile-full",
+        "routes": 1000,
+        "selected": 1000,
+        "documentGzip": 6602,
+        "metadataGzip": 2981,
+        "consumerGzip": 10549,
+        "compilerInBundle": false
+      },
+      {
+        "mode": "build-compile-50",
+        "routes": 1000,
+        "selected": 50,
+        "documentGzip": 6602,
+        "metadataGzip": 282,
+        "consumerGzip": 7092,
+        "compilerInBundle": false
+      }
+    ],
+    "profile-experiment": [
+      {
+        "profile": "full",
+        "minifiedBytes": 21758,
+        "gzipBytes": 6797,
+        "registrationFrameworkIncluded": false
+      },
+      {
+        "profile": "without-forms",
+        "minifiedBytes": 17380,
+        "gzipBytes": 5758,
+        "registrationFrameworkIncluded": false
+      }
+    ]
+  }
+}

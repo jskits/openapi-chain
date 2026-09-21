@@ -2,7 +2,7 @@
 
 [Documentation index](README.md) · [Support matrix](support.md)
 
-Run `pnpm benchmark` to build fresh artifacts and reproduce all measurements. The pinned reference client is `openapi-fetch` 0.17.0; TypeScript and tsdown use the versions in `package.json`. The historical samples below were recorded on 2026-09-20, on macOS arm64 with Node 24.16.0. They are not a cross-platform throughput guarantee or measurements of the current working tree.
+Run `pnpm benchmark` to build fresh artifacts and reproduce the default-compiler benchmark scenarios. Optional compiler comparisons require the executable described below. The pinned reference client is `openapi-fetch` 0.17.0; TypeScript and tsdown use the versions in `package.json`. The historical samples below were recorded on 2026-09-20, on macOS arm64 with Node 24.16.0. They are not a cross-platform throughput guarantee or measurements of the current working tree.
 
 See the archived [schema semantics report](archive/qualification/schema-semantics-qualification.md) for the baseline used by the original measurements and the [path and reference report](archive/qualification/path-reference-qualification.md) for the later shared-prefix type-checking scenario. The subsequent [media report](archive/qualification/media-qualification.md) records another core size. Use `pnpm build && pnpm size:check` to measure the checkout you are evaluating.
 
@@ -72,3 +72,67 @@ A local Node 24.16.0 / TypeScript 6.0.3 run produced:
 | Added operation call   |             201 |        2598785 |    309187 |     3.06 s |     3.27 s |
 
 The edit adds a new checked operation call to the consumer module. Unchanged build caching is effective, but editing this module still requires substantial checking. These are CLI incremental-build measurements, not language-server completion latency or a guarantee for a real application's schema. Large users should measure their generated schemas and can partition clients by service or route subset to limit each type tree. The earlier 5000-route scenario remains a separate scale gate; this project scenario does not replace it.
+
+## Current compiler and scoped-consumer measurements
+
+Recorded 2026-09-21 on macOS arm64 / Node 24.16.0. Raw outputs, including every editor sample, are in [the measurement record](measurements/2026-09-21.json). The following figures use a **new fixed fixture** from `scripts/lib/type-fixture.mjs`, not the earlier historical tables. Both full and scoped consumers call the same 25 operations and check their responses. Scoping keeps the full declaration input but exposes 250 exact paths via Pick.
+
+| Document routes | Selected routes | TypeScript | Instantiations | Memory KB | Check time |
+| --------------- | --------------- | ---------- | -------------: | --------: | ---------: |
+| 1000            | 1000            | 6.0.3      |         402889 |    190330 |     0.57 s |
+| 1000            | 1000            | 7.0.2      |         402886 |     72687 |    0.201 s |
+| 5000            | 5000            | 6.0.3      |        1886889 |    871176 |     2.46 s |
+| 5000            | 5000            | 7.0.2      |        1886886 |    256573 |    1.171 s |
+| 5000            | 250             | 6.0.3      |         125645 |    178035 |     0.31 s |
+| 5000            | 250             | 7.0.2      |         125642 |    100615 |    0.113 s |
+
+The default toolchain remains pinned to 6.0.3. A separately installed 7.0.2 also passed the current source/consumer typecheck (`tsc --noEmit`); this is not full qualification of a toolchain migration, generator peer support or declaration bundling under 7. Compiler times here are individual process measurements, not latency guarantees. Instantiations remain almost equal across these two versions on this fixture, but that is not a cross-version invariant for all programs.
+
+`pnpm benchmark:scoping` also varies the call count on the 1000-route fixture:
+
+| Checked calls | TS 6 instantiations | Check time |
+| ------------- | ------------------: | ---------: |
+| 1             |              165193 |     0.27 s |
+| 5             |              204809 |     0.33 s |
+| 25            |              402889 |     0.57 s |
+| 100           |             1145689 |     1.51 s |
+
+One call still incurs substantial schema-wide work. Call count, route shape and response complexity also matter; do not extrapolate a universal linear formula. The scoped fixture is gated on valid positive/negative types, instantiation and memory limits, and lower instantiation work than its full counterpart in `pnpm check`. Use the [single-scope recipe](large-schemas.md) for a runnable setup.
+
+## Editor completion latency
+
+`pnpm benchmark:editor` drives real TS 6 tsserver requests. Setting `OPENAPI_CHAIN_TSC` to a separately installed TS 7 executable selects native LSP. For each scenario it starts three fresh servers, opens the same consumer, requests root-chain completion, repeats without edits, changes one comment character and requests completion again. The edited interval includes submitting the edit. Cold timing starts at the first completion request after opening the file, not at OS process creation. The same incremental edit is used in both protocols. Returned route names and exclusion of unselected routes are asserted.
+
+| Compiler         | Document / selected routes | Cold median | Unchanged median | Edited median |
+| ---------------- | -------------------------- | ----------: | ---------------: | ------------: |
+| 6.0.3 tsserver   | 1000 / 1000                |    511.8 ms |           5.1 ms |      211.0 ms |
+| 6.0.3 tsserver   | 5000 / 5000                |   1096.7 ms |          17.3 ms |      751.3 ms |
+| 6.0.3 tsserver   | 5000 / 250                 |    498.0 ms |           1.6 ms |      132.1 ms |
+| 7.0.2 native LSP | 1000 / 1000                |    110.7 ms |           2.7 ms |       91.0 ms |
+| 7.0.2 native LSP | 5000 / 5000                |    489.1 ms |          12.5 ms |      483.3 ms |
+| 7.0.2 native LSP | 5000 / 250                 |     83.2 ms |           1.2 ms |       73.4 ms |
+
+These are three-sample medians on a synthetic root completion, not IDE-wide responsiveness, competing-client benchmarks or a promise for deep nodes and semantic edits. The measured improvement does not equal the instantiation ratio. Run these timing benchmarks separately from other CPU-heavy work. Timing is not a shared-runner CI gate; stalled/failed protocol requests do fail the script.
+
+To reproduce the optional comparison, install TypeScript 7.0.2 in a separate temporary project and set an absolute executable path (do not replace this repository's pinned dependency):
+
+```sh
+OPENAPI_CHAIN_TSC=/absolute/temporary-project/node_modules/.bin/tsc pnpm benchmark:scoping
+OPENAPI_CHAIN_TSC=/absolute/temporary-project/node_modules/.bin/tsc pnpm benchmark:editor
+```
+
+## Metadata and consumer delivery
+
+Library-entry size omits application metadata. `pnpm benchmark:delivery` bundles the same synthetic 1000-route document in three ways and executes a deepObject request through each resulting browser-target bundle. It verifies compiler inclusion/exclusion and that the scoped client rejects unselected routes.
+
+| Delivery | Selected routes | Metadata gzip | Complete consumer gzip | Compiler included |
+| --- | --: | --: | --: | --- |
+| Compile in application | 1000 | 2981 B | 18665 B | Yes |
+| Compile at build time | 1000 | 2981 B | 10549 B | No |
+| Compile at build time, scoped | 50 | 282 B | 7092 B | No |
+
+The document alone is 6602 B gzip. Consumer figures compress the whole bundle; they are not sums of separately compressed entry and metadata values. These synthetic schemas compress extremely well and do not establish ratios for Stripe or a representative public API corpus. The scoped scenario intentionally changes the exposed API while preserving the exercised operation. Full metadata retains uncalled routes because the client indexes a dynamic operation table.
+
+Build-time delivery eliminates shipping the compiler and document. Server targets can also benefit in artifact size, initialization and memory, even when browser transfer is not a concern. Neither approach removes the runtime route index or makes cost proportional to inferred source-code call sites.
+
+For this checkout's 2026-09-21 emitted-entry measurement: core 1916 B, strict 6789 B, metadata 4673 B gzip. The separate core transitive release gate reports 2046 / 2048 B. Historical tables above remain labeled historical; do not mix their method or baseline with these numbers. The [serializer-profile experiment](serializer-profiles.md) records why no new reduced strict entry is published in this iteration.

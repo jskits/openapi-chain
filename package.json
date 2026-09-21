@@ -75,7 +75,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:package": "node scripts/check-package.mjs",
-    "check": "pnpm format:check && pnpm lint && pnpm test:generated && pnpm typecheck && pnpm test:coverage && pnpm build && pnpm test:scoped && pnpm test:package && pnpm size:check && pnpm benchmark:types",
+    "check": "pnpm format:check && pnpm lint && pnpm test:generated && pnpm typecheck && pnpm test:coverage && pnpm build && pnpm test:scoped && pnpm test:package && pnpm size:check && pnpm benchmark:types && pnpm benchmark:scoping",
     "commit": "cz",
     "commitlint": "commitlint",
     "changeset": "changeset",
@@ -92,11 +92,14 @@
     "benchmark:types": "node scripts/benchmark-types.mjs && node scripts/benchmark-types-project.mjs",
     "benchmark:runtime": "node scripts/benchmark-runtime.mjs",
     "benchmark:size": "node scripts/benchmark-size.mjs",
-    "benchmark": "pnpm build && pnpm benchmark:types && pnpm benchmark:runtime && pnpm benchmark:size && pnpm benchmark:metadata",
+    "benchmark": "pnpm build && pnpm benchmark:types && pnpm benchmark:runtime && pnpm benchmark:size && pnpm benchmark:metadata && pnpm benchmark:scoping && pnpm benchmark:editor && pnpm benchmark:delivery",
     "benchmark:metadata": "node scripts/benchmark-metadata.mjs",
     "generate:scoped": "pnpm build && node scripts/build-scoped-example.mjs",
     "test:scoped": "node scripts/build-scoped-example.mjs --check && node scripts/check-scoped-bundle.mjs",
-    "benchmark:profiles": "node scripts/benchmark-profile-experiment.mjs"
+    "benchmark:profiles": "node scripts/benchmark-profile-experiment.mjs",
+    "benchmark:scoping": "node scripts/benchmark-scoping.mjs",
+    "benchmark:editor": "node scripts/benchmark-editor.mjs",
+    "benchmark:delivery": "node scripts/benchmark-delivery.mjs"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",

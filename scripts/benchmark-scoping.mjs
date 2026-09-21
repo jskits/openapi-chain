@@ -1,0 +1,118 @@
+import assert from 'node:assert/strict';
+import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { gzipSync } from 'node:zlib';
+import spawn from 'cross-spawn';
+import { compileOpenAPIMetadata } from '../dist/metadata.js';
+import { typeFixture } from './lib/type-fixture.mjs';
+
+const root = fileURLToPath(new URL('..', import.meta.url));
+// Optional absolute CLI executable, e.g. a separately installed TypeScript 7 tsc.
+const compiler = process.env.OPENAPI_CHAIN_TSC ?? join(root, 'node_modules/.bin/tsc');
+const version = spawn.sync(compiler, ['--version'], { encoding: 'utf8' });
+assert.equal(version.status, 0, version.stderr);
+console.log(
+  JSON.stringify({
+    compiler: version.stdout.trim(),
+    node: process.version,
+    platform: process.platform,
+    arch: process.arch,
+  }),
+);
+const directory = mkdtempSync(join(tmpdir(), 'openapi-chain-scope-types-'));
+try {
+  let fullInstantiations;
+  for (const [routes, selected, calls] of [
+    [1000, 1000, 1],
+    [1000, 1000, 5],
+    [1000, 1000, 25],
+    [1000, 1000, 100],
+    [5000, 5000, 25],
+    [5000, 250, 25],
+  ]) {
+    writeFileSync(join(directory, 'consumer.mts'), typeFixture(root, routes, selected, calls));
+    const result = spawn.sync(
+      compiler,
+      [
+        '--noEmit',
+        '--strict',
+        '--skipLibCheck',
+        '--module',
+        'NodeNext',
+        '--target',
+        'ES2022',
+        '--extendedDiagnostics',
+        'consumer.mts',
+      ],
+      { cwd: directory, encoding: 'utf8' },
+    );
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    const instantiations = Number(/Instantiations:\s+(\d+)/.exec(result.stdout)?.[1]);
+    assert.ok(instantiations > 0 && instantiations < 3_000_000);
+    const memoryKB = Number(/Memory used:\s+(\d+)K/.exec(result.stdout)?.[1]);
+    assert.ok(memoryKB > 0 && memoryKB < 1_200_000);
+    if (routes === 5000 && selected === routes) fullInstantiations = instantiations;
+    if (selected < routes)
+      assert.ok(
+        instantiations < fullInstantiations,
+        'Scoping must reduce instantiation work for identical calls.',
+      );
+    console.log(
+      JSON.stringify({
+        routes,
+        selected,
+        calls,
+        instantiations,
+        memory: /Memory used:\s+(\S+)/.exec(result.stdout)?.[1],
+        checkTime: /Check time:\s+(\S+)/.exec(result.stdout)?.[1],
+      }),
+    );
+  }
+  const document = {
+    openapi: '3.1.0',
+    paths: Object.fromEntries(
+      Array.from({ length: 1000 }, (_, i) => [
+        `/r${i}/{id}`,
+        {
+          get: {
+            parameters: [
+              { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
+              {
+                name: 'filter',
+                in: 'query',
+                style: 'deepObject',
+                explode: true,
+                schema: { type: 'object', properties: { name: { type: 'string' } } },
+              },
+            ],
+            responses: {
+              200: {
+                description: 'Synthetic operation for measuring delivery; not a public API corpus.',
+              },
+            },
+          },
+        },
+      ]),
+    ),
+  };
+  const gzip = (value) => gzipSync(JSON.stringify(value), { level: 9 }).length;
+  for (const selected of [1000, 250, 50]) {
+    const metadata = compileOpenAPIMetadata(document, {
+      paths: Object.keys(document.paths).slice(0, selected),
+    });
+    assert.equal(Object.keys(metadata.operations).length, selected);
+    console.log(
+      JSON.stringify({
+        scenario: 'synthetic-metadata-delivery',
+        routes: 1000,
+        selected,
+        documentGzip: gzip(document),
+        metadataGzip: gzip(metadata),
+      }),
+    );
+  }
+} finally {
+  rmSync(directory, { recursive: true, force: true });
+}
