@@ -7,20 +7,10 @@ import { gzipSync } from 'node:zlib';
 import spawn from 'cross-spawn';
 import { compileOpenAPIMetadata } from '../dist/metadata.js';
 import { typeFixture } from './lib/type-fixture.mjs';
+import { compiler, compilerInfo } from './lib/compiler.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
-// Optional absolute CLI executable, e.g. a separately installed TypeScript 7 tsc.
-const compiler = process.env.OPENAPI_CHAIN_TSC ?? join(root, 'node_modules/.bin/tsc');
-const version = spawn.sync(compiler, ['--version'], { encoding: 'utf8' });
-assert.equal(version.status, 0, version.stderr);
-console.log(
-  JSON.stringify({
-    compiler: version.stdout.trim(),
-    node: process.version,
-    platform: process.platform,
-    arch: process.arch,
-  }),
-);
+console.log(JSON.stringify(compilerInfo()));
 const directory = mkdtempSync(join(tmpdir(), 'openapi-chain-scope-types-'));
 try {
   let fullInstantiations;
@@ -34,8 +24,10 @@ try {
   ]) {
     writeFileSync(join(directory, 'consumer.mts'), typeFixture(root, routes, selected, calls));
     const result = spawn.sync(
-      compiler,
+      compiler.command,
       [
+        ...compiler.args,
+        ...compiler.benchmarkArgs,
         '--noEmit',
         '--strict',
         '--skipLibCheck',
@@ -50,9 +42,9 @@ try {
     );
     assert.equal(result.status, 0, result.stdout + result.stderr);
     const instantiations = Number(/Instantiations:\s+(\d+)/.exec(result.stdout)?.[1]);
-    assert.ok(instantiations > 0 && instantiations < 3_000_000);
+    assert.ok(instantiations > 0 && instantiations < compiler.budget.instantiations);
     const memoryKB = Number(/Memory used:\s+(\d+)K/.exec(result.stdout)?.[1]);
-    assert.ok(memoryKB > 0 && memoryKB < 1_200_000);
+    assert.ok(memoryKB > 0 && memoryKB < compiler.budget.memoryKB);
     if (routes === 5000 && selected === routes) fullInstantiations = instantiations;
     if (selected < routes)
       assert.ok(

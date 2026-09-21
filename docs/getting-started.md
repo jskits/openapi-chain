@@ -6,9 +6,11 @@ This guide uses the repository's [Items document](../examples/service.openapi.js
 
 ## Generator and TypeScript compatibility
 
-The repository verifies openapi-typescript **7.13.0** with TypeScript **6.0.3**, but the generator declares a TypeScript peer range of `^5.x`. This repository permits that exact pairing through a scoped pnpm override. Its workspace configuration is not inherited when you install the library into another application.
+We recommend **TypeScript 7.0.2** for application type checking, especially with large OpenAPI schemas. The repository continuously checks both TS 6.0.3 and TS 7.0.2, including installed ESM/CommonJS declaration consumers and type-performance fixtures. Keep using [path scoping](large-schemas.md): a faster compiler does not remove the cost of a large exposed route tree.
 
-If your application uses TypeScript 6.0.3, merge the following into its `pnpm-workspace.yaml` before installing the generator, preserving any existing workspace settings:
+The generator `openapi-typescript@7.13.0` declares `typescript: ^5.x` and uses the compiler API. Our verified configuration keeps `typescript@6.0.3` for that API and installs TS 7 separately as `typescript7`. This avoids replacing the compiler API dependency with the native compiler. It does **not** claim the generator can run against TS 7's API. See the [official side-by-side explanation](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/#running-side-by-side-with-typescript-6-0).
+
+First merge this into your application's `pnpm-workspace.yaml`, preserving other settings. Repository peer rules are not inherited by downstream applications:
 
 ```yaml
 strictPeerDependencies: true
@@ -17,13 +19,30 @@ peerDependencyRules:
     'openapi-typescript>typescript': '6.0.3'
 ```
 
-Then install the verified pair:
+Then install the exact tested versions:
 
 ```sh
-pnpm add -D typescript@6.0.3 openapi-typescript@7.13.0
+pnpm add -D --save-exact typescript@6.0.3 typescript7@npm:typescript@7.0.2 openapi-typescript@7.13.0
+pnpm exec openapi-typescript ./openapi.json -o ./schema.d.ts
+node node_modules/typescript7/bin/tsc --noEmit
 ```
 
-This rule permits only the generator's TypeScript 6.0.3 peer; it keeps other peer checks enabled. Without it, strict peer checking rejects this pair with `ERR_PNPM_PEER_DEP_ISSUES`. Projects using another compiler version should check that pairing independently; the generator's declared TypeScript 5 support does not establish this library's compatibility with every TypeScript 5 version.
+In your application's package.json, use explicit compiler paths:
+
+```json
+{
+  "scripts": {
+    "typecheck": "node node_modules/typescript7/bin/tsc --noEmit",
+    "typecheck:ts6": "node node_modules/typescript/bin/tsc --noEmit"
+  }
+}
+```
+
+Both compiler packages advertise a `tsc` binary. Do not rely on which one the package manager places in `.bin`; the commands above work without shell-specific environment assignments and select the intended compiler. The repository's `pnpm test:package:ts7` installs this setup into an isolated tarball consumer, runs the generator there and checks its output with the consumer's TS 7 compiler, including negative type assertions.
+
+For editor speedups, enable your editor's **TypeScript 7 native language server** using its supported configuration. Installing the alias or running TS 7 on the command line does not automatically switch an editor still using TS 6 tsserver. Follow the editor guidance linked in the [TypeScript 7 announcement](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/).
+
+The scoped peer allowance still permits only the generator's TS 6.0.3 pairing; it does not relax other peer checks or add TS 7 to the generator's allowed range. Framework integrations and other tools importing the compiler API need their own compatibility verification. TS 6 remains supported and checked; this recommendation is not a new minimum compiler requirement for all applications.
 
 ## Install a published package
 
@@ -31,7 +50,7 @@ After checking [generator compatibility](#generator-and-typescript-compatibility
 
 ```sh
 pnpm add openapi-chain
-pnpm add -D openapi-typescript@7.13.0
+pnpm add -D --save-exact typescript@6.0.3 typescript7@npm:typescript@7.0.2 openapi-typescript@7.13.0
 ```
 
 See [package.json](../package.json) for the source checkout version; these docs do not establish which API is available from the npm registry. Use the tarball route below to test this checkout. The generator is a development dependency, not a runtime requirement.
@@ -51,7 +70,7 @@ Then, from a separate application directory with [generator compatibility](#gene
 
 ```sh
 pnpm add /tmp/openapi-chain-local.tgz
-pnpm add -D openapi-typescript@7.13.0
+pnpm add -D --save-exact typescript@6.0.3 typescript7@npm:typescript@7.0.2 openapi-typescript@7.13.0
 ```
 
 `test:package` installs a temporary consumer and checks all public entry points. It does not publish to npm. Choose another output path if `/tmp` is unavailable.

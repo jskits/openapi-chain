@@ -19,7 +19,9 @@ If your Node.js installation does not include Corepack, install pnpm 10.34.5 usi
 | `pnpm build` | Build ESM, CommonJS, declarations and source maps; run publint and attw |
 | `pnpm lint` / `pnpm lint:fix` | Oxlint checks, including type-aware rules; optional fixes |
 | `pnpm format` / `pnpm format:check` | Format or check using Oxfmt |
-| `pnpm typecheck` | Strict TypeScript checks for source, tests, examples and TS configs |
+| `pnpm typecheck` / `pnpm typecheck:ts7` | Strict source, test and example checks with pinned TS 6 / TS 7 |
+| `pnpm check:ts7` | TS 7 source, installed-consumer and type-budget gates (build first) |
+| `pnpm benchmark:types:ts7` / `pnpm benchmark:editor:ts7` | Native compiler complexity scenarios / actual native LSP completion samples |
 | `pnpm test` / `pnpm test:watch` | Run Vitest once or in watch mode |
 | `pnpm test:coverage` | Run tests with V8 coverage and 90% thresholds |
 | `pnpm test:package` / `pnpm verify:package` | Verify all three entries in an isolated tarball consumer |
@@ -37,7 +39,7 @@ If your Node.js installation does not include Corepack, install pnpm 10.34.5 usi
 
 ## Choose the right check
 
-`pnpm check` runs, in order: formatting, typed lint, generated-fixture freshness, TypeScript, tests with coverage, build/package lint, installed-tarball consumers, core gzip size, and both type-scale benchmarks. It excludes the separate Chromium suite and runtime/size/metadata microbenchmarks.
+`pnpm check` runs, in order: formatting, typed lint, generated-fixture freshness, TypeScript, tests with coverage, build/package lint, installed-tarball consumers, core gzip size, and TS 6/TS 7 type-scale/scoping gates. TS 7 also checks an isolated generator installation and installed declarations. It excludes the separate Chromium suite and runtime/size/metadata microbenchmarks.
 
 For a focused behavior change, run its Vitest file during iteration, then the full gate before submitting. For documentation, check links/anchors and typecheck examples against their actual generated schema; keep measured claims tied to a dated verification report. `pnpm format` formats the whole repository, so inspect the diff and avoid including unrelated formatting changes.
 
@@ -51,14 +53,14 @@ pnpm test:browser
 
 On Linux CI, the workflow uses `pnpm exec playwright install --with-deps chromium`. The suite starts local loopback servers and checks real Chromium Fetch behavior, including multipart, CORS/cookies, cancellation, binary and streaming responses. It does not qualify Firefox or WebKit.
 
-For schema changes, run `pnpm generate:example`, format the generated declarations, then `pnpm test:generated` and `pnpm typecheck`. All three fixtures (Petstore, Items and conformance) are checked. For performance changes, use `pnpm benchmark`; see [measurement methods](performance.md). Runtime/metadata timings are observations, not CI timing gates.
+For schema changes, run `pnpm generate:example`, format the generated declarations, then `pnpm test:generated` and `pnpm typecheck`. All four fixtures (Petstore, Items, conformance and scoped catalog) are checked. For performance changes, use `pnpm benchmark`; see [measurement methods](performance.md). Runtime/metadata timings are observations, not CI timing gates.
 
 ## Project conventions
 
 - Add exports to the appropriate public entry: `src/index.ts`, `src/strict.ts` or `src/metadata.ts`. Keep strict/compiler imports out of core. Put behavior tests in `test/*.test.ts` and compile-time regressions in `test/*.typecheck.ts`.
 - Use explicit `.js` extensions for relative TypeScript imports under NodeNext.
 - Keep runtime dependencies deliberate; there are currently none.
-- TypeScript is pinned to 6.0.3. `pnpm-workspace.yaml` permits this exact version for openapi-typescript 7.13.0, whose declared peer range is `^5.x`, while retaining strict peer checks. Independent applications need their own [scoped configuration](getting-started.md#generator-and-typescript-compatibility). Compiler upgrades must pass declaration, generated fixture, installed-consumer and type-scale checks.
+- TypeScript 6.0.3 remains the compiler API/build dependency; `typescript7` is a pinned npm alias to TypeScript 7.0.2 for the recommended performance baseline. Both are checked. Use named scripts, not bare `tsc`, because their executable names collide. `pnpm-workspace.yaml` permits this exact version for openapi-typescript 7.13.0, whose declared peer range is `^5.x`, while retaining strict peer checks. Independent applications need their own [scoped configuration](getting-started.md#generator-and-typescript-compatibility). Compiler upgrades must pass declaration, generated fixture, installed-consumer and type-scale checks.
 - Only `dist`, package metadata, README, license and an optional changelog ship to npm.
 - `pnpm install` installs Husky hooks. Pre-commit runs lint-staged; commit-msg runs commitlint. The full type-aware check runs in `pnpm check` and CI.
 - `sideEffects: false` assumes library modules do not perform import-time side effects. Update the declaration if future modules require them.

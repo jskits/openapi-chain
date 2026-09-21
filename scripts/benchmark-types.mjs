@@ -4,6 +4,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import spawn from 'cross-spawn';
+import { compiler, compilerInfo } from './lib/compiler.mjs';
+console.log(JSON.stringify(compilerInfo()));
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const directory = mkdtempSync(join(tmpdir(), 'openapi-chain-types-'));
@@ -36,9 +38,10 @@ api.r0(1);
 `,
     );
     const result = spawn.sync(
-      process.execPath,
+      compiler.command,
       [
-        join(root, 'node_modules/typescript/bin/tsc'),
+        ...compiler.args,
+        ...compiler.benchmarkArgs,
         '--noEmit',
         '--strict',
         '--skipLibCheck',
@@ -55,10 +58,13 @@ api.r0(1);
     const instantiations = Number(/Instantiations:\s+(\d+)/.exec(result.stdout)?.[1]);
     const memoryKB = Number(/Memory used:\s+(\d+)K/.exec(result.stdout)?.[1]);
     assert.ok(
-      instantiations > 0 && instantiations < 3_000_000,
+      instantiations > 0 && instantiations < compiler.budget.instantiations,
       `Type complexity budget exceeded: ${instantiations}`,
     );
-    assert.ok(memoryKB > 0 && memoryKB < 1_200_000, `Type memory budget exceeded: ${memoryKB} KB`);
+    assert.ok(
+      memoryKB > 0 && memoryKB < compiler.budget.memoryKB,
+      `Type memory budget exceeded: ${memoryKB} KB`,
+    );
     console.log(
       JSON.stringify({
         routes: count,

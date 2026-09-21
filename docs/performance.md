@@ -2,7 +2,7 @@
 
 [Documentation index](README.md) · [Support matrix](support.md)
 
-Run `pnpm benchmark` to build fresh artifacts and reproduce the default-compiler benchmark scenarios. Optional compiler comparisons require the executable described below. The pinned reference client is `openapi-fetch` 0.17.0; TypeScript and tsdown use the versions in `package.json`. The historical samples below were recorded on 2026-09-20, on macOS arm64 with Node 24.16.0. They are not a cross-platform throughput guarantee or measurements of the current working tree.
+Run `pnpm benchmark` to build fresh artifacts and reproduce the default-compiler benchmark scenarios. TS 7 is the recommended performance baseline; both compiler versions are pinned and checked in CI using the commands below. The pinned reference client is `openapi-fetch` 0.17.0; TypeScript and tsdown use the versions in `package.json`. The historical samples below were recorded on 2026-09-20, on macOS arm64 with Node 24.16.0. They are not a cross-platform throughput guarantee or measurements of the current working tree.
 
 See the archived [schema semantics report](archive/qualification/schema-semantics-qualification.md) for the baseline used by the original measurements and the [path and reference report](archive/qualification/path-reference-qualification.md) for the later shared-prefix type-checking scenario. The subsequent [media report](archive/qualification/media-qualification.md) records another core size. Use `pnpm build && pnpm size:check` to measure the checkout you are evaluating.
 
@@ -86,7 +86,7 @@ Recorded 2026-09-21 on macOS arm64 / Node 24.16.0. Raw outputs, including every 
 | 5000            | 250             | 6.0.3      |         125645 |    178035 |     0.31 s |
 | 5000            | 250             | 7.0.2      |         125642 |    100615 |    0.113 s |
 
-The default toolchain remains pinned to 6.0.3. A separately installed 7.0.2 also passed the current source/consumer typecheck (`tsc --noEmit`); this is not full qualification of a toolchain migration, generator peer support or declaration bundling under 7. Compiler times here are individual process measurements, not latency guarantees. Instantiations remain almost equal across these two versions on this fixture, but that is not a cross-version invariant for all programs.
+These recorded figures originally used a separately installed TS 7.0.2. It is now a pinned `typescript7` alias: source type checks, installed ESM/CommonJS declaration consumers and all type-complexity scenarios run on both versions in CI. Generation and declaration building continue using the TS 6 toolchain; the isolated TS 7 consumer test verifies the documented dual-version generator setup, not a wholesale build-tool migration. Compiler times here are individual process measurements, not latency guarantees. Instantiations remain almost equal across these two versions on this fixture, but that is not a cross-version invariant for all programs.
 
 `pnpm benchmark:scoping` also varies the call count on the 1000-route fixture:
 
@@ -101,7 +101,7 @@ One call still incurs substantial schema-wide work. Call count, route shape and 
 
 ## Editor completion latency
 
-`pnpm benchmark:editor` drives real TS 6 tsserver requests. Setting `OPENAPI_CHAIN_TSC` to a separately installed TS 7 executable selects native LSP. For each scenario it starts three fresh servers, opens the same consumer, requests root-chain completion, repeats without edits, changes one comment character and requests completion again. The edited interval includes submitting the edit. Cold timing starts at the first completion request after opening the file, not at OS process creation. The same incremental edit is used in both protocols. Returned route names and exclusion of unselected routes are asserted.
+`pnpm benchmark:editor --compiler=ts6` drives real TS 6 tsserver requests; `pnpm benchmark:editor:ts7` uses the pinned TS 7 native LSP. For each scenario it starts three fresh servers, opens the same consumer, requests root-chain completion, repeats without edits, changes one comment character and requests completion again. The edited interval includes submitting the edit. Cold timing starts at the first completion request after opening the file, not at OS process creation. The same incremental edit is used in both protocols. Returned route names and exclusion of unselected routes are asserted.
 
 | Compiler         | Document / selected routes | Cold median | Unchanged median | Edited median |
 | ---------------- | -------------------------- | ----------: | ---------------: | ------------: |
@@ -114,12 +114,28 @@ One call still incurs substantial schema-wide work. Call count, route shape and 
 
 These are three-sample medians on a synthetic root completion, not IDE-wide responsiveness, competing-client benchmarks or a promise for deep nodes and semantic edits. The measured improvement does not equal the instantiation ratio. Run these timing benchmarks separately from other CPU-heavy work. Timing is not a shared-runner CI gate; stalled/failed protocol requests do fail the script.
 
-To reproduce the optional comparison, install TypeScript 7.0.2 in a separate temporary project and set an absolute executable path (do not replace this repository's pinned dependency):
+## Reproduce and gate both compiler versions
+
+After `pnpm install --frozen-lockfile && pnpm build`, use:
 
 ```sh
-OPENAPI_CHAIN_TSC=/absolute/temporary-project/node_modules/.bin/tsc pnpm benchmark:scoping
-OPENAPI_CHAIN_TSC=/absolute/temporary-project/node_modules/.bin/tsc pnpm benchmark:editor
+pnpm typecheck
+pnpm typecheck:ts7
+pnpm benchmark:types
+pnpm benchmark:scoping --compiler=ts6
+pnpm benchmark:types:ts7
+pnpm benchmark:editor --compiler=ts6
+pnpm benchmark:editor:ts7
+pnpm test:package:ts7
 ```
+
+`benchmark:types:ts7` covers flat routes, shared prefixes/response unions with cold/unchanged/edited builds, and the scope/call-count fixture. The fixture inputs and semantic assertions are shared across versions. TS 7 type benchmarks explicitly use four checkers. Every benchmark reports the actual compiler version and the type-complexity scripts also report platform, worker setting and budget.
+
+`pnpm check` runs the TS 6 gates and then `pnpm check:ts7`; the latter requires a fresh build and covers source types, installed consumers (including independently generated declarations) and all three TS 7 type benchmarks. The existing CI Node/OS matrix runs both compiler versions. A Linux/Node 24 job also runs both editor protocols sequentially, validating returned completions and retaining sample timings in its logs. Elapsed time is reported, not used as a regression threshold on shared runners.
+
+Budgets are separate named records in `scripts/lib/compiler.mjs`. Initially each version uses the established ceiling of fewer than 3,000,000 instantiations and 1,200,000 KB compiler memory. Missing metrics and changed programs reporting zero work fail. Scoping must reduce instantiations for the same calls. There is no cross-compiler equality or speed-ratio assertion. If a compiler update changes metric semantics, review its budget explicitly rather than silently weakening both versions' gates.
+
+Named `--compiler=ts6` and `--compiler=ts7` runs resolve the package's own launcher, verify its pinned version and ignore executable overrides, avoiding `.bin/tsc` collisions. For separate experiments only, `OPENAPI_CHAIN_TSC` remains available when no named compiler is supplied; it must point to a native TS 7 CLI. Such results do not replace the pinned CI baseline.
 
 ## Metadata and consumer delivery
 

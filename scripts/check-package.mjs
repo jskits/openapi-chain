@@ -4,6 +4,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { compiler } from './lib/compiler.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const consumer = mkdtempSync(join(tmpdir(), 'openapi-chain-consumer-'));
@@ -54,20 +55,75 @@ try {
     'Unexpected file in published package',
   );
 
-  writeFileSync(join(consumer, 'package.json'), JSON.stringify({ private: true, type: 'module' }));
-  run(
-    'npm',
-    [
-      'install',
-      '--ignore-scripts',
-      '--no-audit',
-      '--no-fund',
-      '--package-lock=false',
-      join(consumer, packed.filename),
-    ],
-    consumer,
-    env,
-  );
+  if (compiler.major === 7) {
+    // Reproduce the documented dual-compiler installation in a genuinely isolated consumer.
+    writeFileSync(
+      join(consumer, 'package.json'),
+      JSON.stringify({
+        private: true,
+        type: 'module',
+        packageManager: manifest.packageManager,
+        dependencies: {
+          [manifest.name]: `file:${join(consumer, packed.filename).replaceAll('\\', '/')}`,
+        },
+        devDependencies: Object.fromEntries(
+          ['typescript', 'typescript7', 'openapi-typescript'].map((name) => [
+            name,
+            manifest.devDependencies[name],
+          ]),
+        ),
+      }),
+    );
+    writeFileSync(
+      join(consumer, 'pnpm-workspace.yaml'),
+      `strictPeerDependencies: true
+peerDependencyRules:
+  allowedVersions:
+    'openapi-typescript>typescript': '${manifest.devDependencies.typescript}'
+`,
+    );
+    run('pnpm', ['install', '--ignore-scripts', '--no-frozen-lockfile'], consumer, env);
+    writeFileSync(
+      join(consumer, 'generated.openapi.json'),
+      readFileSync(join(root, 'examples/scoped/openapi.json')),
+    );
+    run(process.execPath, [
+      'node_modules/openapi-typescript/bin/cli.js',
+      'generated.openapi.json',
+      '-o',
+      'generated-schema.d.ts',
+    ]);
+    writeFileSync(
+      join(consumer, 'generated-consumer.mts'),
+      `import {createClient} from '${manifest.name}';
+import type {paths} from './generated-schema.js';
+const api = createClient<paths>({baseUrl:'https://example.test'});
+const result: Promise<{id:string;name:string}> = api.items('42').get(); void result;
+// @ts-expect-error generated path parameters remain strings
+api.items(42);
+// @ts-expect-error nonexistent generated routes remain rejected
+api.missing.get();
+`,
+    );
+  } else {
+    writeFileSync(
+      join(consumer, 'package.json'),
+      JSON.stringify({ private: true, type: 'module' }),
+    );
+    run(
+      'npm',
+      [
+        'install',
+        '--ignore-scripts',
+        '--no-audit',
+        '--no-fund',
+        '--package-lock=false',
+        join(consumer, packed.filename),
+      ],
+      consumer,
+      env,
+    );
+  }
   const specifier = JSON.stringify(manifest.name);
   const strictSpecifier = JSON.stringify(`${manifest.name}/strict`);
   const metadataSpecifier = JSON.stringify(`${manifest.name}/metadata`);
@@ -156,8 +212,10 @@ void trailing;
   for (const extension of ['mts', 'cts']) {
     writeFileSync(join(consumer, `consumer.${extension}`), typeConsumer);
   }
-  run(process.execPath, [
-    join(root, 'node_modules/typescript/bin/tsc'),
+  run(compiler.command, [
+    ...(compiler.major === 7
+      ? [join(consumer, 'node_modules/typescript7/bin/tsc')]
+      : compiler.args),
     '--noEmit',
     '--strict',
     '--module',
@@ -168,9 +226,10 @@ void trailing;
     'ES2022',
     'consumer.mts',
     'consumer.cts',
+    ...(compiler.major === 7 ? ['generated-consumer.mts'] : []),
   ]);
   console.log(
-    `Package verified: ${packed.filename}; ${files.length} files; ESM, CommonJS, generated NodeNext consumers and real HTTP passed.`,
+    `Package verified: ${packed.filename}; ${files.length} files; ESM, CommonJS, ${compiler.version} NodeNext consumers and real HTTP passed.`,
   );
 } finally {
   rmSync(consumer, { recursive: true, force: true });

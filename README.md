@@ -22,13 +22,13 @@ This example uses the [Items schema](examples/service.openapi.json). Your chain 
 
 ## Install
 
-If you use TypeScript 6.0.3, first apply the [scoped generator peer configuration](docs/getting-started.md#generator-and-typescript-compatibility); openapi-typescript 7.13.0 declares a TypeScript 5 peer range.
+**TypeScript 7 is recommended for type checking and editor responsiveness, especially for large schemas.** Use the [verified dual-version setup](docs/getting-started.md#generator-and-typescript-compatibility): TS 7.0.2 checks your application while TS 6.0.3 remains available to the generator and tools using its compiler API. Apply the scoped peer configuration there before installing. Large schemas still benefit from [path scoping](docs/large-schemas.md).
 
 For an npm release that contains the API documented here:
 
 ```sh
 pnpm add openapi-chain
-pnpm add -D openapi-typescript@7.13.0
+pnpm add -D --save-exact typescript@6.0.3 typescript7@npm:typescript@7.0.2 openapi-typescript@7.13.0
 pnpm exec openapi-typescript ./openapi.json -o ./schema.d.ts
 ```
 

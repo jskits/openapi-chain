@@ -7,23 +7,17 @@ import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { performance } from 'node:perf_hooks';
 import { typeFixture } from './lib/type-fixture.mjs';
+import { compiler } from './lib/compiler.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
-const native = process.env.OPENAPI_CHAIN_TSC;
+const native = compiler.major === 7;
 const samples = 3;
 const median = (values) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
 
 function session() {
-  const child = native
-    ? spawn(native, ['--lsp', '--stdio'], { stdio: ['pipe', 'pipe', 'pipe'] })
-    : spawn(
-        process.execPath,
-        [
-          join(root, 'node_modules/typescript/lib/tsserver.js'),
-          '--disableAutomaticTypingAcquisition',
-        ],
-        { stdio: ['pipe', 'pipe', 'pipe'] },
-      );
+  const child = spawn(compiler.server.command, compiler.server.args, {
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
   let seq = 0;
   let buffer = Buffer.alloc(0);
   let stderr = '';
@@ -117,9 +111,7 @@ function session() {
 console.log(
   JSON.stringify({
     protocol: native ? 'native LSP' : 'tsserver',
-    compiler: spawn
-      .sync(native ?? join(root, 'node_modules/.bin/tsc'), ['--version'], { encoding: 'utf8' })
-      .stdout.trim(),
+    compiler: compiler.version,
     node: process.version,
     platform: process.platform,
     arch: process.arch,

@@ -4,6 +4,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import spawn from 'cross-spawn';
+import { compiler, compilerInfo } from './lib/compiler.mjs';
+console.log(JSON.stringify(compilerInfo()));
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const directory = mkdtempSync(join(tmpdir(), 'openapi-chain-project-types-'));
@@ -72,23 +74,21 @@ try {
         `\nconst edited: Promise<Entity | Pending> = api.orgs('edited').resources.r999('last').get({query:{expand:'events'}}); void edited;\n`,
       );
     const result = spawn.sync(
-      process.execPath,
-      [
-        join(root, 'node_modules/typescript/bin/tsc'),
-        '-p',
-        'tsconfig.json',
-        '--extendedDiagnostics',
-      ],
+      compiler.command,
+      [...compiler.args, ...compiler.benchmarkArgs, '-p', 'tsconfig.json', '--extendedDiagnostics'],
       { cwd: directory, encoding: 'utf8' },
     );
     assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
     const instantiations = Number(/Instantiations:\s+(\d+)/.exec(result.stdout)?.[1]);
     const memoryKB = Number(/Memory used:\s+(\d+)K/.exec(result.stdout)?.[1]);
     assert.ok(
-      Number.isFinite(instantiations) && instantiations < 3_000_000,
+      Number.isFinite(instantiations) && instantiations < compiler.budget.instantiations,
       `Type complexity budget exceeded: ${instantiations}`,
     );
-    assert.ok(memoryKB > 0 && memoryKB < 1_200_000, `Type memory budget exceeded: ${memoryKB}`);
+    assert.ok(
+      memoryKB > 0 && memoryKB < compiler.budget.memoryKB,
+      `Type memory budget exceeded: ${memoryKB}`,
+    );
     if (phase !== 'unchanged') assert.ok(instantiations > 0, 'Changed consumers must be checked');
     console.log(
       JSON.stringify({
