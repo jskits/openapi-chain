@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { spawn, execFileSync } from 'node:child_process';
+import spawn from 'cross-spawn';
 import { once } from 'node:events';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -117,9 +117,9 @@ function session() {
 console.log(
   JSON.stringify({
     protocol: native ? 'native LSP' : 'tsserver',
-    compiler: execFileSync(native ?? join(root, 'node_modules/.bin/tsc'), ['--version'], {
-      encoding: 'utf8',
-    }).trim(),
+    compiler: spawn
+      .sync(native ?? join(root, 'node_modules/.bin/tsc'), ['--version'], { encoding: 'utf8' })
+      .stdout.trim(),
     node: process.version,
     platform: process.platform,
     arch: process.arch,

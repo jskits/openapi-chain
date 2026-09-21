@@ -16,7 +16,7 @@ export function typeFixture(root, routes, selected = routes, calls = 25) {
       `const result${i}: Promise<{ok:true}> = api.r${i}('id').get({ query: { q: 'x' } }); void result${i};`,
   ).join('\n');
   return `// edit: a
-import { createClient } from ${JSON.stringify(join(root, 'dist/index.js'))};
+import { createClient } from ${JSON.stringify(join(root, 'dist/index.js').replaceAll('\\', '/'))};
 type AllPaths = {${entries}};
 type Paths = ${selected === routes ? 'AllPaths' : `Pick<AllPaths, ${keys}>`};
 const api = createClient<Paths>({ baseUrl: 'https://example.test' });

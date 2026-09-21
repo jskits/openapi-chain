@@ -7,7 +7,10 @@ import spawn from 'cross-spawn';
 import { compileOpenAPIMetadata } from '../dist/metadata.js';
 import { selectedPaths } from '../examples/scoped/scope.ts';
 
-const source = readFileSync(new URL('../examples/scoped/openapi.json', import.meta.url), 'utf8');
+const source = readFileSync(
+  new URL('../examples/scoped/openapi.json', import.meta.url),
+  'utf8',
+).replace(/\r\n/g, '\n');
 const metadata = compileOpenAPIMetadata(JSON.parse(source), { paths: selectedPaths });
 assert.deepEqual(Object.keys(metadata.operations).sort(), [...selectedPaths].sort());
 const schemaSha256 = createHash('sha256').update(source).digest('hex');
@@ -23,10 +26,10 @@ try {
     { encoding: 'utf8' },
   );
   assert.equal(result.status, 0, result.stdout + result.stderr);
-  const formatted = readFileSync(candidate, 'utf8');
+  const formatted = readFileSync(candidate, 'utf8').replace(/\r\n/g, '\n');
   if (process.argv.includes('--check')) {
     assert.equal(
-      readFileSync(output, 'utf8'),
+      readFileSync(output, 'utf8').replace(/\r\n/g, '\n'),
       formatted,
       'Scoped metadata is stale. Run pnpm generate:scoped.',
     );

@@ -39,7 +39,7 @@ try {
               {
                 name: 'experimental-remove-form-roots',
                 transform(code, id) {
-                  if (!id.endsWith('/src/serialization.ts')) return;
+                  if (!id.replaceAll('\\', '/').endsWith('/src/serialization.ts')) return;
                   for (const call of formCalls) {
                     assert.ok(code.includes(call), `Experiment needs updating: ${call}`);
                     code = code.replace(

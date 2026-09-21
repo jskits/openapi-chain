@@ -26,7 +26,7 @@ try {
       {
         name: 'record-runtime-modules',
         transform(_code, id) {
-          modules.add(id);
+          modules.add(id.replaceAll('\\', '/'));
         },
       },
     ],

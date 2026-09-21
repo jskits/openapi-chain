@@ -48,12 +48,12 @@ try {
     const metadata = compileOpenAPIMetadata(document, paths ? { paths } : {});
     const header =
       mode === 'runtime-compile'
-        ? `import {compileOpenAPIMetadata} from ${JSON.stringify(join(root, 'dist/metadata.js'))};\nconst metadata = compileOpenAPIMetadata(${JSON.stringify(document)});`
+        ? `import {compileOpenAPIMetadata} from ${JSON.stringify(join(root, 'dist/metadata.js').replaceAll('\\', '/'))};\nconst metadata = compileOpenAPIMetadata(${JSON.stringify(document)});`
         : `const metadata = ${JSON.stringify(metadata)};`;
     const entry = join(directory, `${mode}.mjs`);
     writeFileSync(
       entry,
-      `import {createStrictClient} from ${JSON.stringify(join(root, 'dist/strict.js'))};\n${header}\nexport const create = transport => createStrictClient({baseUrl:'https://api.test',metadata,transport});`,
+      `import {createStrictClient} from ${JSON.stringify(join(root, 'dist/strict.js').replaceAll('\\', '/'))};\n${header}\nexport const create = transport => createStrictClient({baseUrl:'https://api.test',metadata,transport});`,
     );
     const modules = new Set();
     const outDir = join(directory, mode);
@@ -75,7 +75,7 @@ try {
         {
           name: 'record-modules',
           transform(_code, id) {
-            modules.add(id);
+            modules.add(id.replaceAll('\\', '/'));
           },
         },
       ],

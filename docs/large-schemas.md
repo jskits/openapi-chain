@@ -40,7 +40,7 @@ Generate declarations from that same source revision and create the runtime clie
 
 ## Artifact provenance and deployment
 
-[The build script](../scripts/build-scoped-example.mjs) emits a deterministic TypeScript module containing plain metadata and a source SHA-256. It checks that emitted route keys match the selection; `--check` rejects stale output. The schema generator check independently rejects stale declarations. Together these checks bind the source, scope, declarations and metadata in the repository build.
+[The build script](../scripts/build-scoped-example.mjs) emits a deterministic TypeScript module containing plain metadata and a source SHA-256 after normalizing CRLF to LF. It checks that emitted route keys match the selection; `--check` rejects stale output. The schema generator check independently rejects stale declarations. Together these checks bind the source, scope, declarations and metadata in the repository build.
 
 The generated module uses a CompiledOpenAPIMetadata assertion because JSON output cannot carry a TypeScript brand. The assertion itself does not validate data. Use it only for compiler-produced artifacts under your build's control; arbitrary remote JSON or a cast is not equivalent to successful compilation. Keep runtime metadata immutable.
 
