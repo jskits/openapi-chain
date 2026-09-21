@@ -35,7 +35,9 @@ async function snapshot(value) {
   }
   if (value instanceof Headers) return { kind: 'headers', entries: [...value] };
   if (value instanceof Response)
-    return { kind: 'response', status: value.status, headers: [...value.headers] };
+    throw new TypeError(
+      'Response application data cannot be compared without inspecting its body; use an explicit integration test.',
+    );
   if (Array.isArray(value)) return Promise.all(value.map(snapshot));
   if (
     typeof value === 'object' &&
@@ -56,13 +58,33 @@ async function snapshot(value) {
 }
 
 async function errorSnapshot(error) {
-  return {
+  const result = {
     name: error instanceof Error ? error.name : 'Error',
     message: String(error instanceof Error ? error.message : error),
-    ...(error instanceof HttpError
-      ? { status: error.status, data: await snapshot(error.data) }
-      : {}),
   };
+  if (error instanceof HttpError) {
+    result.status = error.status;
+    try {
+      result.data = await snapshot(error.data);
+    } catch (snapshotError) {
+      result.dataError = { name: snapshotError.name, message: snapshotError.message };
+    }
+  }
+  return result;
+}
+
+async function resultSnapshot(value, throwOnError) {
+  if (throwOnError !== false) return snapshot(value);
+  // Only the client-created outer envelope gets metadata-only Response handling.
+  // Its body was already parsed into data; nested application values stay strict.
+  const { response, ...fields } = value;
+  const result = await snapshot(fields);
+  result.value.response = {
+    kind: 'response',
+    status: response.status,
+    headers: [...response.headers],
+  };
+  return result;
 }
 
 async function runScenario(config, scenario, metadata, metadataError, strict) {
@@ -95,7 +117,7 @@ async function runScenario(config, scenario, metadata, metadataError, strict) {
       : scenario.input?.());
     const params = await scenario.params?.();
     const value = await client.$path(scenario.path, params)[scenario.method ?? 'get'](input);
-    return { requests, result: await snapshot(value) };
+    return { requests, result: await resultSnapshot(value, config.throwOnError) };
   } catch (error) {
     return { requests, error: await errorSnapshot(error) };
   }

@@ -142,6 +142,20 @@ try {
   });
   assert.equal(mismatch.status, 1);
   assert.deepEqual(JSON.parse(mismatch.stdout).scenarios[0].differences, ['response']);
+  writeFileSync(
+    file,
+    `export default { document: ${JSON.stringify(document)}, scenarios: [{name:'opaque',path:'/plain',response:()=>new Response('fixture'),input:()=>({extensions:{response:r=>({status:r.status,data:new Response('before')})}}),strictInput:()=>({extensions:{response:r=>({status:r.status,data:new Response('after')})}})}] };`,
+  );
+  const opaque = spawnSync(process.execPath, ['scripts/compare-migration.mjs', file], {
+    encoding: 'utf8',
+  });
+  assert.equal(opaque.status, 1);
+  const opaqueReport = JSON.parse(opaque.stdout);
+  assert.equal(opaqueReport.passed, false);
+  assert.match(
+    opaqueReport.scenarios[0].strict.error.message,
+    /Response.*data.*cannot be compared/,
+  );
 } finally {
   rmSync(temp, { recursive: true, force: true });
 }
@@ -152,9 +166,6 @@ const unsupported = await run({
 });
 assert.equal(unsupported.passed, false);
 assert.match(unsupported.scenarios[0].strict.error.message, /snapshots require/);
-console.log(
-  'Migration comparison checks passed: wire differences, parsing, validation, metadata, HTTP errors, extensions, multipart and CLI.',
-);
 
 const changedBinaryType = await run({
   input: () => ({
@@ -165,3 +176,86 @@ const changedBinaryType = await run({
   }),
 });
 assert.deepEqual(changedBinaryType.scenarios[0].differences, ['response']);
+
+// Response bodies must not disappear from application-data comparisons.
+for (const throwOnError of [true, false]) {
+  for (const wrap of [
+    (value) => value,
+    (value) => ({ nested: [value] }),
+    (value) => ({ ok: true, status: 200, data: 'value', response: value }),
+  ]) {
+    const responseData = await run(
+      {
+        input: () => ({
+          extensions: {
+            response: (response) => ({
+              status: response.status,
+              data: wrap(new Response('before')),
+            }),
+          },
+        }),
+        strictInput: () => ({
+          extensions: {
+            response: (response) => ({
+              status: response.status,
+              data: wrap(new Response('after')),
+            }),
+          },
+        }),
+      },
+      { throwOnError },
+    );
+    assert.equal(responseData.passed, false);
+    for (const mode of ['core', 'strict']) {
+      assert.match(
+        responseData.scenarios[0][mode].error.message,
+        /Response.*data.*cannot be compared/,
+      );
+    }
+  }
+}
+for (const status of [200, 404]) {
+  const streamData = await run({
+    response: () => new Response('stream', { status }),
+    input: () => ({
+      extensions: { response: (response) => ({ status: response.status, data: response.body }) },
+    }),
+  });
+  assert.equal(streamData.passed, false);
+  const issue = streamData.scenarios[0].strict.error;
+  assert.match((issue.dataError ?? issue).message, /snapshots require/);
+}
+// Unsupported data inside HttpError must remain a report, not reject the whole run.
+const opaqueError = await run({
+  response: () => new Response('error', { status: 404 }),
+  input: () => ({
+    extensions: {
+      response: (response) => ({ status: response.status, data: new Response('hidden') }),
+    },
+  }),
+});
+assert.equal(opaqueError.passed, false);
+assert.equal(opaqueError.scenarios[0].strict.error.status, 404);
+assert.match(
+  opaqueError.scenarios[0].strict.error.dataError.message,
+  /Response.*data.*cannot be compared/,
+);
+for (const status of [200, 204, 404]) {
+  const envelope = await run(
+    {
+      response: () =>
+        status === 204
+          ? new Response(null, { status })
+          : new Response('{"ok":true}', {
+              status,
+              headers: { 'content-type': 'application/json' },
+            }),
+    },
+    { throwOnError: false },
+  );
+  assert.equal(envelope.passed, true);
+  assert.equal(envelope.scenarios[0].strict.result.value.response.status, status);
+}
+console.log(
+  'Migration comparison checks passed, including opaque Response data, nested values, streams, HTTP errors and normal result envelopes.',
+);
