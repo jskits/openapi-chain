@@ -78,14 +78,25 @@ async function main() {
     parameters:[{name:'id',in:'path',required:true,schema:{type:'string'}}],
     get:{responses:{200:{description:'ok'}}}
   }}};
-  const metadata = compileOpenAPIMetadata(document);
+  document.paths['/unselected'] = {$ref:'external.json'};
+  const metadata = compileOpenAPIMetadata(document, {paths:['/x/{id}']});
+  assert.deepEqual(Object.keys(metadata.operations), ['/x/{id}']);
+  for (const extra of [{metadata}, {middleware:[]}, {headers:()=>({authorization:'token'})}]) {
+    assert.throws(() => createClient({baseUrl:'https://example.test',...extra}), {message:'Use openapi-chain/strict.'});
+  }
+  const compatible = compileOpenAPIMetadata({openapi:'3.1.0',paths:{
+    '/x/{id}':document.paths['/x/{id}'],
+    '/x/{name}':{parameters:[{name:'name',in:'path',required:true,schema:{type:'string'}}],delete:{}}
+  }}, {onAmbiguousTemplate:'allow'});
+  assert.equal(Object.keys(compatible.operations).length, 2);
   for (const factory of [createClient, createStrictClient]) {
-    const api = factory({baseUrl:'https://example.test',metadata,transport:async request => {
+    const api = factory({baseUrl:'https://example.test',...(factory === createStrictClient ? {metadata} : {}),transport:async request => {
       assert.equal(request.url, 'https://example.test/x/a%20b');
       assert.equal(request.init.method, 'GET');
       return new Response('{"ok":true}', {headers:{'content-type':'application/json'}});
     }});
     assert.deepEqual(await api.x('a b').get(), {ok:true});
+    if (factory === createStrictClient) await assert.rejects(api.$path('/unselected').get(), /does not contain/);
   }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });
@@ -117,8 +128,13 @@ const { compileOpenAPIMetadata } = require(${metadataSpecifier});
   run(process.execPath, ['packed-http.mjs']);
   const typeConsumer = `import { createClient, type OperationExtensionsFor } from ${specifier};
 import { createStrictClient } from ${strictSpecifier};
-import { compileOpenAPIMetadata } from ${metadataSpecifier};
+import { compileOpenAPIMetadata, type CompileOpenAPIMetadataOptions } from ${metadataSpecifier};
 type Paths = {'/x/{id}': {parameters:{path:{id:string}}, get:{responses:{200:{content:{'application/json':{ok:true}}}}}}};
+const options = {paths: ['/x/{id}'], onAmbiguousTemplate: 'allow'} satisfies CompileOpenAPIMetadataOptions;
+void options;
+// @ts-expect-error only explicit compatibility modes are accepted
+const invalid: CompileOpenAPIMetadataOptions = {onAmbiguousTemplate:'ignore'};
+void invalid;
 const metadata = compileOpenAPIMetadata({openapi:'3.2.1',paths:{}});
 const core = createClient<Paths>({baseUrl:'https://example.test'});
 const strict = createStrictClient<Paths>({baseUrl:'https://example.test',metadata});
