@@ -61,3 +61,13 @@ Automatically serialized strings use UTF-8. For another charset, provide correct
 Check its installed version and entry exports against this checkout's `package.json`. The current source version is `0.0.0`; historical registry packages may use another API. Reproduce against a [locally built tarball](getting-started.md#install-this-checkout) before assuming a source example describes the version you installed.
 
 For repository failures, start with [development checks](development.md#choose-the-right-check). For a bug report, include the version, entry point, runtime, generator version, minimal synthetic schema and expected/actual request or response. Use [GitHub Issues](https://github.com/jskits/openapi-chain/issues) for ordinary bugs and the [security process](../SECURITY.md) for vulnerabilities.
+
+## A third-party document repeats a template hierarchy
+
+OpenAPI forbids `/x/{id}` and `/x/{name}` in the same document, even if they have different HTTP methods. Compilation rejects this by default. Correct the source document when possible. If it cannot be changed, explicitly opt in:
+
+```ts
+const metadata = compileOpenAPIMetadata(document, { onAmbiguousTemplate: 'allow' });
+```
+
+This accepts only that document irregularity; it does not certify conformance or relax other compiler errors. Different-method chains resolve independently. Same-method ambiguous chains still throw before transport; use the exact typed `$path('/x/{name}', { name: '42' })` template to select its serialization rules. Unrelated routes remain available. This selects client metadata, not the server's routing behavior; verify the server's interpretation separately.

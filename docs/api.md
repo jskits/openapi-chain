@@ -254,3 +254,7 @@ Strict middleware has the shape `(request, next) => Promise<Response>` and wraps
 `compileOpenAPIMetadata(document: unknown)` returns `CompiledOpenAPIMetadata` or throws for unsupported/ambiguous compilation inputs. It extracts serialization hints from OpenAPI 3.0/3.1/3.2; it is not a full OpenAPI or JSON Schema validator. See [schema inference](support.md#schema-inference-matrix) for references, composition, recursion and work limits.
 
 `defineOpenAPIMetadata(metadata)` returns its input unchanged and types it as `OpenAPIMetadata`. It does not compile, validate, freeze, or brand a table. It does not meet `createStrictClient`'s required compiled type. Use the compiler for strict clients rather than asserting a hand-written table to the compiled brand.
+
+## Metadata compiler options
+
+`compileOpenAPIMetadata(document, options?)` accepts `CompileOpenAPIMetadataOptions` from `openapi-chain/metadata`. `onAmbiguousTemplate` defaults to `'throw'`. Explicit `'allow'` preserves duplicate template hierarchies for nonconforming documents while runtime method-aware routing still rejects ambiguous chain calls. Exact `$path()` calls select the specified template. See [the compatibility recipe](troubleshooting.md#a-third-party-document-repeats-a-template-hierarchy).

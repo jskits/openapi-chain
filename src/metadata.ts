@@ -725,7 +725,21 @@ function normalizedTemplate(path: string): string {
  * be bundled/dereferenced first; unsupported positional/nested multipart
  * features fail closed or are marked for an operation body extension.
  */
-export function compileOpenAPIMetadata(document: unknown): CompiledOpenAPIMetadata {
+export type CompileOpenAPIMetadataOptions = {
+  /** Allow nonconforming duplicate template hierarchies; ambiguous chain calls still fail. */
+  onAmbiguousTemplate?: 'throw' | 'allow';
+};
+
+export function compileOpenAPIMetadata(
+  document: unknown,
+  options: CompileOpenAPIMetadataOptions = {},
+): CompiledOpenAPIMetadata {
+  if (
+    options.onAmbiguousTemplate !== undefined &&
+    options.onAmbiguousTemplate !== 'throw' &&
+    options.onAmbiguousTemplate !== 'allow'
+  )
+    throw new TypeError('Invalid onAmbiguousTemplate option.');
   const source = asRecord(document, 'OpenAPI document');
   const version = openapiMinor(source);
   const root: CompilationContext = {
@@ -746,9 +760,9 @@ export function compileOpenAPIMetadata(document: unknown): CompiledOpenAPIMetada
     }
     const normalized = normalizedTemplate(path);
     const prior = seenTemplates.get(normalized);
-    if (prior && prior !== path) {
+    if (prior && prior !== path && options.onAmbiguousTemplate !== 'allow') {
       throw new TypeError(
-        `OpenAPI paths ${prior} and ${path} have the same templated hierarchy; matching would be ambiguous.`,
+        `OpenAPI paths ${prior} and ${path} have the same templated hierarchy; matching would be ambiguous. Use { onAmbiguousTemplate: 'allow' } only for documents that cannot be corrected.`,
       );
     }
     seenTemplates.set(normalized, path);
