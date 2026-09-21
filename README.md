@@ -60,6 +60,8 @@ const api = createStrictClient<paths>({
 const item = await api.items('42').get();
 ```
 
+For browser/edge and large schemas, use the [build-time metadata and single-scope workflow](docs/large-schemas.md) so the document and compiler stay out of the runtime bundle.
+
 Generate `paths` and metadata from the same schema revision. Strict checks request structure and supported wire encodings; it is **not a JSON Schema validator**. Response validation, authentication and retries are application responsibilities.
 
 ## Handle responses

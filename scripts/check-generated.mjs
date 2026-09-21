@@ -15,6 +15,7 @@ try {
   for (const [input, fixture] of [
     ['examples/example.yaml', 'examples/schema.d.ts'],
     ['examples/service.openapi.json', 'examples/service-schema.d.ts'],
+    ['examples/scoped/openapi.json', 'examples/scoped/schema.d.ts'],
     ['test/fixtures/conformance.openapi.json', 'test/fixtures/conformance-schema.d.ts'],
   ]) {
     const output = join(directory, 'schema.d.ts');
