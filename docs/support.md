@@ -115,6 +115,8 @@ Strict validates required parameter locations, body presence, declared inputs an
 
 ## Choosing core and migrating to strict
 
+Follow the [staged migration guide](migration.md) and [offline comparison workflow](migration-check.md). Verify the operations you actually use; do not infer compatibility from a document percentage or wait for core to fail.
+
 Core rejects `middleware`, `metadata` and function-valued `headers` at construction, including JavaScript callers. Use `openapi-chain/strict` for these options; core applications can implement authentication and middleware in their transport. Explicit `undefined` is equivalent to omitting an option.
 
 Absence of non-default `style` or `explode` is not proof of core compatibility. Check parameter location and value shape as well: a default simple object header requires `a,b` for `{ a: 'b' }`, whereas core's schema-free coercion produces `[object Object]`. Scalar path encoding, compound cookies, body encoding and response parsing also need review. A keyword search is only an initial screen.

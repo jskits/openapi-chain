@@ -119,6 +119,8 @@ For operations declaring a request body, core requires an explicit `contentType`
 
 ## Use strict serialization
 
+For an existing core application, follow the [migration guide](migration.md) before replacing the client. The call shape is shared, but serialization, validation and binary parsing can change.
+
 Compile metadata from the same document that generated `paths`:
 
 ```ts
@@ -158,7 +160,7 @@ pnpm typecheck
 
 [complete-client.ts](../examples/complete-client.ts) exports `runExample()`, which the test calls using a deterministic mock transport. It demonstrates both clients, status-correlated results and runtime response validation, and returns `{ name: 'Ada', message: 'not found' }`. No public service or credentials are needed.
 
-The declarations in [service-schema.d.ts](../examples/service-schema.d.ts) are already checked in. `pnpm test:generated` verifies all three generated fixtures; `pnpm generate:example` regenerates them when their source documents change.
+The declarations in [service-schema.d.ts](../examples/service-schema.d.ts) are already checked in. `pnpm test:generated` verifies the checked-in generated fixtures; `pnpm generate:example` regenerates them when their source documents change.
 
 ## Next steps
 

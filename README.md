@@ -62,6 +62,8 @@ const item = await api.items('42').get();
 
 For browser/edge and large schemas, use the [build-time metadata and single-scope workflow](docs/large-schemas.md) so the document and compiler stay out of the runtime bundle.
 
+For an existing core application, follow the [migration guide](docs/migration.md) and compare representative requests before switching. Core cannot detect missing serialization rules from erased types; HTTP 200 is not proof of a correct filter.
+
 Generate `paths` and metadata from the same schema revision. Strict checks request structure and supported wire encodings; it is **not a JSON Schema validator**. Response validation, authentication and retries are application responsibilities.
 
 ## Handle responses

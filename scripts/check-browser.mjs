@@ -164,6 +164,10 @@ try {
           init: { credentials: 'include', headers: { 'x-probe': 'preflight' } },
         });
         const omitted = await api.echo.get({ query: { q: '😀' }, init: { credentials: 'omit' } });
+        const emptyQuery = await api.echo.get({
+          query: {},
+          extensions: { query: () => '?q=from-extension' },
+        });
         const controller = new AbortController();
         const abort = api.slow.get({ init: { signal: controller.signal } }).then(
           () => 'not aborted',
@@ -187,6 +191,7 @@ try {
           probe: uploaded.probe,
           omittedCookie: omitted.cookie,
           unicode: omitted.query,
+          emptyQuery: emptyQuery.query,
           abort: await abort,
           chunks: [new TextDecoder().decode(first.value), new TextDecoder().decode(second.value)],
         });
@@ -203,6 +208,7 @@ try {
       probe: 'preflight',
       omittedCookie: '',
       unicode: '😀',
+      emptyQuery: 'from-extension',
       abort: 'AbortError',
       chunks: ['A', 'B'],
     });
