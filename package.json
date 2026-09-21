@@ -95,7 +95,8 @@
     "benchmark": "pnpm build && pnpm benchmark:types && pnpm benchmark:runtime && pnpm benchmark:size && pnpm benchmark:metadata",
     "benchmark:metadata": "node scripts/benchmark-metadata.mjs",
     "generate:scoped": "pnpm build && node scripts/build-scoped-example.mjs",
-    "test:scoped": "node scripts/build-scoped-example.mjs --check && node scripts/check-scoped-bundle.mjs"
+    "test:scoped": "node scripts/build-scoped-example.mjs --check && node scripts/check-scoped-bundle.mjs",
+    "benchmark:profiles": "node scripts/benchmark-profile-experiment.mjs"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",
