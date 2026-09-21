@@ -101,6 +101,32 @@ try {
   browser = await chromium.launch({ channel: 'chromium' });
   const page = await browser.newPage();
   await page.goto(origin);
+  const coreBoundary = await page.evaluate(async (origin) => {
+    const { createClient } = await import(`${origin}/dist/index.js`);
+    let sent = 0;
+    const errors = [];
+    for (const extra of [
+      { metadata: {} },
+      { middleware: [] },
+      { headers: () => ({ authorization: 'token' }) },
+    ]) {
+      try {
+        createClient({
+          baseUrl: origin,
+          ...extra,
+          transport: async () => {
+            sent++;
+            return new Response(null, { status: 204 });
+          },
+        });
+        errors.push('accepted');
+      } catch (error) {
+        errors.push(error.message);
+      }
+    }
+    return { errors, sent };
+  }, origin);
+  assert.deepEqual(coreBoundary, { errors: Array(3).fill('Use openapi-chain/strict.'), sent: 0 });
   const result = await page.evaluate(
     async ({ origin, crossOrigin }) => {
       const { createClient } = await import(`${origin}/dist/index.js`);
@@ -126,7 +152,7 @@ try {
       for (const create of [createClient, createStrictClient]) {
         const api = create({
           baseUrl: crossOrigin,
-          metadata,
+          ...(create === createStrictClient ? { metadata } : {}),
           headers: { 'content-type': 'application/json' },
         });
         await api.session.get({ init: { credentials: 'include' } });
@@ -260,7 +286,10 @@ try {
       });
       const results = [];
       for (const create of [createClient, createStrictClient]) {
-        const api = create({ baseUrl: crossOrigin, metadata });
+        const api = create({
+          baseUrl: crossOrigin,
+          ...(create === createStrictClient ? { metadata } : {}),
+        });
         const text = await api.$path('/misleading-text').get();
         const encoded = await api.text.post({
           body: 'café',
@@ -281,7 +310,7 @@ try {
   for (const result of mediaResults)
     assert.deepEqual(result, { text: 'hello', bytes: [99, 97, 102, 195, 169], rejection: true });
   console.log(
-    'Chromium: core/strict ESM, multipart, Unicode, credentialed CORS, cookie omission, abort, streaming, multipart part fidelity, binary slices, response media and text charsets passed.',
+    'Chromium: strict-only core option rejection, core/strict ESM, multipart, Unicode, credentialed CORS, cookie omission, abort, streaming, multipart part fidelity, binary slices, response media and text charsets passed.',
   );
 } finally {
   await browser?.close();
