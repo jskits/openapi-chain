@@ -52,7 +52,7 @@ function openapiMinor(root: AnyRecord): OasMinor {
   if (typeof root.openapi !== 'string') {
     throw new TypeError('OpenAPI document.openapi must be a version string.');
   }
-  const match = /^3\.(0|1|2)(?:\.|$)/.exec(root.openapi);
+  const match = /^3\.(0|1|2)\.(?:0|[1-9]\d*)$/.exec(root.openapi);
   if (!match) {
     throw new TypeError(
       `compileOpenAPIMetadata() supports OpenAPI 3.0, 3.1, and 3.2; received ${root.openapi}.`,
@@ -853,6 +853,9 @@ export function compileOpenAPIMetadata(
           'by the typed chain yet; use a custom transport or remove/bundle those operations.',
       );
     }
+
+    if (version !== '3.2' && 'query' in pathItem)
+      throw new TypeError(`QUERY operation at ${path} requires OpenAPI 3.2.`);
 
     const methods: Partial<Record<HttpMethod, OperationMetadata>> = {};
     for (const method of httpMethods) {
