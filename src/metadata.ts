@@ -641,7 +641,8 @@ function compileParameter(
     }
   }
 
-  const explode = typeof value.explode === 'boolean' ? value.explode : style === 'form';
+  const explode =
+    typeof value.explode === 'boolean' ? value.explode : style === 'form' || style === 'cookie';
   if (style === 'deepObject' && explode === false) {
     throw new TypeError(`deepObject parameter ${name} requires explode=true.`);
   }
