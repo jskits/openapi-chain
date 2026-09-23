@@ -1,6 +1,6 @@
 export { OpenAPIChainError, type OpenAPIChainErrorCode } from './errors.js';
 import { OpenAPIChainError } from './errors.js';
-import { parseMediaRange } from './media-range.js';
+import { parseMediaRange, splitMediaRanges } from './media-range.js';
 import { httpMethods } from './constant.js';
 import type {
   CompiledOpenAPIMetadata,
@@ -421,12 +421,17 @@ function compileEncoding(
     }
     if (!metadata.styleBased && typeof encoding.contentType === 'string') {
       metadata.contentType = encoding.contentType;
-      if (
-        encoding.contentType
-          .split(',')
-          .map((item) => item.trim())
-          .filter(Boolean).length > 1
-      ) {
+      let choices: string[];
+      try {
+        choices = splitMediaRanges(encoding.contentType);
+      } catch (cause) {
+        throw new OpenAPIChainError(
+          'METADATA_COMPILE',
+          `Invalid encoding.contentType for ${name}: ${encoding.contentType}`,
+          { cause },
+        );
+      }
+      if (choices.length > 1) {
         customReason =
           `Encoding ${name} declares multiple contentType choices (${encoding.contentType}). ` +
           'OpenAPI requires the application to choose the intended media type; provide an operation body extension.';

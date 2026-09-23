@@ -94,6 +94,8 @@ Generated textual multipart parts use UTF-8. Explicit `charset=utf-8` (including
 
 Plain `text/plain` string parts remain normal form fields. Explicit media parameters require a Blob-backed part to retain its Content-Type; native FormData adds a filename to such parts. If the server requires a parameterized text part without a filename, use a whole-body extension to supply that exact representation. Style-based encodings follow their separate OpenAPI rules and ignore contentType.
 
+Quoted commas in Encoding `contentType` parameter values remain part of one media declaration. Native Blob lowercases its type and cannot preserve every parameter value, so strict rejects case-sensitive values that would change and non-ASCII values that would be discarded. Case-insensitive charset spelling remains supported. Use a whole-body extension for part headers that native Blob cannot represent. See the [File API type conversion](https://w3c.github.io/FileAPI/#constructorBlob).
+
 ## Media recognition and text encodings
 
 Default response parsing classifies the normalized media type before its semicolon-separated parameters. JSON parsing applies to `application/json` and `+json` suffix types; parameter values containing `json` or `xml` do not select a parser. Strict uses text for `text/*`, `application/xml`, `+xml` and `application/x-www-form-urlencoded`, and ArrayBuffer for other nonempty bodies. Core retains its text fallback. JSON sequences and other streaming formats need a response extension. Default text decoding follows Fetch's UTF-8 `text()` behavior; use a response extension for another response encoding.

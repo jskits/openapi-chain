@@ -1,5 +1,5 @@
 import { OpenAPIChainError } from './errors.js';
-import { mediaRangeMatches, selectMediaDeclaration } from './media-range.js';
+import { mediaRangeMatches, selectMediaDeclaration, splitMediaRanges } from './media-range.js';
 import {
   isBlob,
   isFormData,
@@ -877,12 +877,9 @@ function serializeUrlEncodedBody(
 }
 
 function selectMultipartContentType(contentTypes: string, value: unknown): string {
-  const choices = contentTypes
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean);
-  if (choices.length <= 1) {
-    const declared = choices[0] ?? 'application/octet-stream';
+  const choices = splitMediaRanges(contentTypes);
+  if (choices.length === 1) {
+    const declared = choices[0]!;
     if (isConcreteMediaType(declared)) return declared;
     // A range is a constraint, not a Content-Type that can be sent on the wire.
     // Parameterized ranges need explicit application selection to avoid losing parameters.
@@ -912,6 +909,16 @@ function appendMultipartContentPart(
   contentType: string,
 ): void {
   contentType = selectMultipartContentType(contentType, value);
+  if (contentType.includes(';')) {
+    // Blob lowercases its entire type and discards non-ASCII values. Only use
+    // native parts when that conversion preserves the parameter semantics.
+    const nativeType = new Blob([], { type: contentType }).type;
+    if (!nativeType || !mediaRangeMatches(contentType, nativeType))
+      throw new OpenAPIChainError(
+        'SERIALIZATION',
+        'Native Blob cannot preserve multipart media parameters; use an operation body extension.',
+      );
+  }
   const normalized = normalizeMediaType(contentType);
   if (isBlob(value)) {
     const part = value.type === contentType ? value : new Blob([value], { type: contentType });

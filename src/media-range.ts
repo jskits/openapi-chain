@@ -29,6 +29,27 @@ export function parseMediaRange(value: string): { type: string; parameters: Map<
   return { type, parameters };
 }
 
+/** Encoding contentType is a list; quoted parameter commas are not separators. */
+export function splitMediaRanges(value: string): string[] {
+  const ranges: string[] = [];
+  let start = 0;
+  let quoted = false;
+  let escaped = false;
+  for (let index = 0; index < value.length; index++) {
+    const char = value[index];
+    if (escaped) escaped = false;
+    else if (quoted && char === '\\') escaped = true;
+    else if (char === '"') quoted = !quoted;
+    else if (!quoted && char === ',') {
+      ranges.push(value.slice(start, index).trim());
+      start = index + 1;
+    }
+  }
+  ranges.push(value.slice(start).trim());
+  for (const range of ranges) parseMediaRange(range);
+  return ranges;
+}
+
 export function mediaRangeMatches(range: string, actual: string): boolean {
   const expected = parseMediaRange(range);
   const value = parseMediaRange(actual);
