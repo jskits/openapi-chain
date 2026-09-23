@@ -201,3 +201,42 @@ await test(
     await assert.rejects(generate(f.config), /must not contain|symlink/);
   },
 );
+
+await test('output is relocatable and CRLF normalization preserves provenance', async (t) => {
+  const a = await fixture(t);
+  const b = await fixture(t);
+  const source = JSON.stringify(document, null, 2) + '\n';
+  await writeFile(a.input, source);
+  await writeFile(b.input, source.replaceAll('\n', '\r\n'));
+  assert.deepEqual((await generate(a.config)).outputs, (await generate(b.config)).outputs);
+});
+
+await test('missing managed artifacts can be regenerated without accepting an unowned directory', async (t) => {
+  const f = await fixture(t);
+  await generate(f.config);
+  await rm(join(f.output, 'scope.ts'));
+  await assert.rejects(generate(f.config, { check: true }), /scope.ts/);
+  assert.equal((await generate(f.config)).changed, true);
+  await generate(f.config, { check: true });
+  await writeFile(join(f.output, 'manifest.json'), '{}');
+  await assert.rejects(generate(f.config), /not owned/);
+  assert.equal(await readFile(join(f.output, 'manifest.json'), 'utf8'), '{}');
+});
+
+await test('ambiguous hierarchy policy is explicit and survives full type generation', async (t) => {
+  const f = await fixture(t, { paths: ['/x/{id}', '/x/{name}'] });
+  const path = (name) => ({
+    get: {
+      parameters: [{ name, in: 'path', required: true, schema: { type: 'string' } }],
+      responses: { 200: { description: 'OK' } },
+    },
+  });
+  await writeFile(
+    f.input,
+    JSON.stringify({ ...document, paths: { '/x/{id}': path('id'), '/x/{name}': path('name') } }),
+  );
+  await assert.rejects(generate(f.config), /same templated hierarchy/);
+  const config = JSON.parse(await readFile(f.config, 'utf8'));
+  await writeFile(f.config, JSON.stringify({ ...config, onAmbiguousTemplate: 'allow' }));
+  assert.deepEqual((await generate(f.config)).selectedPaths, ['/x/{id}', '/x/{name}']);
+});
