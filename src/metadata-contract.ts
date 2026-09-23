@@ -24,3 +24,21 @@ export function assertMetadata(value: unknown): asserts value is CompiledOpenAPI
     }
   }
 }
+
+/** Snapshot caller-owned artifacts, including JSON.parse-generated CLI metadata. */
+export function snapshotMetadata(value: unknown): CompiledOpenAPIMetadata {
+  assertMetadata(value);
+  const snapshot = structuredClone(value);
+  const pending: object[] = [snapshot];
+  const seen = new WeakSet<object>();
+  while (pending.length) {
+    const current = pending.pop()!;
+    if (seen.has(current)) continue;
+    seen.add(current);
+    for (const item of Object.values(current)) {
+      if (item !== null && typeof item === 'object') pending.push(item as object);
+    }
+    Object.freeze(current);
+  }
+  return snapshot;
+}

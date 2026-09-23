@@ -1,0 +1,49 @@
+import { snapshotMetadata } from '../src/metadata-contract.js';
+import { expect, test } from 'vitest';
+import { compileOpenAPIMetadata } from '../src/metadata.js';
+import { createStrictClient } from '../src/strict.js';
+import type { CompiledOpenAPIMetadata, RequestInput } from '../src/index.js';
+
+test('JSON-decoded metadata and its options can change without affecting an existing strict client', async () => {
+  const metadata = JSON.parse(
+    JSON.stringify(
+      compileOpenAPIMetadata({
+        openapi: '3.1.0',
+        paths: { '/x': { post: { requestBody: { content: { 'application/json': {} } } } } },
+      }),
+    ),
+  ) as CompiledOpenAPIMetadata;
+  const requests: unknown[] = [];
+  const options = {
+    baseUrl: 'https://api.test',
+    metadata,
+    transport: async (request: { init: RequestInit }) => {
+      requests.push(request.init.body);
+      return new Response(null, { status: 204 });
+    },
+  };
+  const api = createStrictClient(options) as unknown as {
+    x: { post(input: RequestInput): Promise<unknown> };
+  };
+  const operation = metadata.operations['/x']!.post!;
+  operation.requestBody!.mediaTypes = ['text/plain'];
+  Reflect.deleteProperty(metadata.operations, '/x');
+  Reflect.set(metadata, 'complete', false);
+  options.metadata = compileOpenAPIMetadata({ openapi: '3.1.0', paths: {} });
+  await api.x.post({ body: { stable: true } });
+  await api.x.post({ body: {}, extensions: { body: () => '{}' } });
+  expect(requests).toEqual(['{"stable":true}', '{}']);
+});
+
+test('the private metadata snapshot is recursively frozen', () => {
+  const snapshot = snapshotMetadata(
+    compileOpenAPIMetadata({
+      openapi: '3.1.0',
+      paths: { '/x': { post: { requestBody: { content: { 'application/json': {} } } } } },
+    }),
+  );
+  const operation = snapshot.operations['/x']!.post!;
+  expect(Object.isFrozen(operation)).toBe(true);
+  expect(Object.isFrozen(operation.requestBody!.mediaTypes)).toBe(true);
+  expect(Reflect.set(operation.requestBody!, 'required', true)).toBe(false);
+});

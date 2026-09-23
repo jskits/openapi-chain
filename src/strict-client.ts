@@ -15,7 +15,7 @@ import { createOperationResolver, type ProxyState } from './routes.js';
 import { safePath, safeUrl } from './path.js';
 import { mediaType, isJsonMediaType } from './media.js';
 import { httpMethods } from './constant.js';
-import { assertMetadata } from './metadata-contract.js';
+import { snapshotMetadata } from './metadata-contract.js';
 import {
   HttpError,
   type API,
@@ -241,7 +241,7 @@ function createProxy(runtime: Runtime, state: ProxyState): unknown {
 }
 
 function createRuntime(options: ClientOptions): Runtime {
-  assertMetadata(options.metadata);
+  options = { ...options, metadata: snapshotMetadata(options.metadata) };
   const fetchImpl = options.fetch ?? globalThis.fetch;
   if (!options.transport && typeof fetchImpl !== 'function') {
     throw new TypeError('No Fetch implementation is available. Provide `fetch` or `transport`.');
