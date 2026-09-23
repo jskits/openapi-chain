@@ -8,6 +8,13 @@ import { compileOpenAPIMetadata } from 'openapi-chain/metadata';
 
 // Copied into the isolated npm consumer by check-package.mjs; imports resolve
 // only against its installed tarball, never the repository's source tree.
+for (const metadata of [undefined, null, { version: 1, complete: false, operations: {} }]) {
+  assert.throws(
+    () => createStrictClient({ baseUrl: 'https://example.test', metadata }),
+    /metadata/,
+  );
+}
+
 const document = JSON.parse(
   readFileSync(new URL('./conformance.openapi.json', import.meta.url), 'utf8'),
 );

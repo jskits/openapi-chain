@@ -257,6 +257,8 @@ Strict middleware has the shape `(request, next) => Promise<Response>` and wraps
 
 `defineOpenAPIMetadata(metadata)` returns its input unchanged and types it as `OpenAPIMetadata`. It does not compile, validate, freeze, or brand a table. It does not meet `createStrictClient`'s required compiled type. Use the compiler for strict clients rather than asserting a hand-written table to the compiled brand.
 
+Strict construction rejects absent or partial metadata, unsupported artifact versions and invalid route/operation records before user callbacks run. Use `compileOpenAPIMetadata()` or the official CLI; a complete empty scope is valid and permits no operations.
+
 ## Metadata compiler options
 
 Compiled media metadata may contain `requiresCustomSerializer`. Its default scope is all matching media. When paired with `customSerializerScope: 'form'`, the requirement applies only to the actual multipart or URL-encoded media selected for the request; JSON (including `+json`), text and binary selections from a wildcard declaration remain available. Other serializer requirements retain their unrestricted scope.

@@ -9,6 +9,7 @@ import {
   type CoreClientOptions,
   type CompiledOpenAPIMetadata,
   type OperationMetadata,
+  type ParameterLocation,
 } from '../src/index.js';
 import { createStrictClient } from '../src/strict.js';
 import { compileOpenAPIMetadata } from '../src/metadata.js';
@@ -26,12 +27,50 @@ function client(
   options: CoreClientOptions = { baseUrl: 'https://api.test' },
 ): RuntimeNode {
   if (!strict) return createClient({ ...options, transport }) as unknown as RuntimeNode;
+  const location = (names: string[], kind: ParameterLocation) =>
+    Object.fromEntries(
+      names.map((name) => [
+        name,
+        {
+          name,
+          in: kind,
+          style: kind === 'header' || kind === 'path' ? ('simple' as const) : ('form' as const),
+          explode: kind === 'query' || kind === 'cookie',
+        },
+      ]),
+    );
+  // This complete fixture declares every route/input used by the matrix. Forged
+  // nested annotations below deliberately exercise serializer defensive checks.
+  const declared: OperationMetadata = {
+    requestBody: {
+      mediaTypes: [
+        'application/json',
+        'text/plain',
+        'application/octet-stream',
+        'application/custom',
+        'multipart/form-data',
+        'application/x-www-form-urlencoded',
+      ],
+    },
+    ...operation,
+    parameters: {
+      path: location(['id'], 'path'),
+      query: location(['tags', 'obj', 'absent', 'q'], 'query'),
+      header: location(['x-array', 'x-one', 'absent', 'x'], 'header'),
+      cookie: location(['token', 'absent', 'x'], 'cookie'),
+      ...operation.parameters,
+    },
+  };
+  if (declared.parameters?.querystring) delete declared.parameters.query;
   return createStrictClient({
     ...options,
     transport,
     metadata: {
       version: 1,
-      operations: { '/{id}': { get: operation, post: operation } },
+      complete: true,
+      operations: Object.fromEntries(
+        ['/', '/{id}', '/plain'].map((path) => [path, { get: declared, post: declared }]),
+      ),
     } as unknown as CompiledOpenAPIMetadata,
   }) as unknown as RuntimeNode;
 }
@@ -385,7 +424,7 @@ test('strict native multipart content and text variants', async () => {
   );
 });
 
-test('invalid partial metadata is rejected at the wire boundary', async () => {
+test('forged nested metadata is rejected at the wire boundary', async () => {
   for (const location of ['path', 'query', 'cookie'] as const) {
     for (const value of ['x', ['x'], { x: 1 }]) {
       const transport = vi.fn<Transport>(async () => response());
@@ -429,7 +468,24 @@ test('invalid partial metadata is rejected at the wire boundary', async () => {
 
 test('strict querystring extensions, suffix joining and binary responses', async () => {
   const transport = vi.fn<Transport>(async () => response());
-  const api = client(true, transport, {}, { baseUrl: 'https://api.test/?base=1#hash' });
+  const api = client(
+    true,
+    transport,
+    {
+      parameters: {
+        querystring: {
+          all: {
+            name: 'all',
+            in: 'querystring',
+            style: 'form',
+            explode: true,
+            contentType: 'application/custom',
+          },
+        },
+      },
+    },
+    { baseUrl: 'https://api.test/?base=1#hash' },
+  );
   for (const querystring of ['?q=x', new URLSearchParams('q=x')]) {
     await api.get({ querystring: { all: 'x' }, extensions: { querystring: () => querystring } });
     expect(transport.mock.lastCall![0].url).toBe('https://api.test/?base=1&q=x#hash');
