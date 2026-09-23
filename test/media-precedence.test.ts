@@ -5,7 +5,7 @@ import { createStrictClient } from '../src/strict.js';
 type Paths = {
   '/upload': {
     post: {
-      requestBody: { content: { 'multipart/form-data': { value: string } } };
+      requestBody: { content: { '*/*': { value: string } } };
       responses: { 204: { content: never } };
     };
   };
@@ -42,7 +42,12 @@ test.each(['multipart/form-data', 'Multipart/Form-Data; charset=utf-8', 'multipa
           return new Response(null, { status: 204 });
         },
       });
-      await api.upload.post({ contentType: 'multipart/form-data', body: { value: 'hello' } });
+      await api.upload.post({
+        contentType: specific.includes(';')
+          ? 'multipart/form-data; charset=utf-8'
+          : 'multipart/form-data',
+        body: { value: 'hello' },
+      });
     }
   },
 );

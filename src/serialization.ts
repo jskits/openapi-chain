@@ -1,3 +1,4 @@
+import { mediaRangeMatches, selectMediaDeclaration } from './media-range.js';
 import {
   isBlob,
   isFormData,
@@ -675,21 +676,8 @@ function findMediaMetadata(operation: OperationMetadata | undefined, contentType
   // Select the declaration before looking up optional serialization metadata.
   // An exact declaration with no extra rules must shadow a broader declaration.
   const declarations = [...new Set([...(body?.mediaTypes ?? []), ...Object.keys(media)])];
-  const normalized = normalizeMediaType(contentType);
-  const exact =
-    declarations.find((candidate) => candidate === contentType) ??
-    declarations.find((candidate) => normalizeMediaType(candidate) === normalized);
-  if (exact !== undefined) return media[exact];
-  const ranges = declarations
-    .filter((candidate) => mediaTypeRangeMatches(candidate, contentType))
-    .sort((a, b) => mediaTypeRangeSpecificity(b) - mediaTypeRangeSpecificity(a));
-  return ranges.length ? media[ranges[0]!] : undefined;
-}
-
-function mediaTypeRangeSpecificity(range: string): number {
-  const normalized = normalizeMediaType(range);
-  if (normalized === '*/*') return 0;
-  return normalized.endsWith('/*') ? 1 : 2;
+  const selected = selectMediaDeclaration(declarations, contentType);
+  return selected === undefined ? undefined : media[selected];
 }
 
 function isConcreteMediaType(contentType: string): boolean {
@@ -700,8 +688,8 @@ function requestBodyAcceptsMediaType(
   operation: OperationMetadata | undefined,
   contentType: string,
 ): boolean {
-  return (operation?.requestBody?.mediaTypes ?? []).some((candidate) =>
-    mediaTypeRangeMatches(candidate, contentType),
+  return (
+    selectMediaDeclaration(operation?.requestBody?.mediaTypes ?? [], contentType) !== undefined
   );
 }
 
@@ -834,14 +822,6 @@ function serializeUrlEncodedBody(
   return fragments.join('&');
 }
 
-function mediaTypeRangeMatches(range: string, actual: string): boolean {
-  const expected = normalizeMediaType(range);
-  const value = normalizeMediaType(actual);
-  if (expected === value || expected === '*/*') return true;
-  const slash = expected.indexOf('/');
-  return slash > 0 && expected.endsWith('/*') && value.startsWith(`${expected.slice(0, slash)}/`);
-}
-
 function selectMultipartContentType(contentTypes: string, value: unknown): string {
   const choices = contentTypes
     .split(',')
@@ -856,7 +836,7 @@ function selectMultipartContentType(contentTypes: string, value: unknown): strin
       !declared.includes(';') &&
       isBlob(value) &&
       /^[^/;\s*]+\/[^/;\s*]+$/.test(normalizeMediaType(value.type)) &&
-      mediaTypeRangeMatches(declared, value.type)
+      mediaRangeMatches(declared, value.type)
     )
       return value.type;
     throw new TypeError(

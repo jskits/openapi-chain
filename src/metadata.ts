@@ -1,3 +1,4 @@
+import { parseMediaRange } from './media-range.js';
 import { httpMethods } from './constant.js';
 import type {
   CompiledOpenAPIMetadata,
@@ -479,6 +480,7 @@ function compileMediaType(
   version: OasMinor,
   contentType: string,
 ): MediaTypeMetadata | undefined {
+  parseMediaRange(contentType);
   const mediaObject = asRecord(rawMedia, `Media Type Object for ${contentType}`);
   const normalizedContentType = normalizeMediaTypeForCompiler(contentType);
   const multipart = normalizedContentType.startsWith('multipart/');
