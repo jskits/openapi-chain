@@ -1,4 +1,5 @@
 /* oxlint-disable typescript/no-base-to-string -- Core scalar coercion intentionally follows String(); structured serialization uses typed extensions. */
+import { stringifyJson } from './json.js';
 import { safePath, safeUrl } from './path.js';
 import { mediaType, isJsonMediaType, validateTextCharset } from './media.js';
 import { httpMethods } from './constant.js';
@@ -88,7 +89,7 @@ function requestBody(
   if (serialize) serialized = serialize({ body, contentType });
   else {
     const media = mediaType(contentType);
-    if (isJsonMediaType(media)) serialized = JSON.stringify(body);
+    if (isJsonMediaType(media)) serialized = stringifyJson(body, `body (${contentType})`);
     else if (media.startsWith('text/') && typeof body !== 'object') serialized = String(body);
     else if (isNativeBody(body)) serialized = body;
     else throw new TypeError(`Need body extension: ${contentType}`);

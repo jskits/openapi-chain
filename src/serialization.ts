@@ -1,3 +1,4 @@
+import { stringifyJson } from './json.js';
 import { safePath } from './path.js';
 import { validateTextCharset } from './media.js';
 import { splitPath, type ProxyState } from './routes.js';
@@ -229,7 +230,7 @@ function serializeContentValue(
   const normalized = contentType.split(';', 1)[0]!.trim().toLowerCase();
   validateTextCharset(contentType);
   if (normalized === 'application/json' || normalized.endsWith('+json')) {
-    return JSON.stringify(value);
+    return stringifyJson(value, `${parameter.in} parameter ${parameter.name} (${contentType})`);
   }
   if (normalized.startsWith('text/')) {
     return primitive(value, `parameter ${parameter.name}`);
@@ -767,7 +768,7 @@ function formContentString(value: unknown, contentType: string, context: string)
   validateTextCharset(contentType);
   const normalized = normalizeMediaType(contentType);
   if (normalized === 'application/json' || normalized.endsWith('+json')) {
-    return JSON.stringify(value);
+    return stringifyJson(value, `${context} (${contentType})`);
   }
   if (normalized.startsWith('text/')) {
     return primitive(value, context);
@@ -935,7 +936,12 @@ function appendMultipartContentPart(
   }
   if (normalized === 'application/json' || normalized.endsWith('+json')) {
     validateTextCharset(contentType);
-    form.append(name, new Blob([JSON.stringify(value)], { type: contentType }));
+    form.append(
+      name,
+      new Blob([stringifyJson(value, `multipart field ${name} (${contentType})`)], {
+        type: contentType,
+      }),
+    );
     return;
   }
   if (normalized.startsWith('text/')) {
@@ -1097,7 +1103,7 @@ export function serializeBody(
   if (normalized === 'application/json' || normalized.endsWith('+json')) {
     validateTextCharset(contentType);
     headers.set('content-type', contentType);
-    return JSON.stringify(body);
+    return stringifyJson(body, `body (${contentType})`);
   }
   if (normalized.startsWith('text/')) {
     headers.set('content-type', contentType);
