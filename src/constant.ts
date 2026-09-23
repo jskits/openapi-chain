@@ -1,4 +1,4 @@
-export const httpMethods = [
+export const httpMethods = Object.freeze([
   'get',
   'put',
   'post',
@@ -8,4 +8,4 @@ export const httpMethods = [
   'patch',
   'trace',
   'query',
-] as const;
+] as const);
