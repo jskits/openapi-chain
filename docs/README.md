@@ -7,6 +7,7 @@
 | Read | When you need |
 | --- | --- |
 | [Getting started](getting-started.md) | Install, generate types and run an offline example |
+| [Query libraries and mocks](integrations.md) | Integrate TanStack Query, SWR and MSW with executable recipes |
 | [Official CLI](cli.md) | Generate synchronized types, scopes and metadata; check drift in CI |
 | [API reference](api.md) | Options, path calls, request bodies, errors, extensions and transport |
 | [Support and boundaries](support.md) | Decide whether a wire format, schema feature or platform is supported |
