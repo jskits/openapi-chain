@@ -1,3 +1,4 @@
+export { OpenAPIChainError, type OpenAPIChainErrorCode } from './errors.js';
 export { createClient } from './client.js';
 export { httpMethods } from './constant.js';
 export {

@@ -1,3 +1,4 @@
+import { OpenAPIChainError } from './errors.js';
 import { mediaRangeMatches, selectMediaDeclaration } from './media-range.js';
 import {
   isBlob,
@@ -124,7 +125,7 @@ function primitive(value: unknown, context: string): string {
   ) {
     return String(value);
   }
-  throw new TypeError(`${context} contains a nested/unsupported value.`);
+  throw new OpenAPIChainError('SERIALIZATION', `${context} contains a nested/unsupported value.`);
 }
 
 function encodedPrimitive(value: unknown, context: string, allowReserved = false): string {
@@ -157,7 +158,7 @@ function serializePathStyle(
         ? items.map((item) => `;${encodeValue(name)}=${item}`).join('')
         : `;${encodeValue(name)}=${items.join(',')}`;
     }
-    throw new TypeError(`Invalid path style ${style} for ${name}.`);
+    throw new OpenAPIChainError('SERIALIZATION', `Invalid path style ${style} for ${name}.`);
   }
 
   if (isPlainRecord(value)) {
@@ -179,14 +180,14 @@ function serializePathStyle(
         ? entries.map(([key, item]) => `;${key}=${item}`).join('')
         : `;${encodeValue(name)}=${entries.flatMap(([key, item]) => [key, item]).join(',')}`;
     }
-    throw new TypeError(`Invalid path style ${style} for ${name}.`);
+    throw new OpenAPIChainError('SERIALIZATION', `Invalid path style ${style} for ${name}.`);
   }
 
   const item = encodePrimitive(value);
   if (style === 'simple') return item;
   if (style === 'label') return `.${item}`;
   if (style === 'matrix') return `;${encodeValue(name)}=${item}`;
-  throw new TypeError(`Invalid path style ${style} for ${name}.`);
+  throw new OpenAPIChainError('SERIALIZATION', `Invalid path style ${style} for ${name}.`);
 }
 
 function defaultParameter(name: string, location: ParameterMetadata['in']): ParameterMetadata {
@@ -204,7 +205,7 @@ function serializeContentValue(
   custom: ParameterContentSerializer | undefined,
 ): string {
   const contentType = parameter.contentType;
-  if (!contentType) throw new TypeError('Missing parameter content type.');
+  if (!contentType) throw new OpenAPIChainError('SERIALIZATION', 'Missing parameter content type.');
   const normalized = contentType.split(';', 1)[0]!.trim().toLowerCase();
   validateTextCharset(contentType);
   if (normalized === 'application/json' || normalized.endsWith('+json')) {
@@ -214,7 +215,8 @@ function serializeContentValue(
     return primitive(value, `parameter ${parameter.name}`);
   }
   if (custom) return custom({ value, contentType, parameter });
-  throw new TypeError(
+  throw new OpenAPIChainError(
+    'SERIALIZATION',
     `Parameter ${parameter.name} uses ${contentType}; provide an operation-local location extension.`,
   );
 }
@@ -250,13 +252,14 @@ function serializeStyledPairs(
 ): Array<[string, string]> {
   if (style === 'deepObject') {
     if (!isPlainRecord(value)) {
-      throw new TypeError(`deepObject ${context} must be an object.`);
+      throw new OpenAPIChainError('SERIALIZATION', `deepObject ${context} must be an object.`);
     }
     return objectEntries(value, context).map(([key, item]) => [`${name}[${key}]`, item]);
   }
 
   if (style === 'spaceDelimited' || style === 'pipeDelimited') {
-    if (explode) throw new TypeError(`${style} ${context} requires explode=false.`);
+    if (explode)
+      throw new OpenAPIChainError('SERIALIZATION', `${style} ${context} requires explode=false.`);
     const delimiter = style === 'spaceDelimited' ? ' ' : '|';
     if (Array.isArray(value)) {
       return [[name, value.map((item) => primitive(item, context)).join(delimiter)]];
@@ -271,10 +274,11 @@ function serializeStyledPairs(
         ],
       ];
     }
-    throw new TypeError(`${style} ${context} must be an array or object.`);
+    throw new OpenAPIChainError('SERIALIZATION', `${style} ${context} must be an array or object.`);
   }
 
-  if (style !== 'form') throw new TypeError(`Invalid form/query style ${style}.`);
+  if (style !== 'form')
+    throw new OpenAPIChainError('SERIALIZATION', `Invalid form/query style ${style}.`);
   if (Array.isArray(value)) {
     const values = value.map((item) => primitive(item, context));
     return explode ? values.map((item) => [name, item]) : [[name, values.join(',')]];
@@ -314,7 +318,11 @@ function serializeQueryParameter(
     );
   }
   if (style === 'spaceDelimited' || style === 'pipeDelimited') {
-    if (explode) throw new TypeError(`${style} query parameter ${name} requires explode=false.`);
+    if (explode)
+      throw new OpenAPIChainError(
+        'SERIALIZATION',
+        `${style} query parameter ${name} requires explode=false.`,
+      );
     const delimiter = style === 'spaceDelimited' ? '%20' : '%7C';
     let items: string[];
     if (Array.isArray(value)) {
@@ -325,12 +333,15 @@ function serializeQueryParameter(
         encodeQueryComponent(item, allowReserved),
       ]);
     } else {
-      throw new TypeError(`${style} query parameter ${name} must be an array or object.`);
+      throw new OpenAPIChainError(
+        'SERIALIZATION',
+        `${style} query parameter ${name} must be an array or object.`,
+      );
     }
     return [`${encodeValue(metadata.name)}=${items.join(delimiter)}`];
   }
   if (style !== 'form') {
-    throw new TypeError(`Invalid query style ${style} for ${name}.`);
+    throw new OpenAPIChainError('SERIALIZATION', `Invalid query style ${style} for ${name}.`);
   }
 
   if (Array.isArray(value)) {
@@ -387,13 +398,17 @@ export function serializeQuerystring(
   const parameters = operation?.parameters?.querystring;
   const entries = parameters ? Object.values(parameters) : [];
   if (entries.length !== 1) {
-    throw new TypeError(
+    throw new OpenAPIChainError(
+      'SERIALIZATION',
       'querystring input requires compiled OpenAPI 3.2 metadata with exactly one in: querystring parameter.',
     );
   }
   const parameter = entries[0]!;
   if (!parameter.contentType) {
-    throw new TypeError(`querystring parameter ${parameter.name} is missing content metadata.`);
+    throw new OpenAPIChainError(
+      'SERIALIZATION',
+      `querystring parameter ${parameter.name} is missing content metadata.`,
+    );
   }
   const value = Object.prototype.hasOwnProperty.call(values, parameter.name)
     ? values[parameter.name]
@@ -406,7 +421,8 @@ export function serializeQuerystring(
       parameter.media?.requiresCustomSerializer &&
       parameter.media.customSerializerScope !== 'multipart'
     ) {
-      throw new TypeError(
+      throw new OpenAPIChainError(
+        'SERIALIZATION',
         `${parameter.media.requiresCustomSerializer} Use the operation querystring extension to serialize the whole query string.`,
       );
     }
@@ -467,7 +483,10 @@ function cookieParts(
   const context = `cookie parameter ${name}`;
   if (metadata.style === 'cookie') {
     if (!metadata.explode) {
-      throw new TypeError(`OAS 3.2 cookie style parameter ${name} requires explode=true.`);
+      throw new OpenAPIChainError(
+        'SERIALIZATION',
+        `OAS 3.2 cookie style parameter ${name} requires explode=true.`,
+      );
     }
     if (Array.isArray(value)) {
       return value.map((item) => `${metadata.name}=${primitive(item, context)}`);
@@ -479,11 +498,15 @@ function cookieParts(
   }
 
   if (metadata.style !== 'form') {
-    throw new TypeError(`Invalid cookie style ${metadata.style} for ${name}.`);
+    throw new OpenAPIChainError(
+      'SERIALIZATION',
+      `Invalid cookie style ${metadata.style} for ${name}.`,
+    );
   }
 
   if (Array.isArray(value) || isPlainRecord(value)) {
-    throw new TypeError(
+    throw new OpenAPIChainError(
+      'SERIALIZATION',
       `Cookie style form cannot faithfully represent compound parameter ${name} in a Cookie header. ` +
         'Use OpenAPI 3.2 style: cookie, Parameter content, or an operation cookie extension.',
     );
@@ -509,7 +532,7 @@ function validateParameterLocation(
 ): void {
   if (!completeMetadata) return;
   if (values !== undefined && !isPlainRecord(values))
-    throw new TypeError(`Request ${location} input must be an object.`);
+    throw new OpenAPIChainError('SERIALIZATION', `Request ${location} input must be an object.`);
   const declared = operation?.parameters?.[location] ?? {};
   const supplied = values ?? {};
   const declaredEntries = Object.values(declared);
@@ -519,7 +542,8 @@ function validateParameterLocation(
       !declaredEntries.some((parameter) => parameterNameEquals(location, name, parameter.name)),
   );
   if (extras.length) {
-    throw new TypeError(
+    throw new OpenAPIChainError(
+      'SERIALIZATION',
       `Compiled OpenAPI metadata does not declare ${location} parameter(s): ${extras.join(', ')}.`,
     );
   }
@@ -535,7 +559,8 @@ function validateParameterLocation(
     )
     .map((parameter) => parameter.name);
   if (missing.length) {
-    throw new TypeError(
+    throw new OpenAPIChainError(
+      'SERIALIZATION',
       `Missing required OpenAPI ${location} parameter(s): ${missing.join(', ')}.`,
     );
   }
@@ -547,20 +572,27 @@ export function validateRuntimeInput(
   completeMetadata: boolean,
 ): void {
   if (input !== undefined && !isPlainRecord(input))
-    throw new TypeError('Request input must be an object.');
+    throw new OpenAPIChainError('SERIALIZATION', 'Request input must be an object.');
   if (input?.query !== undefined && input?.querystring !== undefined)
-    throw new TypeError('OpenAPI query and querystring parameters cannot be used together.');
+    throw new OpenAPIChainError(
+      'SERIALIZATION',
+      'OpenAPI query and querystring parameters cannot be used together.',
+    );
   if (input?.body !== undefined && completeMetadata && !operation?.requestBody)
-    throw new TypeError(
+    throw new OpenAPIChainError(
+      'SERIALIZATION',
       'Compiled OpenAPI metadata does not declare a request body for this operation.',
     );
   if (input?.body !== undefined && input.contentType !== undefined)
     validateRequestContentType(input.contentType, operation, completeMetadata);
   if (input?.body === undefined && input?.contentType !== undefined) {
-    throw new TypeError('Request contentType cannot be provided without a request body.');
+    throw new OpenAPIChainError(
+      'SERIALIZATION',
+      'Request contentType cannot be provided without a request body.',
+    );
   }
   if (completeMetadata && operation?.requestBody?.required && input?.body === undefined) {
-    throw new TypeError('Missing required OpenAPI request body.');
+    throw new OpenAPIChainError('SERIALIZATION', 'Missing required OpenAPI request body.');
   }
   validateParameterLocation('query', input?.query, operation, completeMetadata);
   validateParameterLocation('querystring', input?.querystring, operation, completeMetadata);
@@ -594,14 +626,18 @@ export function buildTemplatePath(
   const names = [...template.matchAll(/\{([^{}]+)\}/g)].map((match) => match[1]!);
   if (!names.length) {
     if (params && Object.keys(params).length) {
-      throw new TypeError(`Path ${template} does not accept path parameters.`);
+      throw new OpenAPIChainError(
+        'SERIALIZATION',
+        `Path ${template} does not accept path parameters.`,
+      );
     }
     return template;
   }
   if (params) {
     const extras = Object.keys(params).filter((name) => !names.includes(name));
     if (extras.length) {
-      throw new TypeError(
+      throw new OpenAPIChainError(
+        'SERIALIZATION',
         `Path ${template} received unexpected parameter(s): ${extras.join(', ')}.`,
       );
     }
@@ -609,7 +645,7 @@ export function buildTemplatePath(
   let index = 0;
   return template.replace(/\{([^{}]+)\}/g, (_match, name: string) => {
     if (!params || !Object.hasOwn(params, name)) {
-      throw new TypeError(`Missing path parameter: ${name}`);
+      throw new OpenAPIChainError('SERIALIZATION', `Missing path parameter: ${name}`);
     }
     return customPath
       ? safePath(customPath(params[name], { index: index++ }), true)
@@ -638,7 +674,7 @@ export function buildChainPath(
       if (!match) return segment;
       const name = match[1]!;
       if (!actual || actual.kind !== 'dynamic') {
-        throw new TypeError(`Missing dynamic path value for ${name}.`);
+        throw new OpenAPIChainError('SERIALIZATION', `Missing dynamic path value for ${name}.`);
       }
       return customPath
         ? safePath(customPath(actual.value, { index: dynamicIndex++ }), true)
@@ -717,7 +753,8 @@ function formContentString(value: unknown, contentType: string, context: string)
   if (normalized === 'application/octet-stream' && typeof value === 'string') {
     return value;
   }
-  throw new TypeError(
+  throw new OpenAPIChainError(
+    'SERIALIZATION',
     `${context} uses ${contentType}; provide an operation body extension to serialize the whole request body.`,
   );
 }
@@ -736,14 +773,22 @@ function serializeFormStyleFragments(
   const encode = (item: unknown) => encodeQueryComponent(item, allowReserved);
 
   if (style === 'deepObject') {
-    if (!explode) throw new TypeError(`deepObject form field ${name} requires explode=true.`);
+    if (!explode)
+      throw new OpenAPIChainError(
+        'SERIALIZATION',
+        `deepObject form field ${name} requires explode=true.`,
+      );
     return serializeStyledPairs(name, value, style, explode, context).map(
       ([partName, partValue]) => `${encodeQueryComponent(partName)}=${encode(partValue)}`,
     );
   }
 
   if (style === 'spaceDelimited' || style === 'pipeDelimited') {
-    if (explode) throw new TypeError(`${style} form field ${name} requires explode=false.`);
+    if (explode)
+      throw new OpenAPIChainError(
+        'SERIALIZATION',
+        `${style} form field ${name} requires explode=false.`,
+      );
     const delimiter = style === 'spaceDelimited' ? '%20' : '%7C';
     let items: string[];
     if (Array.isArray(value)) {
@@ -751,13 +796,19 @@ function serializeFormStyleFragments(
     } else if (isPlainRecord(value)) {
       items = objectEntries(value, context).flatMap(([key, item]) => [encode(key), encode(item)]);
     } else {
-      throw new TypeError(`${style} form field ${name} must be an array or object.`);
+      throw new OpenAPIChainError(
+        'SERIALIZATION',
+        `${style} form field ${name} must be an array or object.`,
+      );
     }
     return [`${encodeQueryComponent(name)}=${items.join(delimiter)}`];
   }
 
   if (style !== 'form') {
-    throw new TypeError(`Invalid form encoding style ${style} for ${name}.`);
+    throw new OpenAPIChainError(
+      'SERIALIZATION',
+      `Invalid form encoding style ${style} for ${name}.`,
+    );
   }
   if (Array.isArray(value)) {
     const items = value.map((item) => encode(primitive(item, context)));
@@ -789,7 +840,10 @@ function serializeUrlEncodedBody(
   validateTextCharset(contentType);
   if (isUrlSearchParams(body)) return body.toString();
   if (!isPlainRecord(body)) {
-    throw new TypeError(`${contentType} request body must be an object or URLSearchParams.`);
+    throw new OpenAPIChainError(
+      'SERIALIZATION',
+      `${contentType} request body must be an object or URLSearchParams.`,
+    );
   }
 
   const media = mediaOverride ?? findMediaMetadata(operation, contentType);
@@ -839,11 +893,13 @@ function selectMultipartContentType(contentTypes: string, value: unknown): strin
       mediaRangeMatches(declared, value.type)
     )
       return value.type;
-    throw new TypeError(
+    throw new OpenAPIChainError(
+      'SERIALIZATION',
       `Multipart media range ${declared} needs a matching concrete Blob/File type or an operation body extension.`,
     );
   }
-  throw new TypeError(
+  throw new OpenAPIChainError(
+    'SERIALIZATION',
     `Multipart part declares multiple content types (${contentTypes}); ` +
       'provide an operation body extension to choose the intended media type explicitly.',
   );
@@ -885,7 +941,8 @@ function appendMultipartContentPart(
     return;
   }
 
-  throw new TypeError(
+  throw new OpenAPIChainError(
+    'SERIALIZATION',
     `Multipart field ${name} uses ${contentType}; provide an operation body extension to serialize the whole request body.`,
   );
 }
@@ -899,10 +956,16 @@ function appendMultipartStyleParts(
   const style = encoding.style ?? 'form';
   const explode = encoding.explode ?? style === 'form';
   if (style === 'deepObject' && !explode) {
-    throw new TypeError(`deepObject multipart field ${name} requires explode=true.`);
+    throw new OpenAPIChainError(
+      'SERIALIZATION',
+      `deepObject multipart field ${name} requires explode=true.`,
+    );
   }
   if ((style === 'spaceDelimited' || style === 'pipeDelimited') && explode) {
-    throw new TypeError(`${style} multipart field ${name} requires explode=false.`);
+    throw new OpenAPIChainError(
+      'SERIALIZATION',
+      `${style} multipart field ${name} requires explode=false.`,
+    );
   }
   for (const [partName, partValue] of serializeStyledPairs(
     name,
@@ -924,7 +987,10 @@ function serializeMultipartBody(
 ): FormData {
   if (isFormData(body)) return body;
   if (!isPlainRecord(body)) {
-    throw new TypeError(`${contentType} request body must be an object or FormData.`);
+    throw new OpenAPIChainError(
+      'SERIALIZATION',
+      `${contentType} request body must be an object or FormData.`,
+    );
   }
   const media = findMediaMetadata(operation, contentType);
   const form = new FormData();
@@ -933,7 +999,8 @@ function serializeMultipartBody(
     if (value === undefined) continue;
     const encoding = media?.encoding?.[name];
     if (encoding?.hasHeaders) {
-      throw new TypeError(
+      throw new OpenAPIChainError(
+        'SERIALIZATION',
         `Multipart encoding.headers for ${name} cannot be represented by native FormData. ` +
           'Use an operation body extension or a custom transport.',
       );
@@ -964,12 +1031,14 @@ function validateRequestContentType(
   completeMetadata: boolean,
 ) {
   if (typeof contentType !== 'string' || !isConcreteMediaType(contentType)) {
-    throw new TypeError(
+    throw new OpenAPIChainError(
+      'SERIALIZATION',
       `Request body content type ${contentType} is a media range; provide a concrete media type.`,
     );
   }
   if (completeMetadata && !requestBodyAcceptsMediaType(operation, contentType)) {
-    throw new TypeError(
+    throw new OpenAPIChainError(
+      'SERIALIZATION',
       `Request body content type ${contentType} is not declared by the compiled OpenAPI operation.`,
     );
   }
@@ -987,7 +1056,8 @@ export function serializeBody(
 
   let contentType = requestedContentType ?? headers.get('content-type') ?? undefined;
   if (completeMetadata && !operation?.requestBody) {
-    throw new TypeError(
+    throw new OpenAPIChainError(
+      'SERIALIZATION',
       'Compiled OpenAPI metadata does not declare a request body for this operation.',
     );
   }
@@ -1003,7 +1073,8 @@ export function serializeBody(
   if (!contentType && isFormData(body)) contentType = 'multipart/form-data';
   if (!contentType && isBlob(body) && body.type) contentType = body.type;
   if (!contentType) {
-    throw new TypeError(
+    throw new OpenAPIChainError(
+      'SERIALIZATION',
       'Request body contentType is required without compiled single-concrete-media OpenAPI metadata.',
     );
   }
@@ -1024,7 +1095,7 @@ export function serializeBody(
       (media.customSerializerScope === 'form' &&
         normalized === 'application/x-www-form-urlencoded'))
   ) {
-    throw new TypeError(media.requiresCustomSerializer);
+    throw new OpenAPIChainError('SERIALIZATION', media.requiresCustomSerializer);
   }
   if (normalized === 'multipart/form-data') {
     headers.delete('content-type');
@@ -1047,16 +1118,25 @@ export function serializeBody(
     if (typeof body === 'number' || typeof body === 'boolean' || typeof body === 'bigint') {
       return String(body);
     }
-    throw new TypeError(`Structured ${contentType} body requires an operation body extension.`);
+    throw new OpenAPIChainError(
+      'SERIALIZATION',
+      `Structured ${contentType} body requires an operation body extension.`,
+    );
   }
 
   if (isNativeBody(body)) {
     if (typeof body === 'string' || isUrlSearchParams(body)) validateTextCharset(contentType);
     if (isFormData(body)) {
-      throw new TypeError(`FormData cannot be sent as ${contentType}; use multipart/form-data.`);
+      throw new OpenAPIChainError(
+        'SERIALIZATION',
+        `FormData cannot be sent as ${contentType}; use multipart/form-data.`,
+      );
     }
     headers.set('content-type', contentType);
     return body;
   }
-  throw new TypeError(`Structured ${contentType} body requires an operation body extension.`);
+  throw new OpenAPIChainError(
+    'SERIALIZATION',
+    `Structured ${contentType} body requires an operation body extension.`,
+  );
 }

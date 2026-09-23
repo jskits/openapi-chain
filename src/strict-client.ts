@@ -1,3 +1,4 @@
+import { operationError } from './errors.js';
 import { responseExtensionData } from './response-contract.js';
 import {
   joinUrl,
@@ -102,100 +103,109 @@ async function execute(
   method: HttpMethod,
   input: RequestInput | undefined,
 ): Promise<unknown> {
-  const extensions = input?.extensions as RuntimeOperationExtensions | undefined;
-  const resolved = runtime.resolveOperation(state, method);
-  const operation = resolved.metadata;
-  const completeMetadata = runtime.options.metadata?.complete === true;
-  validateRuntimeInput(input, operation, completeMetadata);
-  const path =
+  let pathTemplate =
     state.kind === 'template'
-      ? buildTemplatePath(state.template, state.params, operation, undefined, extensions?.path)
-      : buildChainPath(state, resolved.template, operation, undefined, extensions?.path);
+      ? state.template
+      : `/${state.segments.map((segment) => (segment.kind === 'static' ? segment.value : '{}')).join('/')}`;
+  try {
+    const extensions = input?.extensions as RuntimeOperationExtensions | undefined;
+    const resolved = runtime.resolveOperation(state, method);
+    pathTemplate = resolved.template ?? pathTemplate;
+    const operation = resolved.metadata;
+    const completeMetadata = runtime.options.metadata?.complete === true;
+    validateRuntimeInput(input, operation, completeMetadata);
+    const path =
+      state.kind === 'template'
+        ? buildTemplatePath(state.template, state.params, operation, undefined, extensions?.path)
+        : buildChainPath(state, resolved.template, operation, undefined, extensions?.path);
 
-  let url = safeUrl(runtime.options.baseUrl, joinUrl(runtime.options.baseUrl, safePath(path)));
+    let url = safeUrl(runtime.options.baseUrl, joinUrl(runtime.options.baseUrl, safePath(path)));
 
-  const headers = await resolveHeaders(runtime.options.headers);
-  if (input?.header && extensions?.header) {
-    new Headers(extensions.header(input.header)).forEach((value, key) => headers.set(key, value));
-  } else {
-    appendParameterHeaders(headers, input?.header, operation, undefined);
-  }
-  if (input?.init?.headers) {
-    const extra = new Headers(input.init.headers);
-    extra.forEach((value, key) => headers.set(key, value));
-  }
-  if (input?.cookie && extensions?.cookie) {
-    headers.set('cookie', extensions.cookie(input.cookie));
-  } else {
-    appendCookieHeader(headers, input?.cookie, operation, undefined);
-  }
-
-  const localBodySerializer: RequestBodySerializer | undefined = extensions?.body
-    ? ({ body, contentType }) => extensions.body!({ body, contentType })
-    : undefined;
-  const body = serializeBody(
-    input?.body,
-    input?.contentType,
-    headers,
-    operation,
-    completeMetadata,
-    localBodySerializer,
-  );
-
-  if (input?.querystring && (extensions?.querystring || Object.keys(input.querystring).length)) {
-    if (extensions?.querystring) {
-      const custom = extensions.querystring(input.querystring);
-      url = appendRawQuery(
-        url,
-        typeof custom === 'string' ? custom.replace(/^\?/, '') : custom.toString(),
-      );
+    const headers = await resolveHeaders(runtime.options.headers);
+    if (input?.header && extensions?.header) {
+      new Headers(extensions.header(input.header)).forEach((value, key) => headers.set(key, value));
     } else {
-      url = appendRawQuery(url, serializeQuerystring(input.querystring, operation, undefined));
+      appendParameterHeaders(headers, input?.header, operation, undefined);
     }
-  } else if (input?.query) {
-    const localQuery = extensions?.query;
-    if (localQuery) {
-      const custom = localQuery(input.query);
-      const raw = typeof custom === 'string' ? custom.replace(/^\?/, '') : custom.toString();
-      url = appendRawQuery(url, raw);
+    if (input?.init?.headers) {
+      const extra = new Headers(input.init.headers);
+      extra.forEach((value, key) => headers.set(key, value));
+    }
+    if (input?.cookie && extensions?.cookie) {
+      headers.set('cookie', extensions.cookie(input.cookie));
     } else {
-      url = appendRawQuery(url, serializeQuery(input.query, operation, undefined));
+      appendCookieHeader(headers, input?.cookie, operation, undefined);
     }
-  }
 
-  let request: TransportRequest = {
-    url,
-    method,
-    init: {
-      ...input?.init,
-      method: method.toUpperCase(),
+    const localBodySerializer: RequestBodySerializer | undefined = extensions?.body
+      ? ({ body, contentType }) => extensions.body!({ body, contentType })
+      : undefined;
+    const body = serializeBody(
+      input?.body,
+      input?.contentType,
       headers,
-      body: body ?? null,
-    },
-  };
-  if (extensions?.request) request = await extensions.request(request, input ?? {});
-
-  const response = await runtime.transport(request);
-  if (response.status === 0) throw new TypeError('Response status 0');
-  let data: unknown;
-  if (extensions?.response) {
-    data = responseExtensionData(await extensions.response(response), response.status);
-  } else {
-    data = await defaultResponseParser(response);
-  }
-  const ok = response.status >= 200 && response.status < 300;
-
-  if (runtime.options.throwOnError === false) {
-    return { ok, status: response.status, data, response };
-  }
-  if (!ok) {
-    throw new HttpError(
-      `HTTP ${response.status}${response.statusText ? ` ${response.statusText}` : ''}`,
-      response,
-      data,
+      operation,
+      completeMetadata,
+      localBodySerializer,
     );
+
+    if (input?.querystring && (extensions?.querystring || Object.keys(input.querystring).length)) {
+      if (extensions?.querystring) {
+        const custom = extensions.querystring(input.querystring);
+        url = appendRawQuery(
+          url,
+          typeof custom === 'string' ? custom.replace(/^\?/, '') : custom.toString(),
+        );
+      } else {
+        url = appendRawQuery(url, serializeQuerystring(input.querystring, operation, undefined));
+      }
+    } else if (input?.query) {
+      const localQuery = extensions?.query;
+      if (localQuery) {
+        const custom = localQuery(input.query);
+        const raw = typeof custom === 'string' ? custom.replace(/^\?/, '') : custom.toString();
+        url = appendRawQuery(url, raw);
+      } else {
+        url = appendRawQuery(url, serializeQuery(input.query, operation, undefined));
+      }
+    }
+
+    let request: TransportRequest = {
+      url,
+      method,
+      init: {
+        ...input?.init,
+        method: method.toUpperCase(),
+        headers,
+        body: body ?? null,
+      },
+    };
+    if (extensions?.request) request = await extensions.request(request, input ?? {});
+
+    const response = await runtime.transport(request);
+    if (response.status === 0) throw new TypeError('Response status 0');
+    let data: unknown;
+    if (extensions?.response) {
+      data = responseExtensionData(await extensions.response(response), response.status);
+    } else {
+      data = await defaultResponseParser(response);
+    }
+    const ok = response.status >= 200 && response.status < 300;
+
+    if (runtime.options.throwOnError === false) {
+      return { ok, status: response.status, data, response };
+    }
+    if (!ok) {
+      throw new HttpError(
+        `HTTP ${response.status}${response.statusText ? ` ${response.statusText}` : ''}`,
+        response,
+        data,
+      );
+    }
+    return data;
+  } catch (error) {
+    throw operationError(error, method, pathTemplate);
   }
-  return data;
 }
 
 function createProxy(runtime: Runtime, state: ProxyState): unknown {

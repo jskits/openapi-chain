@@ -1,3 +1,5 @@
+export { OpenAPIChainError, type OpenAPIChainErrorCode } from './errors.js';
+import { OpenAPIChainError } from './errors.js';
 import { parseMediaRange } from './media-range.js';
 import { httpMethods } from './constant.js';
 import type {
@@ -25,7 +27,8 @@ type CompilationContext = {
 };
 
 function spendWork(root: CompilationContext): void {
-  if (++root.work > 1_000_000) throw new TypeError('OpenAPI compilation work budget exceeded.');
+  if (++root.work > 1_000_000)
+    throw new OpenAPIChainError('METADATA_COMPILE', 'OpenAPI compilation work budget exceeded.');
 }
 
 function dictionary<T>(): Record<string, T> {
@@ -45,17 +48,22 @@ function isRecord(value: unknown): value is AnyRecord {
 }
 
 function asRecord(value: unknown, context: string): AnyRecord {
-  if (!isRecord(value)) throw new TypeError(`${context} must be an object.`);
+  if (!isRecord(value))
+    throw new OpenAPIChainError('METADATA_COMPILE', `${context} must be an object.`);
   return value;
 }
 
 function openapiMinor(root: AnyRecord): OasMinor {
   if (typeof root.openapi !== 'string') {
-    throw new TypeError('OpenAPI document.openapi must be a version string.');
+    throw new OpenAPIChainError(
+      'METADATA_COMPILE',
+      'OpenAPI document.openapi must be a version string.',
+    );
   }
   const match = /^3\.(0|1|2)\.(?:0|[1-9]\d*)$/.exec(root.openapi);
   if (!match) {
-    throw new TypeError(
+    throw new OpenAPIChainError(
+      'METADATA_COMPILE',
       `compileOpenAPIMetadata() supports OpenAPI 3.0, 3.1, and 3.2; received ${root.openapi}.`,
     );
   }
@@ -68,7 +76,8 @@ function decodePointerToken(token: string): string {
 
 function resolvePointer(root: CompilationContext, ref: string): unknown {
   if (!ref.startsWith('#')) {
-    throw new TypeError(
+    throw new OpenAPIChainError(
+      'METADATA_COMPILE',
       `External OpenAPI $ref is not supported by compileOpenAPIMetadata(): ${ref}. ` +
         'Bundle or dereference the document first.',
     );
@@ -78,22 +87,31 @@ function resolvePointer(root: CompilationContext, ref: string): unknown {
     // URI fragments are decoded before JSON Pointer tokenization/unescaping.
     pointer = decodeURIComponent(ref.slice(1));
   } catch {
-    throw new TypeError(`Invalid URI encoding in OpenAPI $ref: ${ref}`);
+    throw new OpenAPIChainError('METADATA_COMPILE', `Invalid URI encoding in OpenAPI $ref: ${ref}`);
   }
   if (pointer === '') return root.document;
   if (!pointer.startsWith('/')) {
-    throw new TypeError(`Unsupported local OpenAPI $ref (expected JSON Pointer): ${ref}`);
+    throw new OpenAPIChainError(
+      'METADATA_COMPILE',
+      `Unsupported local OpenAPI $ref (expected JSON Pointer): ${ref}`,
+    );
   }
   if (/~(?:[^01]|$)/.test(pointer)) {
-    throw new TypeError(`Invalid JSON Pointer escape in OpenAPI $ref: ${ref}`);
+    throw new OpenAPIChainError(
+      'METADATA_COMPILE',
+      `Invalid JSON Pointer escape in OpenAPI $ref: ${ref}`,
+    );
   }
   let value: unknown = root.document;
   for (const token of pointer.slice(1).split('/').map(decodePointerToken)) {
     if (Array.isArray(value) && !/^(?:0|[1-9][0-9]*)$/.test(token)) {
-      throw new TypeError(`Invalid JSON Pointer array index in OpenAPI $ref: ${ref}`);
+      throw new OpenAPIChainError(
+        'METADATA_COMPILE',
+        `Invalid JSON Pointer array index in OpenAPI $ref: ${ref}`,
+      );
     }
     if (typeof value !== 'object' || value === null || !Object.hasOwn(value, token)) {
-      throw new TypeError(`Unresolvable OpenAPI $ref: ${ref}`);
+      throw new OpenAPIChainError('METADATA_COMPILE', `Unresolvable OpenAPI $ref: ${ref}`);
     }
     value = (value as AnyRecord)[token];
   }
@@ -109,8 +127,10 @@ function dereference(
   spendWork(root);
   if (!isRecord(value) || typeof value.$ref !== 'string') return value;
   const ref = value.$ref;
-  if (seen.has(ref)) throw new TypeError(`Circular OpenAPI $ref: ${ref}`);
-  if (seen.size >= 128) throw new TypeError('OpenAPI reference depth exceeds 128.');
+  if (seen.has(ref))
+    throw new OpenAPIChainError('METADATA_COMPILE', `Circular OpenAPI $ref: ${ref}`);
+  if (seen.size >= 128)
+    throw new OpenAPIChainError('METADATA_COMPILE', 'OpenAPI reference depth exceeds 128.');
   seen.add(ref);
   const target = dereference(resolvePointer(root, ref), root, context, seen);
   seen.delete(ref);
@@ -123,7 +143,10 @@ function dereference(
   if (!isRecord(target)) return target;
   const overlap = Object.keys(siblings).find((key) => Object.hasOwn(target, key));
   if (overlap !== undefined) {
-    throw new TypeError(`Ambiguous Path Item $ref sibling field: ${overlap}.`);
+    throw new OpenAPIChainError(
+      'METADATA_COMPILE',
+      `Ambiguous Path Item $ref sibling field: ${overlap}.`,
+    );
   }
   return { ...target, ...siblings };
 }
@@ -144,7 +167,11 @@ function allowedStyles(
   return BASE_STYLES[location];
 }
 
-class SchemaInferenceError extends TypeError {}
+class SchemaInferenceError extends OpenAPIChainError {
+  constructor(message: string) {
+    super('METADATA_COMPILE', message);
+  }
+}
 
 // Track traversal across schema applicators, not only adjacent $ref chains.
 function visitSchema<T>(
@@ -283,7 +310,8 @@ function inferContentType(
           .filter((value) => value !== undefined),
       );
       if (types.size > 1) {
-        throw new TypeError(
+        throw new OpenAPIChainError(
+          'METADATA_COMPILE',
           'Conflicting allOf serialization content types; provide an explicit schema type.',
         );
       }
@@ -386,7 +414,10 @@ function compileEncoding(
       'contentType' in encoding &&
       typeof encoding.contentType !== 'string'
     ) {
-      throw new TypeError(`encoding.contentType for ${name} must be a string.`);
+      throw new OpenAPIChainError(
+        'METADATA_COMPILE',
+        `encoding.contentType for ${name} must be a string.`,
+      );
     }
     if (!metadata.styleBased && typeof encoding.contentType === 'string') {
       metadata.contentType = encoding.contentType;
@@ -404,23 +435,35 @@ function compileEncoding(
     }
 
     if ('style' in encoding && typeof encoding.style !== 'string') {
-      throw new TypeError(`encoding.style for ${name} must be a string.`);
+      throw new OpenAPIChainError(
+        'METADATA_COMPILE',
+        `encoding.style for ${name} must be a string.`,
+      );
     }
     if (typeof encoding.style === 'string') {
       const style = encoding.style as ParameterStyle;
       if (!['form', 'spaceDelimited', 'pipeDelimited', 'deepObject'].includes(style)) {
-        throw new TypeError(`Unsupported encoding style ${encoding.style} for ${name}.`);
+        throw new OpenAPIChainError(
+          'METADATA_COMPILE',
+          `Unsupported encoding style ${encoding.style} for ${name}.`,
+        );
       }
       metadata.style = style;
     }
 
     if ('explode' in encoding && typeof encoding.explode !== 'boolean') {
-      throw new TypeError(`encoding.explode for ${name} must be boolean.`);
+      throw new OpenAPIChainError(
+        'METADATA_COMPILE',
+        `encoding.explode for ${name} must be boolean.`,
+      );
     }
     if (typeof encoding.explode === 'boolean') metadata.explode = encoding.explode;
 
     if ('allowReserved' in encoding && typeof encoding.allowReserved !== 'boolean') {
-      throw new TypeError(`encoding.allowReserved for ${name} must be boolean.`);
+      throw new OpenAPIChainError(
+        'METADATA_COMPILE',
+        `encoding.allowReserved for ${name} must be boolean.`,
+      );
     }
     if (typeof encoding.allowReserved === 'boolean')
       metadata.allowReserved = encoding.allowReserved;
@@ -428,13 +471,19 @@ function compileEncoding(
     const effectiveStyle = metadata.style ?? 'form';
     const effectiveExplode = metadata.explode ?? effectiveStyle === 'form';
     if (effectiveStyle === 'deepObject' && effectiveExplode === false) {
-      throw new TypeError(`deepObject encoding ${name} requires explode=true.`);
+      throw new OpenAPIChainError(
+        'METADATA_COMPILE',
+        `deepObject encoding ${name} requires explode=true.`,
+      );
     }
     if (
       (effectiveStyle === 'spaceDelimited' || effectiveStyle === 'pipeDelimited') &&
       effectiveExplode
     ) {
-      throw new TypeError(`${effectiveStyle} encoding ${name} requires explode=false.`);
+      throw new OpenAPIChainError(
+        'METADATA_COMPILE',
+        `${effectiveStyle} encoding ${name} requires explode=false.`,
+      );
     }
 
     if ('headers' in encoding) asRecord(encoding.headers, `encoding.headers for ${name}`);
@@ -480,7 +529,13 @@ function compileMediaType(
   version: OasMinor,
   contentType: string,
 ): MediaTypeMetadata | undefined {
-  parseMediaRange(contentType);
+  try {
+    parseMediaRange(contentType);
+  } catch (cause) {
+    throw new OpenAPIChainError('METADATA_COMPILE', `Invalid media declaration: ${contentType}`, {
+      cause,
+    });
+  }
   const mediaObject = asRecord(rawMedia, `Media Type Object for ${contentType}`);
   const normalizedContentType = normalizeMediaTypeForCompiler(contentType);
   const multipart = normalizedContentType.startsWith('multipart/');
@@ -552,7 +607,10 @@ function compileMediaType(
   if (compiledEncoding.encoding && Object.keys(properties.schemas).length) {
     for (const name of Object.keys(compiledEncoding.encoding)) {
       if (!Object.hasOwn(properties.schemas, name)) {
-        throw new TypeError(`Encoding key ${name} is not a request-body schema property.`);
+        throw new OpenAPIChainError(
+          'METADATA_COMPILE',
+          `Encoding key ${name} is not a request-body schema property.`,
+        );
       }
     }
   }
@@ -586,23 +644,35 @@ function compileParameter(
 ): ParameterMetadata {
   const value = asRecord(dereference(rawValue, root), 'OpenAPI parameter');
   if ('required' in value && typeof value.required !== 'boolean')
-    throw new TypeError('OpenAPI parameter.required must be boolean.');
+    throw new OpenAPIChainError('METADATA_COMPILE', 'OpenAPI parameter.required must be boolean.');
   const name = value.name;
   const location = value.in;
   if (typeof name !== 'string' || !name) {
-    throw new TypeError('OpenAPI parameter.name must be a non-empty string.');
+    throw new OpenAPIChainError(
+      'METADATA_COMPILE',
+      'OpenAPI parameter.name must be a non-empty string.',
+    );
   }
   if (!['path', 'query', 'querystring', 'header', 'cookie'].includes(String(location))) {
-    throw new TypeError(`Unsupported OpenAPI parameter location for ${name}.`);
+    throw new OpenAPIChainError(
+      'METADATA_COMPILE',
+      `Unsupported OpenAPI parameter location for ${name}.`,
+    );
   }
   if (location === 'querystring' && version !== '3.2') {
-    throw new TypeError(`in: querystring requires OpenAPI 3.2 (${name}).`);
+    throw new OpenAPIChainError(
+      'METADATA_COMPILE',
+      `in: querystring requires OpenAPI 3.2 (${name}).`,
+    );
   }
 
   const hasSchema = 'schema' in value;
   const hasContent = 'content' in value;
   if (hasSchema === hasContent) {
-    throw new TypeError(`Parameter ${name} must define exactly one of schema or content.`);
+    throw new OpenAPIChainError(
+      'METADATA_COMPILE',
+      `Parameter ${name} must define exactly one of schema or content.`,
+    );
   }
 
   let contentType: string | undefined;
@@ -611,17 +681,27 @@ function compileParameter(
     const contentRecord = asRecord(value.content, `content for parameter ${name}`);
     const mediaTypes = Object.keys(contentRecord);
     if (mediaTypes.length !== 1) {
-      throw new TypeError(`Parameter ${name} content must contain exactly one media type.`);
+      throw new OpenAPIChainError(
+        'METADATA_COMPILE',
+        `Parameter ${name} content must contain exactly one media type.`,
+      );
     }
     contentType = mediaTypes[0]!;
     media = compileMediaType(contentRecord[contentType], root, version, contentType);
   }
 
   if (location === 'querystring') {
-    if (!contentType) throw new TypeError(`querystring parameter ${name} requires content.`);
+    if (!contentType)
+      throw new OpenAPIChainError(
+        'METADATA_COMPILE',
+        `querystring parameter ${name} requires content.`,
+      );
     for (const keyword of ['style', 'explode', 'allowReserved'] as const) {
       if (keyword in value) {
-        throw new TypeError(`querystring parameter ${name} cannot use ${keyword}.`);
+        throw new OpenAPIChainError(
+          'METADATA_COMPILE',
+          `querystring parameter ${name} cannot use ${keyword}.`,
+        );
       }
     }
     return {
@@ -637,25 +717,33 @@ function compileParameter(
 
   const typedLocation = location as Exclude<ParameterLocation, 'querystring'>;
   if (hasContent && ('style' in value || 'explode' in value || 'allowReserved' in value)) {
-    throw new TypeError(
+    throw new OpenAPIChainError(
+      'METADATA_COMPILE',
       `Parameter ${name} uses content; style, explode, and allowReserved are not applicable.`,
     );
   }
 
   const style = (value.style ?? defaultStyle(typedLocation)) as ParameterStyle;
   if (!allowedStyles(typedLocation, version).includes(style)) {
-    throw new TypeError(
+    throw new OpenAPIChainError(
+      'METADATA_COMPILE',
       `Invalid OpenAPI style ${String(style)} for ${typedLocation} parameter ${name}.`,
     );
   }
   if (typedLocation === 'path' && value.required !== true) {
-    throw new TypeError(`Path parameter ${name} must set required: true.`);
+    throw new OpenAPIChainError(
+      'METADATA_COMPILE',
+      `Path parameter ${name} must set required: true.`,
+    );
   }
   if ('explode' in value && typeof value.explode !== 'boolean') {
-    throw new TypeError(`Parameter ${name} explode must be boolean.`);
+    throw new OpenAPIChainError('METADATA_COMPILE', `Parameter ${name} explode must be boolean.`);
   }
   if ('allowReserved' in value && typeof value.allowReserved !== 'boolean') {
-    throw new TypeError(`Parameter ${name} allowReserved must be boolean.`);
+    throw new OpenAPIChainError(
+      'METADATA_COMPILE',
+      `Parameter ${name} allowReserved must be boolean.`,
+    );
   }
 
   if (value.allowReserved === true) {
@@ -664,20 +752,32 @@ function compileParameter(
       (version === '3.2' && typedLocation === 'path') ||
       (version === '3.2' && typedLocation === 'cookie' && style === 'form');
     if (!allowed) {
-      throw new TypeError(`allowReserved is not valid for ${typedLocation} parameter ${name}.`);
+      throw new OpenAPIChainError(
+        'METADATA_COMPILE',
+        `allowReserved is not valid for ${typedLocation} parameter ${name}.`,
+      );
     }
   }
 
   const explode =
     typeof value.explode === 'boolean' ? value.explode : style === 'form' || style === 'cookie';
   if (style === 'deepObject' && explode === false) {
-    throw new TypeError(`deepObject parameter ${name} requires explode=true.`);
+    throw new OpenAPIChainError(
+      'METADATA_COMPILE',
+      `deepObject parameter ${name} requires explode=true.`,
+    );
   }
   if ((style === 'spaceDelimited' || style === 'pipeDelimited') && explode) {
-    throw new TypeError(`${style} parameter ${name} requires explode=false.`);
+    throw new OpenAPIChainError(
+      'METADATA_COMPILE',
+      `${style} parameter ${name} requires explode=false.`,
+    );
   }
   if (version === '3.2' && typedLocation === 'cookie' && explode === false) {
-    throw new TypeError(`OAS 3.2 cookie parameter ${name} requires explode=true.`);
+    throw new OpenAPIChainError(
+      'METADATA_COMPILE',
+      `OAS 3.2 cookie parameter ${name} requires explode=true.`,
+    );
   }
 
   return {
@@ -699,7 +799,8 @@ function compileParameterList(
 ): Map<string, ParameterMetadata> {
   const result = new Map<string, ParameterMetadata>();
   if (raw === undefined) return result;
-  if (!Array.isArray(raw)) throw new TypeError('OpenAPI parameters must be an array.');
+  if (!Array.isArray(raw))
+    throw new OpenAPIChainError('METADATA_COMPILE', 'OpenAPI parameters must be an array.');
   for (const item of raw) {
     const resolved = asRecord(dereference(item, root), 'OpenAPI parameter');
     const resolvedName = resolved.name;
@@ -715,7 +816,10 @@ function compileParameterList(
     const parameter = compileParameter(resolved, root, version);
     const key = parameterKey(parameter.in, parameter.name);
     if (result.has(key)) {
-      throw new TypeError(`Duplicate OpenAPI parameter ${parameter.name} in ${parameter.in}.`);
+      throw new OpenAPIChainError(
+        'METADATA_COMPILE',
+        `Duplicate OpenAPI parameter ${parameter.name} in ${parameter.in}.`,
+      );
     }
     result.set(key, parameter);
   }
@@ -730,7 +834,10 @@ function compileRequestBody(
   if (rawValue === undefined) return undefined;
   const value = asRecord(dereference(rawValue, root), 'OpenAPI requestBody');
   if ('required' in value && typeof value.required !== 'boolean')
-    throw new TypeError('OpenAPI requestBody.required must be boolean.');
+    throw new OpenAPIChainError(
+      'METADATA_COMPILE',
+      'OpenAPI requestBody.required must be boolean.',
+    );
   const content = asRecord(value.content, 'OpenAPI requestBody.content');
   const mediaTypes = Object.keys(content);
   const media: Record<string, MediaTypeMetadata> = dictionary();
@@ -770,22 +877,34 @@ function compileOperation(
   }
 
   if (byLocation.querystring && Object.keys(byLocation.querystring).length > 1) {
-    throw new TypeError(`Operation ${path} can define at most one querystring parameter.`);
+    throw new OpenAPIChainError(
+      'METADATA_COMPILE',
+      `Operation ${path} can define at most one querystring parameter.`,
+    );
   }
   if (byLocation.querystring && byLocation.query && Object.keys(byLocation.query).length) {
-    throw new TypeError(`Operation ${path} cannot mix query and querystring parameters.`);
+    throw new OpenAPIChainError(
+      'METADATA_COMPILE',
+      `Operation ${path} cannot mix query and querystring parameters.`,
+    );
   }
 
   const templateNames = [...path.matchAll(/\{([^{}]+)\}/g)].map((match) => match[1]!);
   const pathParameters = byLocation.path ?? {};
   for (const name of templateNames) {
     if (!Object.hasOwn(pathParameters, name)) {
-      throw new TypeError(`Path ${path} is missing parameter definition for {${name}}.`);
+      throw new OpenAPIChainError(
+        'METADATA_COMPILE',
+        `Path ${path} is missing parameter definition for {${name}}.`,
+      );
     }
   }
   for (const name of Object.keys(pathParameters)) {
     if (!templateNames.includes(name)) {
-      throw new TypeError(`Path parameter ${name} is not present in template ${path}.`);
+      throw new OpenAPIChainError(
+        'METADATA_COMPILE',
+        `Path parameter ${name} is not present in template ${path}.`,
+      );
     }
   }
 
@@ -823,7 +942,7 @@ export function compileOpenAPIMetadata(
     options.onAmbiguousTemplate !== 'throw' &&
     options.onAmbiguousTemplate !== 'allow'
   )
-    throw new TypeError('Invalid onAmbiguousTemplate option.');
+    throw new OpenAPIChainError('METADATA_COMPILE', 'Invalid onAmbiguousTemplate option.');
   const source = asRecord(document, 'OpenAPI document');
   const version = openapiMinor(source);
   const root: CompilationContext = {
@@ -844,23 +963,28 @@ export function compileOpenAPIMetadata(
   const seenTemplates = new Map<string, string>();
   let selected: Set<string> | undefined;
   if (options.paths !== undefined) {
-    if (!Array.isArray(options.paths)) throw new TypeError('Metadata paths must be an array.');
+    if (!Array.isArray(options.paths))
+      throw new OpenAPIChainError('METADATA_COMPILE', 'Metadata paths must be an array.');
     selected = new Set(options.paths);
     for (const path of selected) {
       if (typeof path !== 'string' || !path.startsWith('/') || !Object.hasOwn(paths, path))
-        throw new TypeError(`Unknown selected OpenAPI path: ${String(path)}`);
+        throw new OpenAPIChainError(
+          'METADATA_COMPILE',
+          `Unknown selected OpenAPI path: ${String(path)}`,
+        );
     }
   }
 
   for (const [path, rawPathItem] of Object.entries(paths)) {
     if (path.startsWith('x-') || (selected && !selected.has(path))) continue;
     if (!path.startsWith('/')) {
-      throw new TypeError(`OpenAPI path must begin with /: ${path}`);
+      throw new OpenAPIChainError('METADATA_COMPILE', `OpenAPI path must begin with /: ${path}`);
     }
     const normalized = normalizedTemplate(path);
     const prior = seenTemplates.get(normalized);
     if (prior && prior !== path && options.onAmbiguousTemplate !== 'allow') {
-      throw new TypeError(
+      throw new OpenAPIChainError(
+        'METADATA_COMPILE',
         `OpenAPI paths ${prior} and ${path} have the same templated hierarchy; matching would be ambiguous. Use { onAmbiguousTemplate: 'allow' } only for documents that cannot be corrected.`,
       );
     }
@@ -872,14 +996,18 @@ export function compileOpenAPIMetadata(
       isRecord(pathItem.additionalOperations) &&
       Object.keys(pathItem.additionalOperations).length
     ) {
-      throw new TypeError(
+      throw new OpenAPIChainError(
+        'METADATA_COMPILE',
         `Path ${path} uses OAS 3.2 additionalOperations. Arbitrary HTTP methods are not representable ` +
           'by the typed chain yet; use a custom transport or remove/bundle those operations.',
       );
     }
 
     if (version !== '3.2' && 'query' in pathItem)
-      throw new TypeError(`QUERY operation at ${path} requires OpenAPI 3.2.`);
+      throw new OpenAPIChainError(
+        'METADATA_COMPILE',
+        `QUERY operation at ${path} requires OpenAPI 3.2.`,
+      );
 
     const methods: Partial<Record<HttpMethod, OperationMetadata>> = {};
     for (const method of httpMethods) {

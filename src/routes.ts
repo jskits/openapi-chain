@@ -1,3 +1,4 @@
+import { OpenAPIChainError } from './errors.js';
 import { httpMethods } from './constant.js';
 import type { HttpMethod, OpenAPIMetadata, OperationMetadata } from './type.js';
 
@@ -51,7 +52,8 @@ export function createOperationResolver(metadata: OpenAPIMetadata | undefined) {
     if (state.kind === 'template') {
       const operation = direct.get(state.template)?.[method];
       if (!operation && complete) {
-        throw new TypeError(
+        throw new OpenAPIChainError(
+          'METADATA_MISMATCH',
           `Compiled OpenAPI metadata does not contain ${method.toUpperCase()} ${state.template}.`,
         );
       }
@@ -60,13 +62,15 @@ export function createOperationResolver(metadata: OpenAPIMetadata | undefined) {
     const key = chainKey(state, method);
     const matches = chains.get(key);
     if (matches && matches.length > 1) {
-      throw new TypeError(
+      throw new OpenAPIChainError(
+        'METADATA_MISMATCH',
         `Ambiguous OpenAPI runtime metadata for ${method.toUpperCase()} chain path.`,
       );
     }
     if (matches?.length) return matches[0]!;
     if (complete)
-      throw new TypeError(
+      throw new OpenAPIChainError(
+        'METADATA_MISMATCH',
         `Compiled OpenAPI metadata does not match the ${method.toUpperCase()} chain path.`,
       );
     return {};

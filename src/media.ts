@@ -1,3 +1,4 @@
+import { OpenAPIChainError } from './errors.js';
 /** Parameters describe a representation; they do not select its parser. */
 export const mediaType = (value: string) => value.split(';', 1)[0]!.trim().toLowerCase();
 export const isJsonMediaType = (value: string) =>
@@ -9,6 +10,6 @@ export function validateTextCharset(contentType: string): void {
     .toLowerCase()
     .matchAll(/;\s*([^=;\s]+)\s*=\s*("(?:[^"\\]|\\.)*"|[^;]*)/g)) {
     if (name === 'charset' && value!.trim().replace(/^"|"$|\\(.)/g, '$1') !== 'utf-8')
-      throw new TypeError('Text charset not supported.');
+      throw new OpenAPIChainError('SERIALIZATION', 'Text charset not supported.');
   }
 }

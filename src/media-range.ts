@@ -1,3 +1,4 @@
+import { OpenAPIChainError } from './errors.js';
 import { mediaType } from './media.js';
 
 /** Preserve representation parameters when selecting an OpenAPI media declaration. */
@@ -7,7 +8,7 @@ export function parseMediaRange(value: string): { type: string; parameters: Map<
     !/^[!#$%&'*+.^_`|~\w-]+\/[!#$%&'*+.^_`|~\w-]+$/.test(type) ||
     (type.startsWith('*/') && type !== '*/*')
   )
-    throw new TypeError(`Invalid media type: ${value}`);
+    throw new OpenAPIChainError('SERIALIZATION', `Invalid media type: ${value}`);
   const parameters = new Map<string, string>();
   let rest = value.includes(';') ? value.slice(value.indexOf(';')) : '';
   while (rest) {
@@ -15,12 +16,13 @@ export function parseMediaRange(value: string): { type: string; parameters: Map<
       /^\s*;\s*([!#$%&'*+.^_`|~\w-]+)\s*=\s*("(?:[^"\\\r\n]|\\[^\r\n])*"|[!#$%&'*+.^_`|~\w-]+)\s*/.exec(
         rest,
       );
-    if (!match) throw new TypeError(`Invalid media parameters: ${value}`);
+    if (!match) throw new OpenAPIChainError('SERIALIZATION', `Invalid media parameters: ${value}`);
     const name = match[1]!.toLowerCase();
     let parameter = match[2]!;
     if (parameter.startsWith('"')) parameter = parameter.slice(1, -1).replace(/\\(.)/g, '$1');
     if (name === 'charset') parameter = parameter.toLowerCase();
-    if (parameters.has(name)) throw new TypeError(`Duplicate media parameter ${name}: ${value}`);
+    if (parameters.has(name))
+      throw new OpenAPIChainError('SERIALIZATION', `Duplicate media parameter ${name}: ${value}`);
     parameters.set(name, parameter);
     rest = rest.slice(match[0].length);
   }
@@ -59,7 +61,7 @@ export function selectMediaDeclaration(
     const first = specificity(candidates[0]!),
       second = specificity(candidates[1]!);
     if (first[0] === second[0] && first[1] === second[1])
-      throw new TypeError(`Ambiguous media declarations for ${actual}.`);
+      throw new OpenAPIChainError('SERIALIZATION', `Ambiguous media declarations for ${actual}.`);
   }
   return candidates[0];
 }

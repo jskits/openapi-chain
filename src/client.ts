@@ -1,3 +1,4 @@
+import { OpenAPIChainError, operationError } from './errors.js';
 import { isNativeBody, isFormData, isUrlSearchParams } from './native-body.js';
 import { responseExtensionData } from './response-contract.js';
 import { joinUrl, appendRawQuery } from './url.js';
@@ -37,13 +38,15 @@ type Runtime = { options: CoreClientOptions; transport: Transport };
 const entries = Object.entries;
 const encodeScalar = (v: unknown) => encodeURIComponent(String(v));
 function serializeQuery(input: Record<string, unknown>) {
-  if (!isPlainRecord(input)) throw new TypeError('Query must be a plain record.');
+  if (!isPlainRecord(input))
+    throw new OpenAPIChainError('SERIALIZATION', 'Query must be a plain record.');
   const query = new URLSearchParams();
   for (const [name, value] of entries(input)) {
     if (value == null) continue;
     if (Array.isArray(value)) value.forEach((item) => query.append(name, String(item)));
     else if (typeof value === 'object') {
-      if (!isPlainRecord(value)) throw new TypeError(`Query ${name} must be a plain record.`);
+      if (!isPlainRecord(value))
+        throw new OpenAPIChainError('SERIALIZATION', `Query ${name} must be a plain record.`);
       entries(value).forEach(([key, entry]) => entry != null && query.append(key, String(entry)));
     } else query.append(name, String(value));
   }
@@ -57,7 +60,7 @@ function renderPath(state: State, serialize?: RuntimeExtensions['path']) {
   if (!Array.isArray(state))
     return state.template.replace(/\{([^{}]+)\}/g, (_m, name: string) => {
       if (!state.params || !Object.hasOwn(state.params, name))
-        throw new TypeError(`Missing path: ${name}`);
+        throw new OpenAPIChainError('SERIALIZATION', `Missing path: ${name}`);
       return encode(state.params[name]);
     });
   return `/${state.map((segment) => (typeof segment === 'string' ? segment : encode(segment[0]))).join('/')}`;
@@ -70,7 +73,7 @@ function requestBody(
   serialize?: RuntimeExtensions['body'],
 ) {
   if (body === undefined) return undefined;
-  if (!contentType) throw new TypeError('Missing contentType.');
+  if (!contentType) throw new OpenAPIChainError('SERIALIZATION', 'Missing contentType.');
   let serialized: BodyInit | undefined;
   if (serialize) serialized = serialize({ body, contentType });
   else {
@@ -78,7 +81,7 @@ function requestBody(
     if (isJsonMediaType(media)) serialized = stringifyJson(body, `body (${contentType})`);
     else if (media.startsWith('text/') && typeof body !== 'object') serialized = String(body);
     else if (isNativeBody(body)) serialized = body;
-    else throw new TypeError(`Need body extension: ${contentType}`);
+    else throw new OpenAPIChainError('SERIALIZATION', `Need body extension: ${contentType}`);
     if (typeof serialized === 'string' || isUrlSearchParams(serialized))
       validateTextCharset(contentType);
   }
@@ -93,69 +96,79 @@ async function executeRequest(
   method: HttpMethod,
   input?: RequestInput,
 ) {
-  const extensions = input?.extensions as RuntimeExtensions | undefined;
-  let url = safeUrl(
-    runtime.options.baseUrl,
-    joinUrl(runtime.options.baseUrl, safePath(renderPath(state, extensions?.path))),
-  );
-  const headers = new Headers(runtime.options.headers);
-  const mergeHeaders = (value: HeadersInit) =>
-    new Headers(value).forEach((entry, name) => headers.set(name, entry));
-  if (input?.header) {
-    if (extensions?.header) mergeHeaders(extensions.header(input.header));
-    else
-      for (const [k, v] of entries(input.header))
-        if (v != null) headers.set(k, Array.isArray(v) ? v.join(',') : String(v));
-  }
-  if (input?.init?.headers) mergeHeaders(input.init.headers);
-  if (input?.cookie) {
-    if (extensions?.cookie) headers.set('cookie', extensions.cookie(input.cookie));
-    else {
-      const cookies: string[] = [];
-      for (const [k, v] of entries(input.cookie)) {
-        if (v == null) continue;
-        (Array.isArray(v) ? v : [v]).forEach((item) =>
-          cookies.push(`${encodeScalar(k)}=${encodeScalar(item)}`),
-        );
-      }
-      if (cookies.length) headers.set('cookie', cookies.join('; '));
-    }
-  }
-  if (input?.query)
-    url = appendRawQuery(
-      url,
-      extensions?.query
-        ? String(extensions.query(input.query)).replace(/^\?/, '')
-        : serializeQuery(input.query),
+  const pathTemplate = Array.isArray(state)
+    ? `/${state.map((segment) => (typeof segment === 'string' ? segment : '{}')).join('/')}`
+    : state.template;
+  try {
+    const extensions = input?.extensions as RuntimeExtensions | undefined;
+    let url = safeUrl(
+      runtime.options.baseUrl,
+      joinUrl(runtime.options.baseUrl, safePath(renderPath(state, extensions?.path))),
     );
-  let request: TransportRequest = {
-    url,
-    method: method,
-    init: {
-      ...input?.init,
-      method: method.toUpperCase(),
-      headers: headers,
-      body: requestBody(input?.body, input?.contentType, headers, extensions?.body) ?? null,
-    },
-  };
-  if (extensions?.request) request = await extensions.request(request, input!);
-  const response = await runtime.transport(request);
-  const { status } = response;
-  if (status === 0) throw new TypeError('Response status 0');
-  let data: unknown;
-  if (extensions?.response) {
-    data = responseExtensionData(await extensions.response(response), status);
-  } else if (![204, 205, 304].includes(status) && response.headers.get('content-length') !== '0') {
-    const text = await response.text();
-    if (text)
-      data = isJsonMediaType(mediaType(response.headers.get('content-type') ?? ''))
-        ? JSON.parse(text)
-        : text;
+    const headers = new Headers(runtime.options.headers);
+    const mergeHeaders = (value: HeadersInit) =>
+      new Headers(value).forEach((entry, name) => headers.set(name, entry));
+    if (input?.header) {
+      if (extensions?.header) mergeHeaders(extensions.header(input.header));
+      else
+        for (const [k, v] of entries(input.header))
+          if (v != null) headers.set(k, Array.isArray(v) ? v.join(',') : String(v));
+    }
+    if (input?.init?.headers) mergeHeaders(input.init.headers);
+    if (input?.cookie) {
+      if (extensions?.cookie) headers.set('cookie', extensions.cookie(input.cookie));
+      else {
+        const cookies: string[] = [];
+        for (const [k, v] of entries(input.cookie)) {
+          if (v == null) continue;
+          (Array.isArray(v) ? v : [v]).forEach((item) =>
+            cookies.push(`${encodeScalar(k)}=${encodeScalar(item)}`),
+          );
+        }
+        if (cookies.length) headers.set('cookie', cookies.join('; '));
+      }
+    }
+    if (input?.query)
+      url = appendRawQuery(
+        url,
+        extensions?.query
+          ? String(extensions.query(input.query)).replace(/^\?/, '')
+          : serializeQuery(input.query),
+      );
+    let request: TransportRequest = {
+      url,
+      method: method,
+      init: {
+        ...input?.init,
+        method: method.toUpperCase(),
+        headers: headers,
+        body: requestBody(input?.body, input?.contentType, headers, extensions?.body) ?? null,
+      },
+    };
+    if (extensions?.request) request = await extensions.request(request, input!);
+    const response = await runtime.transport(request);
+    const { status } = response;
+    if (status === 0) throw new TypeError('Response status 0');
+    let data: unknown;
+    if (extensions?.response) {
+      data = responseExtensionData(await extensions.response(response), status);
+    } else if (
+      ![204, 205, 304].includes(status) &&
+      response.headers.get('content-length') !== '0'
+    ) {
+      const text = await response.text();
+      if (text)
+        data = isJsonMediaType(mediaType(response.headers.get('content-type') ?? ''))
+          ? JSON.parse(text)
+          : text;
+    }
+    const ok = status >= 200 && status < 300;
+    if (runtime.options.throwOnError === false) return { ok, status, data, response };
+    if (!ok) throw new HttpError(`HTTP ${status}`, response, data);
+    return data;
+  } catch (error) {
+    throw operationError(error, method, pathTemplate);
   }
-  const ok = status >= 200 && status < 300;
-  if (runtime.options.throwOnError === false) return { ok, status, data, response };
-  if (!ok) throw new HttpError(`HTTP ${status}`, response, data);
-  return data;
 }
 
 function createNode(runtime: Runtime, state: State): unknown {
