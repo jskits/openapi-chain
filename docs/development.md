@@ -24,12 +24,14 @@ If your Node.js installation does not include Corepack, install pnpm 10.34.5 usi
 | `pnpm benchmark:types:ts7` / `pnpm benchmark:editor:ts7` | Native compiler complexity scenarios / actual native LSP completion samples |
 | `pnpm test` / `pnpm test:watch` | Run Vitest once or in watch mode |
 | `pnpm test:coverage` | Run tests with V8 coverage and 90% thresholds |
+| `pnpm test:cli` | Run CLI filesystem, generation and command-contract regressions after building |
+| `pnpm test:cli:package` | Install runtime/CLI tarballs and verify the installed command, generated types and browser bundle |
 | `pnpm test:package` / `pnpm verify:package` | Verify all three entries in an isolated tarball consumer |
 | `pnpm size:check` | Enforce the 2048-byte transitive core gzip limit after building |
 | `pnpm check` | Run the complete local quality gate, including a fresh build |
 | `pnpm commit` | Create a Conventional Commit using Commitizen |
 | `pnpm changeset` | Describe a user-facing change and its version impact |
-| `pnpm version:packages` | Apply changesets and update the lockfile |
+| `pnpm version:packages` | Apply changesets, update the lockfile and regenerate the scoped CLI fixture |
 | `pnpm test:generated` | Regenerate and compare the pinned OpenAPI fixtures |
 | `pnpm test:browser` | Run Chromium integration after building and installing its browser |
 | `pnpm benchmark` | Rebuild and measure type scale, runtime overhead and comparable bundle sizes |
@@ -39,7 +41,7 @@ If your Node.js installation does not include Corepack, install pnpm 10.34.5 usi
 
 ## Choose the right check
 
-`pnpm check` runs, in order: formatting, typed lint, generated-fixture freshness, TypeScript, tests with coverage, build/package lint, installed-tarball consumers, core gzip size, and TS 6/TS 7 type-scale/scoping gates. TS 7 also checks an isolated generator installation and installed declarations. It excludes the separate Chromium suite and runtime/size/metadata microbenchmarks.
+`pnpm check` runs a fresh build/package lint first, followed by formatting, typed lint, generated-fixture freshness, TypeScript, runtime coverage, CLI regressions, migration/scoped checks, installed runtime/CLI tarball consumers, core gzip size, and TS 6/TS 7 type-scale/scoping gates. TS 7 also checks an isolated generator installation and installed declarations. It excludes the separate Chromium suite and runtime/size/metadata microbenchmarks.
 
 For a focused behavior change, run its Vitest file during iteration, then the full gate before submitting. For documentation, check links/anchors and typecheck examples against their actual generated schema; keep measured claims tied to a dated verification report. `pnpm format` formats the whole repository, so inspect the diff and avoid including unrelated formatting changes.
 
@@ -53,13 +55,13 @@ pnpm test:browser
 
 On Linux CI, the workflow uses `pnpm exec playwright install --with-deps chromium`. The suite starts local loopback servers and checks real Chromium Fetch behavior, including multipart, CORS/cookies, cancellation, binary and streaming responses. It does not qualify Firefox or WebKit.
 
-For schema changes, run `pnpm generate:example`, format the generated declarations, then `pnpm test:generated` and `pnpm typecheck`. All four fixtures (Petstore, Items, conformance and scoped catalog) are checked. For performance changes, use `pnpm benchmark`; see [measurement methods](performance.md). Runtime/metadata timings are observations, not CI timing gates.
+For schema changes, run `pnpm generate:example`, format the generated declarations, then `pnpm test:generated` and `pnpm typecheck`. The Petstore, Items and conformance fixtures use that workflow. The scoped catalog uses `pnpm generate:scoped` and `pnpm test:scoped` through the official CLI; its generated directory must not be reformatted. For performance changes, use `pnpm benchmark`; see [measurement methods](performance.md). Runtime/metadata timings are observations, not CI timing gates.
 
 ## Project conventions
 
 - Add exports to the appropriate public entry: `src/index.ts`, `src/strict.ts` or `src/metadata.ts`. Keep strict/compiler imports out of core. Put behavior tests in `test/*.test.ts` and compile-time regressions in `test/*.typecheck.ts`.
 - Use explicit `.js` extensions for relative TypeScript imports under NodeNext.
-- Keep runtime dependencies deliberate; there are currently none.
+- The runtime package has no dependencies. The separate `cli/` workspace owns Node-only generation dependencies and pins a private TypeScript 5.9.3 compatible with its generator. Keep those dependencies out of runtime entries.
 - TypeScript 6.0.3 remains the compiler API/build dependency; `typescript7` is a pinned npm alias to TypeScript 7.0.2 for the recommended performance baseline. Both are checked. Use named scripts, not bare `tsc`, because their executable names collide. `pnpm-workspace.yaml` permits this exact version for openapi-typescript 7.13.0, whose declared peer range is `^5.x`, while retaining strict peer checks. Independent applications need their own [scoped configuration](getting-started.md#generator-and-typescript-compatibility). Compiler upgrades must pass declaration, generated fixture, installed-consumer and type-scale checks.
 - Only `dist`, package metadata, README, license and an optional changelog ship to npm.
 - `pnpm install` installs Husky hooks. Pre-commit runs lint-staged; commit-msg runs commitlint. The full type-aware check runs in `pnpm check` and CI.
@@ -78,6 +80,8 @@ The [release workflow](../.github/workflows/release.yml) runs automatically on `
 2. Confirm ownership of the npm package name `openapi-chain`. If the package does not exist, create its first release with an authenticated maintainer account. A local bootstrap publish requires maintainer authentication and a deliberate version choice; `npm publish --provenance=false` is a real publishing command, not a validation step. Run the full checks and review the packed files first.
 3. Configure an npm **Trusted Publisher** with organization/user `jskits`, repository `openapi-chain`, workflow `release.yml`, and no environment name.
 4. In GitHub Actions settings, enable **Allow GitHub Actions to create and approve pull requests**. Releases are enabled by default; set the repository variable `RELEASE_ENABLED` to `false` to pause them. Remove it or set it to `true` to resume.
+
+`openapi-chain-cli` is a separately published workspace package. Its npm package must have its own Trusted Publisher configured for this repository and workflow before its first automated publication; the runtime package's authorization does not grant access to a new package. Local tarball checks do not prove npm publication or account ownership. Changesets versions/packs both workspaces, and `version:packages` regenerates tool-version-bound scoped output. The existing `v<version>` recovery path validates the root runtime version; use the normal Changesets flow for CLI releases.
 
 Pushing changesets to `main` creates or updates a release PR. Merging the release PR triggers the full CI matrix and Chromium integration before packaging and publishing. Only the publish job receives `id-token: write`. It publishes the packed artifact with lifecycle scripts disabled, then creates Git tags and GitHub releases. The workflow requires the publish-plan and package artifact IDs so a missing artifact cannot fall back to publishing from the checkout.
 

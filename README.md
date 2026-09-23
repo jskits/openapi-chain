@@ -108,6 +108,12 @@ Response types assume the server follows the schema. For runtime validation, bin
 
 Start with [CONTRIBUTING.md](CONTRIBUTING.md). Report bugs or request features in [GitHub Issues](https://github.com/jskits/openapi-chain/issues); include the entry point, package version and a minimal schema. Report vulnerabilities through the [security process](SECURITY.md).
 
+## Build-time generation
+
+The separate `openapi-chain-cli` package provides an official `openapi-chain generate` command for local OpenAPI 3.0/3.1 JSON/YAML documents. One config produces full type declarations, scoped client types, selected runtime metadata and a provenance manifest. `generate --check` detects drift without writing files.
+
+See the [CLI guide](docs/cli.md) and [runnable scoped example](docs/large-schemas.md). CLI dependencies remain separate from the runtime package and browser bundles.
+
 ## License
 
 [MIT](LICENSE)

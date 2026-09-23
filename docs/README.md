@@ -7,6 +7,7 @@
 | Read | When you need |
 | --- | --- |
 | [Getting started](getting-started.md) | Install, generate types and run an offline example |
+| [Official CLI](cli.md) | Generate synchronized types, scopes and metadata; check drift in CI |
 | [API reference](api.md) | Options, path calls, request bodies, errors, extensions and transport |
 | [Support and boundaries](support.md) | Decide whether a wire format, schema feature or platform is supported |
 | [Core to strict migration](migration.md) | Stage a migration, preserve intentional response contracts and review wire changes |
