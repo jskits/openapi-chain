@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { compileOpenAPIMetadata } from '../src/metadata.js';
+import { compileOpenAPIMetadata } from '../packages/core/src/metadata.js';
 
 test.each(['3.1.foo', '3.1.', '3.1', '3.2.foo', '3.1.0junk', '3.1.01'])(
   'rejects malformed version %s',

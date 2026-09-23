@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
-import { createClient, type RequestInput } from '../src/index.js';
-import { createStrictClient } from '../src/strict.js';
-import { compileOpenAPIMetadata } from '../src/metadata.js';
+import { createClient, type RequestInput } from '../packages/core/src/index.js';
+import { createStrictClient } from '../packages/core/src/strict.js';
+import { compileOpenAPIMetadata } from '../packages/core/src/metadata.js';
 const metadata = compileOpenAPIMetadata({
   openapi: '3.1.0',
   paths: { '/x': { get: { parameters: [{ name: 'a', in: 'query', schema: {} }] } } },

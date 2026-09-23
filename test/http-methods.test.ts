@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
-import { httpMethods, createClient } from '../src/index.js';
-import { compileOpenAPIMetadata } from '../src/metadata.js';
+import { httpMethods, createClient } from '../packages/core/src/index.js';
+import { compileOpenAPIMetadata } from '../packages/core/src/metadata.js';
 
 test('the public method table cannot mutate method recognition or compilation', async () => {
   expect(Object.isFrozen(httpMethods)).toBe(true);

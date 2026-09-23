@@ -1,9 +1,9 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { once } from 'node:events';
 import { afterAll, beforeAll, expect, test } from 'vitest';
-import { createClient } from '../src/index.js';
-import { createStrictClient } from '../src/strict.js';
-import { compileOpenAPIMetadata } from '../src/metadata.js';
+import { createClient } from '../packages/core/src/index.js';
+import { createStrictClient } from '../packages/core/src/strict.js';
+import { compileOpenAPIMetadata } from '../packages/core/src/metadata.js';
 
 type Echo = { url: string; body: string; contentType: string };
 type Paths = {

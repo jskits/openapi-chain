@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { performance } from 'node:perf_hooks';
-import { compileOpenAPIMetadata } from '../dist/metadata.js';
+import { compileOpenAPIMetadata } from '../packages/core/dist/metadata.js';
 
 // Small documents with exponentially many paths through a shared DAG.
 // Operation-count regression checks live in schema-work.test.ts; wall time here

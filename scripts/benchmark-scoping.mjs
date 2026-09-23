@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import spawn from 'cross-spawn';
-import { compileOpenAPIMetadata } from '../dist/metadata.js';
+import { compileOpenAPIMetadata } from '../packages/core/dist/metadata.js';
 import { typeFixture } from './lib/type-fixture.mjs';
 import { compiler, compilerInfo } from './lib/compiler.mjs';
 

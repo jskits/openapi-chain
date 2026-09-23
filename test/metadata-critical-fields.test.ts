@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { compileOpenAPIMetadata } from '../src/metadata.js';
+import { compileOpenAPIMetadata } from '../packages/core/src/metadata.js';
 
 const compile = (operation: unknown) =>
   compileOpenAPIMetadata({ openapi: '3.2.0', paths: { '/x': { post: operation } } });

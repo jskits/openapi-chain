@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
-import { createClient, OpenAPIChainError, type RequestInput } from '../src/index.js';
-import { createStrictClient } from '../src/strict.js';
-import { compileOpenAPIMetadata } from '../src/metadata.js';
+import { createClient, OpenAPIChainError, type RequestInput } from '../packages/core/src/index.js';
+import { createStrictClient } from '../packages/core/src/strict.js';
+import { compileOpenAPIMetadata } from '../packages/core/src/metadata.js';
 
 test('compiler and initialization failures expose stable codes without losing TypeError compatibility', () => {
   expect(() => compileOpenAPIMetadata({ openapi: 'broken' })).toThrow(

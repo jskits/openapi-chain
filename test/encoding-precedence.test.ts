@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
-import { compileOpenAPIMetadata } from '../src/metadata.js';
-import { createStrictClient } from '../src/strict.js';
-import type { RequestInput } from '../src/index.js';
+import { compileOpenAPIMetadata } from '../packages/core/src/metadata.js';
+import { createStrictClient } from '../packages/core/src/strict.js';
+import type { RequestInput } from '../packages/core/src/index.js';
 
 test.each([{ style: 'form' }, { explode: true }, { allowReserved: false }])(
   'explicit RFC6570 encoding ignores contentType: %j',

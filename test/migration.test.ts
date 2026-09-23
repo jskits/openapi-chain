@@ -10,9 +10,9 @@ import {
   type CompiledOpenAPIMetadata,
   type OperationMetadata,
   type ParameterLocation,
-} from '../src/index.js';
-import { createStrictClient } from '../src/strict.js';
-import { compileOpenAPIMetadata } from '../src/metadata.js';
+} from '../packages/core/src/index.js';
+import { createStrictClient } from '../packages/core/src/strict.js';
+import { compileOpenAPIMetadata } from '../packages/core/src/metadata.js';
 
 type RuntimeNode = {
   get(input?: RequestInput): Promise<unknown>;

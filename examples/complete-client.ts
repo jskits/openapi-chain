@@ -1,8 +1,12 @@
 import document from './service.openapi.json' with { type: 'json' };
 import type { paths } from './service-schema.js';
-import { createClient, type OperationExtensionsFor, type Transport } from '../src/index.js';
-import { createStrictClient } from '../src/strict.js';
-import { compileOpenAPIMetadata } from '../src/metadata.js';
+import {
+  createClient,
+  type OperationExtensionsFor,
+  type Transport,
+} from '../packages/core/src/index.js';
+import { createStrictClient } from '../packages/core/src/strict.js';
+import { compileOpenAPIMetadata } from '../packages/core/src/metadata.js';
 
 const validateResponse = {
   response: async (response: Response) => {

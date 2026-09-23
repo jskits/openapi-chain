@@ -8,7 +8,7 @@ export default defineConfig({
     restoreMocks: true,
     coverage: {
       provider: 'v8',
-      include: ['src/**/*.ts', 'query/src/**/*.ts'],
+      include: ['packages/core/src/**/*.ts', 'packages/query/src/**/*.ts'],
       reporter: ['text', 'lcov', 'json-summary'],
       thresholds: { lines: 90, statements: 90, functions: 90, branches: 90 },
     },

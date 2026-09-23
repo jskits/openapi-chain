@@ -33,7 +33,7 @@ try {
     const result${i}: Promise<Entity | Pending> = api.orgs('org').resources.r${i * 5}('id').get({query:{expand:'owner'}});
     void result${i};`,
   ).join('\n');
-  const specifier = JSON.stringify(join(root, 'dist/index.js').replaceAll('\\', '/'));
+  const specifier = JSON.stringify(join(root, 'packages/core/dist/index.js').replaceAll('\\', '/'));
   writeFileSync(
     join(directory, 'consumer.mts'),
     `

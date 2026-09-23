@@ -2,16 +2,16 @@
 
 [Documentation index](README.md) · [Large schemas](large-schemas.md) · [Compiler API](api.md#metadata-compiler-options)
 
-`openapi-chain-cli` provides the `openapi-chain` command. It generates types, an exact path scope and runtime metadata from one configuration and one source snapshot. It is a separate Node-only package; installing `openapi-chain` alone does not install the CLI or its type-generation dependencies.
+`@openapi-chain/cli` provides the `openapi-chain` command. It generates types, an exact path scope and runtime metadata from one configuration and one source snapshot. It is a separate Node-only package; installing `openapi-chain` alone does not install the CLI or its type-generation dependencies.
 
 ## Install and generate
 
 ```sh
-pnpm add openapi-chain
-pnpm add -D openapi-chain-cli
+pnpm add @openapi-chain/core
+pnpm add -D @openapi-chain/cli
 ```
 
-The CLI uses the same Node versions as the runtime package: `^22.22.1 || ^24.11.0 || >=26.0.0`. npm users can install with `npm install --save-dev openapi-chain-cli` and invoke `npx openapi-chain` after installation.
+The CLI uses the same Node versions as the runtime package: `^22.22.1 || ^24.11.0 || >=26.0.0`. npm users can install with `npm install --save-dev @openapi-chain/cli` and invoke `npx openapi-chain` after installation.
 
 Create `openapi-chain.config.json`:
 
@@ -32,7 +32,7 @@ pnpm exec openapi-chain generate --check
 
 For multiple APIs or scopes, create a config per output directory and invoke `generate --config <file>` for each. `--config` is relative to the current working directory; `schema` and `outDir` are relative to that config file, even when invoking the CLI from elsewhere. `--help` and `--version` are also available. Unknown flags, commands and configuration fields are errors.
 
-For an unpublished source checkout, run `pnpm install` and `pnpm build` in the repository, then invoke `node cli/src/cli.mjs generate --config <file>`. Registry installation requires the separate CLI package to have been published; local generation and tarball verification do not publish it.
+For an unpublished source checkout, run `pnpm install` and `pnpm build` in the repository, then invoke `node packages/cli/src/cli.mjs generate --config <file>`. Registry installation requires the separate CLI package to have been published; local generation and tarball verification do not publish it.
 
 ## Configuration
 
@@ -63,7 +63,7 @@ The CLI generates full schema declarations, so upstream type validation can reje
 Use the generated type and metadata together:
 
 ```ts
-import { createStrictClient } from 'openapi-chain/strict';
+import { createStrictClient } from '@openapi-chain/core/strict';
 import { metadata } from './generated/catalog/metadata.js';
 import type { ScopedPaths } from './generated/catalog/scope.js';
 

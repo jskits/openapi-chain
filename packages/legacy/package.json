@@ -1,0 +1,75 @@
+{
+  "name": "openapi-chain",
+  "version": "0.5.0",
+  "description": "Compatibility entry points for @openapi-chain/core.",
+  "keywords": [
+    "client",
+    "openapi",
+    "typescript"
+  ],
+  "homepage": "https://github.com/jskits/openapi-chain#readme",
+  "bugs": {
+    "url": "https://github.com/jskits/openapi-chain/issues"
+  },
+  "license": "MIT",
+  "author": "unadlib",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jskits/openapi-chain.git",
+    "directory": "packages/legacy"
+  },
+  "files": [
+    "*.js",
+    "*.cjs",
+    "*.d.ts",
+    "*.d.cts"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./index.cjs",
+  "module": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./index.d.ts",
+        "default": "./index.js"
+      },
+      "require": {
+        "types": "./index.d.cts",
+        "default": "./index.cjs"
+      }
+    },
+    "./strict": {
+      "import": {
+        "types": "./strict.d.ts",
+        "default": "./strict.js"
+      },
+      "require": {
+        "types": "./strict.d.cts",
+        "default": "./strict.cjs"
+      }
+    },
+    "./metadata": {
+      "import": {
+        "types": "./metadata.d.ts",
+        "default": "./metadata.js"
+      },
+      "require": {
+        "types": "./metadata.d.cts",
+        "default": "./metadata.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "dependencies": {
+    "@openapi-chain/core": "workspace:^"
+  },
+  "engines": {
+    "node": "^22.22.1 || ^24.11.0 || >=26.0.0"
+  }
+}

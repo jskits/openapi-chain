@@ -1,12 +1,12 @@
 {
-  "name": "openapi-chain-query",
+  "name": "@openapi-chain/query",
   "version": "0.2.0",
   "description": "Explicit operation query keys and fetchers for TanStack Query and SWR.",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jskits/openapi-chain.git",
-    "directory": "query"
+    "directory": "packages/query"
   },
   "files": [
     "dist"

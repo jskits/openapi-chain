@@ -3,7 +3,7 @@
   "changelog": "@changesets/cli/changelog",
   "commit": false,
   "format": "oxfmt",
-  "fixed": [],
+  "fixed": [["@openapi-chain/core", "openapi-chain"]],
   "linked": [],
   "access": "public",
   "baseBranch": "main",

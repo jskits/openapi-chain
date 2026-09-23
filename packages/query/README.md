@@ -1,13 +1,13 @@
-# openapi-chain-query
+# @openapi-chain/query
 
 An optional, dependency-free bridge from explicit typed operations to TanStack Query and SWR. It does not inspect client Proxies, generate hooks, retry requests or infer cache invalidation.
 
 ```sh
-pnpm add openapi-chain-query
+pnpm add @openapi-chain/query
 ```
 
 ```ts
-import { createQuery } from 'openapi-chain-query';
+import { createQuery } from '@openapi-chain/query';
 
 const item = createQuery({
   key: ['production:catalog:account-123', 'GET', '/items/{id}'],

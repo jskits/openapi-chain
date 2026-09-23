@@ -1,9 +1,9 @@
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
-import { createClient, httpMethods, HttpError } from '../dist/index.js';
-import { createStrictClient } from '../dist/strict.js';
-import { compileOpenAPIMetadata } from '../dist/metadata.js';
+import { createClient, httpMethods, HttpError } from '../packages/core/dist/index.js';
+import { createStrictClient } from '../packages/core/dist/strict.js';
+import { compileOpenAPIMetadata } from '../packages/core/dist/metadata.js';
 
 // Deliberately compare observable values rather than multipart boundary strings.
 async function snapshot(value) {

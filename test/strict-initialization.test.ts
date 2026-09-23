@@ -1,7 +1,7 @@
 import { expect, test, vi } from 'vitest';
-import { createStrictClient, type StrictClientOptions } from '../src/strict.js';
-import { compileOpenAPIMetadata } from '../src/metadata.js';
-import type { Transport } from '../src/index.js';
+import { createStrictClient, type StrictClientOptions } from '../packages/core/src/strict.js';
+import { compileOpenAPIMetadata } from '../packages/core/src/metadata.js';
+import type { Transport } from '../packages/core/src/index.js';
 
 test.each([
   undefined,

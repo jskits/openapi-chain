@@ -1,7 +1,12 @@
 import { expect, test, vi } from 'vitest';
-import { createStrictClient } from '../src/strict.js';
-import { compileOpenAPIMetadata } from '../src/metadata.js';
-import { createClient, httpMethods, type HttpMethod, type Transport } from '../src/index.js';
+import { createStrictClient } from '../packages/core/src/strict.js';
+import { compileOpenAPIMetadata } from '../packages/core/src/metadata.js';
+import {
+  createClient,
+  httpMethods,
+  type HttpMethod,
+  type Transport,
+} from '../packages/core/src/index.js';
 
 type Op = { responses: { 204: { content: never } } };
 

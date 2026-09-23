@@ -8,7 +8,12 @@ import { compiler } from './lib/compiler.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const consumer = mkdtempSync(join(tmpdir(), 'openapi-chain-consumer-'));
-const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+const workspace = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+const manifest = {
+  ...JSON.parse(readFileSync(join(root, 'packages/core/package.json'), 'utf8')),
+  devDependencies: workspace.devDependencies,
+  packageManager: workspace.packageManager,
+};
 
 function run(command, args, cwd = consumer, env = process.env) {
   const result = spawn.sync(command, args, { cwd, env, encoding: 'utf8' });
@@ -34,7 +39,12 @@ try {
     NPM_CONFIG_GLOBALCONFIG: npmGlobalConfig,
   };
   const [packed] = JSON.parse(
-    run('npm', ['pack', '--ignore-scripts', '--json', '--pack-destination', consumer], root, env),
+    run(
+      'npm',
+      ['pack', '--ignore-scripts', '--json', '--pack-destination', consumer],
+      join(root, 'packages/core'),
+      env,
+    ),
   );
   const files = packed.files.map(({ path }) => path);
   for (const required of [
@@ -138,7 +148,7 @@ async function main() {
   const metadata = compileOpenAPIMetadata(document, {paths:['/x/{id}']});
   assert.deepEqual(Object.keys(metadata.operations), ['/x/{id}']);
   for (const extra of [{metadata}, {middleware:[]}, {headers:()=>({authorization:'token'})}]) {
-    assert.throws(() => createClient({baseUrl:'https://example.test',...extra}), {message:'Use openapi-chain/strict.'});
+    assert.throws(() => createClient({baseUrl:'https://example.test',...extra}), {message:'Use @openapi-chain/core/strict.'});
   }
   const compatible = compileOpenAPIMetadata({openapi:'3.1.0',paths:{
     '/x/{id}':document.paths['/x/{id}'],

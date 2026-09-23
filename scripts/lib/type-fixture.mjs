@@ -20,7 +20,7 @@ export function typeFixture(root, routes, selected = routes, calls = 25, mode = 
       `const result${i}: Promise<{ok:true}> = api.r${i}${segment}('id').get({ query: { q: 'x' } }); void result${i};`,
   ).join('\n');
   return `// edit: a
-import { ${factory}${strict ? ', type CompiledOpenAPIMetadata' : ''} } from ${JSON.stringify(join(root, strict ? 'dist/strict.js' : 'dist/index.js').replaceAll('\\', '/'))};
+import { ${factory}${strict ? ', type CompiledOpenAPIMetadata' : ''} } from ${JSON.stringify(join(root, strict ? 'packages/core/dist/strict.js' : 'packages/core/dist/index.js').replaceAll('\\', '/'))};
 type AllPaths = {${entries}};
 type Paths = ${selected === routes ? 'AllPaths' : `Pick<AllPaths, ${keys}>`};
 const api = ${factory}<Paths>({ baseUrl: 'https://example.test'${strict ? ', metadata: {} as CompiledOpenAPIMetadata' : ''} });

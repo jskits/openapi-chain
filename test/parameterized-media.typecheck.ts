@@ -1,6 +1,6 @@
-import { createClient } from '../src/index.js';
-import { createStrictClient } from '../src/strict.js';
-import type { CompiledOpenAPIMetadata } from '../src/metadata.js';
+import { createClient } from '../packages/core/src/index.js';
+import { createStrictClient } from '../packages/core/src/strict.js';
+import type { CompiledOpenAPIMetadata } from '../packages/core/src/metadata.js';
 
 type Paths = {
   '/profile': {

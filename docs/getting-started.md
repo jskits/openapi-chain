@@ -49,7 +49,7 @@ The scoped peer allowance still permits only the generator's TS 6.0.3 pairing; i
 After checking [generator compatibility](#generator-and-typescript-compatibility), install a published version with this API:
 
 ```sh
-pnpm add openapi-chain
+pnpm add @openapi-chain/core
 pnpm add -D --save-exact typescript@6.0.3 typescript7@npm:typescript@7.0.2 openapi-typescript@7.13.0
 ```
 
@@ -105,7 +105,7 @@ Use your framework's module settings for bundled applications. `resolveJsonModul
 ## Make a core request
 
 ```ts
-import { createClient } from 'openapi-chain';
+import { createClient } from '@openapi-chain/core';
 import type { paths } from './schema.js';
 
 const api = createClient<paths>({ baseUrl: 'https://api.example.com' });
@@ -125,8 +125,8 @@ Compile metadata from the same document that generated `paths`:
 
 ```ts
 import document from './openapi.json' with { type: 'json' };
-import { createStrictClient } from 'openapi-chain/strict';
-import { compileOpenAPIMetadata } from 'openapi-chain/metadata';
+import { createStrictClient } from '@openapi-chain/core/strict';
+import { compileOpenAPIMetadata } from '@openapi-chain/core/metadata';
 import type { paths } from './schema.js';
 
 const api = createStrictClient<paths>({

@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { compileOpenAPIMetadata } from '../src/metadata.js';
+import { compileOpenAPIMetadata } from '../packages/core/src/metadata.js';
 
 function compile(properties: Record<string, unknown>, schemas: Record<string, unknown> = {}) {
   return compileOpenAPIMetadata({

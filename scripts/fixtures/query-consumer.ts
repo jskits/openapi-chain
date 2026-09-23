@@ -1,5 +1,5 @@
-import { createQuery } from 'openapi-chain-query';
-import { createClient } from 'openapi-chain';
+import { createQuery } from '@openapi-chain/query';
+import { createClient } from '@openapi-chain/core';
 import { QueryClient, queryOptions } from '@tanstack/react-query';
 import useSWR from 'swr';
 

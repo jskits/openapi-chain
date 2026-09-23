@@ -1,4 +1,4 @@
-import { createClient } from '../src/index.js';
+import { createClient } from '../packages/core/src/index.js';
 type Operation = {
   parameters: { path: { a: string; b: string } };
   get: { responses: { 204: { content: never } } };

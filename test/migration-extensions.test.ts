@@ -1,7 +1,7 @@
 import { expect, test, vi } from 'vitest';
-import { createClient, type RequestInput, type Transport } from '../src/index.js';
-import { createStrictClient } from '../src/strict.js';
-import { compileOpenAPIMetadata } from '../src/metadata.js';
+import { createClient, type RequestInput, type Transport } from '../packages/core/src/index.js';
+import { createStrictClient } from '../packages/core/src/strict.js';
+import { compileOpenAPIMetadata } from '../packages/core/src/metadata.js';
 
 type Runtime = { $path(path: string): { get(input?: RequestInput): Promise<unknown> } };
 const metadata = compileOpenAPIMetadata({

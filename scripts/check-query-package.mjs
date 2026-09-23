@@ -9,7 +9,12 @@ import { compiler } from './lib/compiler.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const consumer = mkdtempSync(join(tmpdir(), 'openapi-chain-query-consumer-'));
-const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+const workspace = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+const manifest = {
+  ...JSON.parse(readFileSync(join(root, 'packages/core/package.json'), 'utf8')),
+  devDependencies: workspace.devDependencies,
+  packageManager: workspace.packageManager,
+};
 const npmrc = join(consumer, '.npmrc');
 const globalConfig = join(consumer, 'global.npmrc');
 writeFileSync(npmrc, 'registry=https://registry.npmjs.org/\n');
@@ -34,8 +39,8 @@ try {
     JSON.parse(
       run('npm', ['pack', '--ignore-scripts', '--json', '--pack-destination', consumer], cwd),
     )[0];
-  const runtime = pack(root);
-  const adapter = pack(join(root, 'query'));
+  const runtime = pack(join(root, 'packages/core'));
+  const adapter = pack(join(root, 'packages/query'));
   assert.ok(adapter.files.some((file) => file.path === 'LICENSE'));
   assert.ok(
     !adapter.files.some((file) => file.path.startsWith('src/') || file.path.startsWith('test/')),
@@ -47,8 +52,8 @@ try {
       private: true,
       type: 'module',
       dependencies: {
-        'openapi-chain': `file:./${runtime.filename}`,
-        'openapi-chain-query': `file:./${adapter.filename}`,
+        '@openapi-chain/core': `file:./${runtime.filename}`,
+        '@openapi-chain/query': `file:./${adapter.filename}`,
         ...Object.fromEntries(
           ['@tanstack/react-query', 'swr', 'react', '@types/react'].map((name) => [
             name,
@@ -60,7 +65,7 @@ try {
   );
   run('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund']);
   const installed = JSON.parse(
-    readFileSync(join(consumer, 'node_modules/openapi-chain-query/package.json'), 'utf8'),
+    readFileSync(join(consumer, 'node_modules/@openapi-chain/query/package.json'), 'utf8'),
   );
   assert.equal(Object.keys(installed.dependencies ?? {}).length, 0);
   for (const extension of ['mts', 'cts'])
@@ -90,7 +95,7 @@ try {
   const entry = join(consumer, 'browser.mjs');
   writeFileSync(
     entry,
-    `import { createQuery } from 'openapi-chain-query';\nexport const item = createQuery({key:['scope','GET','/items/{id}'], fetcher: async input => input});\n`,
+    `import { createQuery } from '@openapi-chain/query';\nexport const item = createQuery({key:['scope','GET','/items/{id}'], fetcher: async input => input});\n`,
   );
   const modules = new Set();
   await build({
@@ -102,7 +107,7 @@ try {
     dts: false,
     sourcemap: false,
     minify: true,
-    deps: { alwaysBundle: [/openapi-chain-query/] },
+    deps: { alwaysBundle: [/@openapi-chain\/query/] },
     plugins: [
       {
         name: 'inspect-query-consumer',
@@ -113,7 +118,7 @@ try {
     ],
   });
   assert.ok(
-    [...modules].some((id) => id.replaceAll('\\', '/').includes('openapi-chain-query/dist/')),
+    [...modules].some((id) => id.replaceAll('\\', '/').includes('@openapi-chain/query/dist/')),
   );
   assert.ok(![...modules].some((id) => /node:|(?:react|swr|msw|typescript|yaml)[/\\]/.test(id)));
   console.log(

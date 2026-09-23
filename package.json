@@ -1,71 +1,11 @@
 {
-  "name": "openapi-chain",
-  "version": "0.5.0",
-  "description": "A tiny, type-safe OpenAPI client with fluent chain APIs, strict wire semantics, and a small dependency-free core.",
-  "keywords": [
-    "client",
-    "openapi",
-    "typescript"
-  ],
-  "homepage": "https://github.com/jskits/openapi-chain#readme",
-  "bugs": {
-    "url": "https://github.com/jskits/openapi-chain/issues"
-  },
-  "license": "MIT",
-  "author": "unadlib",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/jskits/openapi-chain.git"
-  },
-  "files": [
-    "dist"
-  ],
+  "name": "openapi-chain-workspace",
+  "private": true,
   "type": "module",
-  "sideEffects": false,
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      },
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
-      }
-    },
-    "./package.json": "./package.json",
-    "./strict": {
-      "import": {
-        "types": "./dist/strict.d.ts",
-        "default": "./dist/strict.js"
-      },
-      "require": {
-        "types": "./dist/strict.d.cts",
-        "default": "./dist/strict.cjs"
-      }
-    },
-    "./metadata": {
-      "import": {
-        "types": "./dist/metadata.d.ts",
-        "default": "./dist/metadata.js"
-      },
-      "require": {
-        "types": "./dist/metadata.d.cts",
-        "default": "./dist/metadata.cjs"
-      }
-    }
-  },
-  "publishConfig": {
-    "access": "public",
-    "provenance": true
-  },
   "scripts": {
-    "build": "tsdown && pnpm --filter openapi-chain-query build",
-    "dev": "tsdown --watch",
-    "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; for (const path of ['dist', 'query/dist', 'coverage']) rmSync(path, { recursive: true, force: true });\"",
+    "build": "turbo run build --filter=./packages/*",
+    "dev": "pnpm --filter @openapi-chain/core dev",
+    "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; for (const path of ['packages/core/dist', 'packages/query/dist', 'coverage', '.turbo']) rmSync(path, { recursive: true, force: true });\"",
     "lint": "oxlint --type-aware --deny-warnings",
     "lint:fix": "oxlint --type-aware --fix",
     "format": "oxfmt --write .",
@@ -75,14 +15,12 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:package": "node scripts/check-package.mjs --compiler=ts6",
-    "check": "pnpm build && pnpm format:check && pnpm lint && pnpm test:generated && pnpm typecheck && pnpm test:coverage && pnpm test:cli && pnpm test:migration && pnpm test:scoped && pnpm test:package && pnpm test:cli:package && pnpm test:query:package && pnpm size:check && pnpm benchmark:types && node scripts/benchmark-scoping.mjs --compiler=ts6 && pnpm check:ts7",
+    "check": "pnpm build && pnpm format:check && pnpm lint && pnpm test:generated && pnpm typecheck && pnpm test:coverage && pnpm test:cli && pnpm test:migration && pnpm test:scoped && pnpm test:package && pnpm test:cli:package && pnpm test:query:package && pnpm test:legacy:package && pnpm size:check && pnpm benchmark:types && node scripts/benchmark-scoping.mjs --compiler=ts6 && pnpm check:ts7",
     "commit": "cz",
     "commitlint": "commitlint",
     "changeset": "changeset",
     "version:packages": "changeset version && pnpm install --lockfile-only && pnpm generate:scoped && pnpm format",
     "release": "pnpm check && changeset publish",
-    "prepack": "pnpm build",
-    "prepublishOnly": "pnpm check",
     "prepare": "husky",
     "verify:package": "pnpm test:package",
     "size:check": "node scripts/check-size.mjs",
@@ -94,8 +32,8 @@
     "benchmark:size": "node scripts/benchmark-size.mjs",
     "benchmark": "pnpm build && pnpm benchmark:types:ts7 && pnpm benchmark:types && pnpm benchmark:runtime && pnpm benchmark:size && pnpm benchmark:metadata && pnpm benchmark:scoping && pnpm benchmark:editor --compiler=ts6 && pnpm benchmark:editor:ts7 && pnpm benchmark:delivery",
     "benchmark:metadata": "node scripts/benchmark-metadata.mjs",
-    "generate:scoped": "pnpm build && node cli/src/cli.mjs generate --config examples/scoped/openapi-chain.config.json",
-    "test:scoped": "node cli/src/cli.mjs generate --config examples/scoped/openapi-chain.config.json --check && node scripts/check-scoped-bundle.mjs",
+    "generate:scoped": "pnpm build && node packages/cli/src/cli.mjs generate --config examples/scoped/openapi-chain.config.json",
+    "test:scoped": "node packages/cli/src/cli.mjs generate --config examples/scoped/openapi-chain.config.json --check && node scripts/check-scoped-bundle.mjs",
     "benchmark:profiles": "node scripts/benchmark-profile-experiment.mjs",
     "benchmark:scoping": "node scripts/benchmark-scoping.mjs",
     "benchmark:editor": "node scripts/benchmark-editor.mjs",
@@ -104,18 +42,20 @@
     "benchmark:types:ts7": "node scripts/benchmark-types.mjs --compiler=ts7 && node scripts/benchmark-types-project.mjs --compiler=ts7 && node scripts/benchmark-scoping.mjs --compiler=ts7",
     "benchmark:editor:ts7": "node scripts/benchmark-editor.mjs --compiler=ts7",
     "test:package:ts7": "node scripts/check-package.mjs --compiler=ts7",
-    "check:ts7": "pnpm typecheck:ts7 && pnpm test:package:ts7 && node scripts/check-cli-package.mjs --compiler=ts7 && node scripts/check-query-package.mjs --compiler=ts7 && pnpm benchmark:types:ts7",
+    "check:ts7": "pnpm typecheck:ts7 && pnpm test:package:ts7 && node scripts/check-cli-package.mjs --compiler=ts7 && node scripts/check-query-package.mjs --compiler=ts7 && node scripts/check-legacy-package.mjs --compiler=ts7 && pnpm benchmark:types:ts7",
     "migration:check": "node scripts/compare-migration.mjs",
     "test:migration": "node scripts/test-migration.mjs",
-    "test:cli": "pnpm --filter openapi-chain-cli test",
+    "test:cli": "turbo run test --filter=@openapi-chain/cli",
     "test:cli:package": "node scripts/check-cli-package.mjs --compiler=ts6",
-    "test:query:package": "node scripts/check-query-package.mjs --compiler=ts6"
+    "test:query:package": "node scripts/check-query-package.mjs --compiler=ts6",
+    "test:legacy:package": "node scripts/check-legacy-package.mjs --compiler=ts6"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",
     "@changesets/cli": "3.0.3",
     "@commitlint/cli": "21.2.2",
     "@commitlint/config-conventional": "21.2.2",
+    "@openapi-chain/core": "workspace:^",
     "@tanstack/react-query": "5.103.2",
     "@types/node": "24.13.6",
     "@types/react": "19.3.0",
@@ -139,6 +79,7 @@
     "react-dom": "19.3.0",
     "swr": "2.5.1",
     "tsdown": "0.23.0",
+    "turbo": "2.11.3",
     "typescript": "6.0.3",
     "typescript7": "npm:typescript@7.0.2",
     "vitest": "5.0.1"
@@ -147,9 +88,6 @@
     "commitizen": {
       "path": "cz-conventional-changelog"
     }
-  },
-  "engines": {
-    "node": "^22.22.1 || ^24.11.0 || >=26.0.0"
   },
   "packageManager": "pnpm@10.34.5"
 }

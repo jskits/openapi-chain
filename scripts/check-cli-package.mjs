@@ -12,8 +12,13 @@ import { compiler } from './lib/compiler.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const consumer = mkdtempSync(join(tmpdir(), 'openapi-chain-cli-consumer-'));
-const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
-const cliManifest = JSON.parse(readFileSync(join(root, 'cli/package.json'), 'utf8'));
+const workspace = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+const manifest = {
+  ...JSON.parse(readFileSync(join(root, 'packages/core/package.json'), 'utf8')),
+  devDependencies: workspace.devDependencies,
+  packageManager: workspace.packageManager,
+};
+const cliManifest = JSON.parse(readFileSync(join(root, 'packages/cli/package.json'), 'utf8'));
 const npmrc = join(consumer, '.npmrc');
 const globalConfig = join(consumer, 'global.npmrc');
 writeFileSync(npmrc, 'registry=https://registry.npmjs.org/\n');
@@ -36,23 +41,27 @@ function run(command, args, cwd = consumer) {
 let server;
 try {
   const [packed] = JSON.parse(
-    run('npm', ['pack', '--ignore-scripts', '--json', '--pack-destination', consumer], root),
+    run(
+      'npm',
+      ['pack', '--ignore-scripts', '--json', '--pack-destination', consumer],
+      join(root, 'packages/core'),
+    ),
   );
-  run('pnpm', ['pack', '--pack-destination', consumer], join(root, 'cli'));
-  const cliTarball = `${cliManifest.name}-${cliManifest.version}.tgz`;
+  run('pnpm', ['pack', '--pack-destination', consumer], join(root, 'packages/cli'));
+  const cliTarball = `${cliManifest.name.replace(/^@/, '').replace('/', '-')}-${cliManifest.version}.tgz`;
   writeFileSync(
     join(consumer, 'package.json'),
     JSON.stringify({
       private: true,
       type: 'module',
-      dependencies: { 'openapi-chain': `file:./${packed.filename}` },
+      dependencies: { '@openapi-chain/core': `file:./${packed.filename}` },
       devDependencies: {
-        'openapi-chain-cli': `file:./${cliTarball}`,
+        '@openapi-chain/cli': `file:./${cliTarball}`,
         typescript: manifest.devDependencies.typescript,
       },
       pnpm: {
         overrides: {
-          'openapi-chain': `file:${join(consumer, packed.filename).replaceAll('\\', '/')}`,
+          '@openapi-chain/core': `file:${join(consumer, packed.filename).replaceAll('\\', '/')}`,
         },
       },
     }),
@@ -69,20 +78,20 @@ try {
     compiler.major === 7
       ? run('pnpm', ['exec', 'openapi-chain', ...args])
       : run('npm', ['exec', '--offline', '--', 'openapi-chain', ...args]);
-  const cliRequire = createRequire(join(consumer, 'node_modules/openapi-chain-cli/src/cli.mjs'));
+  const cliRequire = createRequire(join(consumer, 'node_modules/@openapi-chain/cli/src/cli.mjs'));
   assert.equal(
-    readFileSync(cliRequire.resolve('openapi-chain/metadata'), 'utf8'),
-    readFileSync(join(root, 'dist/metadata.cjs'), 'utf8'),
+    readFileSync(cliRequire.resolve('@openapi-chain/core/metadata'), 'utf8'),
+    readFileSync(join(root, 'packages/core/dist/metadata.cjs'), 'utf8'),
   );
   const installed = JSON.parse(
-    readFileSync(join(consumer, 'node_modules/openapi-chain-cli/package.json'), 'utf8'),
+    readFileSync(join(consumer, 'node_modules/@openapi-chain/cli/package.json'), 'utf8'),
   );
-  assert.equal(installed.dependencies['openapi-chain'], `^${manifest.version}`);
+  assert.equal(installed.dependencies['@openapi-chain/core'], `^${manifest.version}`);
   assert.equal(installed.bin['openapi-chain'], 'src/cli.mjs');
   assert.ok(
-    readFileSync(join(consumer, 'node_modules/openapi-chain-cli/LICENSE'), 'utf8').includes('MIT'),
+    readFileSync(join(consumer, 'node_modules/@openapi-chain/cli/LICENSE'), 'utf8').includes('MIT'),
   );
-  assert.ok(!readdirSync(join(consumer, 'node_modules/openapi-chain-cli')).includes('test'));
+  assert.ok(!readdirSync(join(consumer, 'node_modules/@openapi-chain/cli')).includes('test'));
   assert.ok(!packed.files.some(({ path }) => path.startsWith('cli/')));
   assert.equal(runCli('--version').trim(), cliManifest.version);
   const sourceDocument = JSON.parse(
@@ -110,8 +119,8 @@ try {
   assert.equal(provenance.versions.runtime, manifest.version);
   writeFileSync(
     join(consumer, 'client.ts'),
-    `import {createStrictClient} from 'openapi-chain/strict';
-import type {Transport} from 'openapi-chain';
+    `import {createStrictClient} from '@openapi-chain/core/strict';
+import type {Transport} from '@openapi-chain/core';
 import type {ScopedPaths} from './generated/scope.js';
 import {metadata} from './generated/metadata.js';
 export const createCatalog = (baseUrl: string, transport?: Transport) => createStrictClient<ScopedPaths>({baseUrl, metadata, ...(transport ? {transport} : {})});
@@ -178,7 +187,7 @@ void api.items.get({query:{unknown:'x'}});
   });
   for (const id of modules) {
     assert.ok(
-      !/\/node_modules\/(?:openapi-chain-cli|openapi-typescript|yaml|typescript)\/|\/dist\/metadata\.|\/openapi\.json|\/schema\.d\.ts/.test(
+      !/\/node_modules\/(?:@openapi-chain\/cli|openapi-typescript|yaml|typescript)\/|\/dist\/metadata\.|\/openapi\.json|\/schema\.d\.ts/.test(
         id,
       ),
       `Build-time module leaked: ${id}`,

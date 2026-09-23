@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
 import { readFileSync } from 'node:fs';
-import { createClient, OpenAPIChainError } from 'openapi-chain';
-import { createStrictClient } from 'openapi-chain/strict';
-import { compileOpenAPIMetadata } from 'openapi-chain/metadata';
+import { createClient, OpenAPIChainError } from '@openapi-chain/core';
+import { createStrictClient } from '@openapi-chain/core/strict';
+import { compileOpenAPIMetadata } from '@openapi-chain/core/metadata';
 
 // Copied into the isolated npm consumer by check-package.mjs; imports resolve
 // only against its installed tarball, never the repository's source tree.

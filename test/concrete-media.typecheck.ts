@@ -1,4 +1,4 @@
-import { createClient, type OperationInputFor } from '../src/index.js';
+import { createClient, type OperationInputFor } from '../packages/core/src/index.js';
 
 type Paths = {
   '/all': {

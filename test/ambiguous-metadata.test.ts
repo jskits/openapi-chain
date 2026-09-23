@@ -1,7 +1,10 @@
 import { expect, test, vi } from 'vitest';
-import { compileOpenAPIMetadata, type CompileOpenAPIMetadataOptions } from '../src/metadata.js';
-import { createStrictClient } from '../src/strict.js';
-import type { Transport } from '../src/index.js';
+import {
+  compileOpenAPIMetadata,
+  type CompileOpenAPIMetadataOptions,
+} from '../packages/core/src/metadata.js';
+import { createStrictClient } from '../packages/core/src/strict.js';
+import type { Transport } from '../packages/core/src/index.js';
 
 type Operation = { responses: { 204: { content?: never } } };
 type Paths = {

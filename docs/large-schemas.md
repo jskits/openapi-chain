@@ -45,6 +45,6 @@ The manifest binds the normalized source hash, config, selected paths, tool vers
 
 The generated metadata module uses a `CompiledOpenAPIMetadata` assertion because JSON output cannot carry a TypeScript brand. The assertion itself does not validate data. Use it only for compiler-produced artifacts under your build's control; arbitrary remote JSON or a cast is not equivalent to successful compilation. Keep runtime metadata immutable.
 
-Browser and edge clients import only the generated metadata module and `openapi-chain/strict`. They should not import the source document, CLI or `openapi-chain/metadata` at runtime. The generated metadata module's import from that entry is type-only and is erased.
+Browser and edge clients import only the generated metadata module and `@openapi-chain/core/strict`. They should not import the source document, CLI or `@openapi-chain/core/metadata` at runtime. The generated metadata module's import from that entry is type-only and is erased.
 
 A scoped result remains `complete: true` for its selected operations. Calls outside it fail before transport. This is a safety net, not a replacement for synchronized generation. The programmatic compiler skips unrelated operations, but the CLI also generates full type declarations and may reject invalid unselected portions of the document. Its upstream type generator currently limits CLI input to OpenAPI 3.0/3.1; the programmatic metadata compiler continues to support 3.2.

@@ -1,7 +1,7 @@
-import { createQuery } from '../../query/src/index.js';
+import { createQuery } from '../../packages/query/src/index.js';
 import type { Catalog, DetailInput } from './api.js';
 
-// Application code imports createQuery from 'openapi-chain-query'.
+// Application code imports createQuery from '@openapi-chain/query'.
 export function catalogDetail(api: Catalog, cacheScope: string) {
   return createQuery({
     key: [cacheScope, 'GET', '/items/{id}'],

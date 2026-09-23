@@ -1,0 +1,74 @@
+{
+  "name": "@openapi-chain/core",
+  "version": "0.5.0",
+  "description": "A tiny, type-safe OpenAPI client with fluent chain APIs, strict wire semantics, and a small dependency-free core.",
+  "keywords": [
+    "client",
+    "openapi",
+    "typescript"
+  ],
+  "homepage": "https://github.com/jskits/openapi-chain#readme",
+  "bugs": {
+    "url": "https://github.com/jskits/openapi-chain/issues"
+  },
+  "license": "MIT",
+  "author": "unadlib",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jskits/openapi-chain.git",
+    "directory": "packages/core"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json",
+    "./strict": {
+      "import": {
+        "types": "./dist/strict.d.ts",
+        "default": "./dist/strict.js"
+      },
+      "require": {
+        "types": "./dist/strict.d.cts",
+        "default": "./dist/strict.cjs"
+      }
+    },
+    "./metadata": {
+      "import": {
+        "types": "./dist/metadata.d.ts",
+        "default": "./dist/metadata.js"
+      },
+      "require": {
+        "types": "./dist/metadata.d.cts",
+        "default": "./dist/metadata.cjs"
+      }
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "prepack": "pnpm build"
+  },
+  "engines": {
+    "node": "^22.22.1 || ^24.11.0 || >=26.0.0"
+  }
+}

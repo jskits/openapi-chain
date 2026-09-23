@@ -1,8 +1,8 @@
 import { expect, test } from 'vitest';
-import { createClient, type Transport } from '../src/index.js';
-import { createStrictClient } from '../src/strict.js';
-import { compileOpenAPIMetadata } from '../src/metadata.js';
-import { safeUrl } from '../src/path.js';
+import { createClient, type Transport } from '../packages/core/src/index.js';
+import { createStrictClient } from '../packages/core/src/strict.js';
+import { compileOpenAPIMetadata } from '../packages/core/src/metadata.js';
+import { safeUrl } from '../packages/core/src/path.js';
 
 type Paths = {
   '/files/{id}': {

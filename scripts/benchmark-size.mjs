@@ -9,9 +9,9 @@ import { build } from 'tsdown';
 const directory = mkdtempSync(join(tmpdir(), 'openapi-chain-size-'));
 try {
   const entries = {
-    core: new URL('../dist/index.js', import.meta.url),
-    strict: new URL('../dist/strict.js', import.meta.url),
-    metadata: new URL('../dist/metadata.js', import.meta.url),
+    core: new URL('../packages/core/dist/index.js', import.meta.url),
+    strict: new URL('../packages/core/dist/strict.js', import.meta.url),
+    metadata: new URL('../packages/core/dist/metadata.js', import.meta.url),
     openapiFetch: new URL(import.meta.resolve('openapi-fetch')),
   };
   for (const [label, url] of Object.entries(entries)) {

@@ -5,7 +5,7 @@ import { setupServer } from 'msw/node';
 import { createCatalog } from '../examples/integrations/api.js';
 import { catalogQueries } from '../examples/integrations/tanstack.js';
 import { handlers } from '../examples/integrations/handlers.js';
-import { HttpError } from '../src/index.js';
+import { HttpError } from '../packages/core/src/index.js';
 
 const server = setupServer(...handlers);
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));

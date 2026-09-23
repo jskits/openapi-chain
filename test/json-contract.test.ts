@@ -1,8 +1,8 @@
 import { expect, test, vi } from 'vitest';
-import { createClient, type RequestInput, type Transport } from '../src/index.js';
-import { createStrictClient } from '../src/strict.js';
-import { compileOpenAPIMetadata } from '../src/metadata.js';
-import { stringifyJson } from '../src/json.js';
+import { createClient, type RequestInput, type Transport } from '../packages/core/src/index.js';
+import { createStrictClient } from '../packages/core/src/strict.js';
+import { compileOpenAPIMetadata } from '../packages/core/src/metadata.js';
+import { stringifyJson } from '../packages/core/src/json.js';
 
 const metadata = compileOpenAPIMetadata({
   openapi: '3.1.0',

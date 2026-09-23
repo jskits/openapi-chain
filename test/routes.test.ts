@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
-import { createOperationResolver } from '../src/routes.js';
-import type { OpenAPIMetadata } from '../src/type.js';
+import { createOperationResolver } from '../packages/core/src/routes.js';
+import type { OpenAPIMetadata } from '../packages/core/src/type.js';
 
 test('indexes routes once and preserves method and dynamic/static distinctions', () => {
   let enumerations = 0;

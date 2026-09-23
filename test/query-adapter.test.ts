@@ -1,6 +1,6 @@
 import { expect, test, vi } from 'vitest';
 import { QueryClient } from '@tanstack/react-query';
-import { createQuery } from '../query/src/index.js';
+import { createQuery } from '../packages/query/src/index.js';
 
 test('immutable snapshots bind the cached identity to the actual fetch input', async () => {
   const prefix = ['account-a', 'GET', '/items/{id}'];

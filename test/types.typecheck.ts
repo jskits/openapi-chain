@@ -5,8 +5,8 @@ import {
   type CompiledOpenAPIMetadata,
   type OperationExtensionsFor,
   type SuccessData,
-} from '../src/index.js';
-import { createStrictClient } from '../src/strict.js';
+} from '../packages/core/src/index.js';
+import { createStrictClient } from '../packages/core/src/strict.js';
 
 type Paths = {
   '/': {

@@ -1,6 +1,9 @@
 import { expect, test } from 'vitest';
-import { compileOpenAPIMetadata, type CompileOpenAPIMetadataOptions } from '../src/metadata.js';
-import { createOperationResolver } from '../src/routes.js';
+import {
+  compileOpenAPIMetadata,
+  type CompileOpenAPIMetadataOptions,
+} from '../packages/core/src/metadata.js';
+import { createOperationResolver } from '../packages/core/src/routes.js';
 
 const document = {
   openapi: '3.1.0',

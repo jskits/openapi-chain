@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { compileOpenAPIMetadata } from '../src/metadata.js';
+import { compileOpenAPIMetadata } from '../packages/core/src/metadata.js';
 
 test.each(['3.0.4', '3.1.1', '3.2.1'])(
   'ignores Paths specification extensions in %s',

@@ -1,4 +1,4 @@
-import { createClient } from '../../src/index.js';
+import { createClient } from '../../packages/core/src/index.js';
 
 export type Item = { id: string; label: string };
 type Paths = {
@@ -18,7 +18,7 @@ type Paths = {
   };
 };
 
-// Application code imports createClient from 'openapi-chain'.
+// Application code imports createClient from '@openapi-chain/core'.
 export function createCatalog(baseUrl: string, token: string) {
   return createClient<Paths>({ baseUrl, headers: { authorization: `Bearer ${token}` } });
 }

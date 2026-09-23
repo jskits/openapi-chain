@@ -1,12 +1,12 @@
 {
-  "name": "openapi-chain-cli",
+  "name": "@openapi-chain/cli",
   "version": "0.2.0",
   "description": "Build-time types, scoped clients and metadata for openapi-chain.",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jskits/openapi-chain.git",
-    "directory": "cli"
+    "directory": "packages/cli"
   },
   "bin": {
     "openapi-chain": "src/cli.mjs"
@@ -23,7 +23,7 @@
     "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
-    "openapi-chain": "workspace:^",
+    "@openapi-chain/core": "workspace:^",
     "openapi-typescript": "7.13.0",
     "typescript": "5.9.3",
     "yaml": "2.9.1"

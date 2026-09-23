@@ -7,6 +7,7 @@
 | Read | When you need |
 | --- | --- |
 | [Getting started](getting-started.md) | Install, generate types and run an offline example |
+| [Scope migration](migration-to-scope.md) | Move imports to the npm organization scope and understand the compatibility package |
 | [Query libraries and mocks](integrations.md) | Integrate TanStack Query, SWR and MSW with executable recipes |
 | [Official CLI](cli.md) | Generate synchronized types, scopes and metadata; check drift in CI |
 | [API reference](api.md) | Options, path calls, request bodies, errors, extensions and transport |
@@ -25,7 +26,7 @@
 | [Architecture](architecture.md) | Understand type inference and runtime package boundaries |
 | [Conformance fixtures](../test/fixtures/README.md) | Understand independent wire/type expectations |
 | [Security](../SECURITY.md) | Report a vulnerability privately |
-| [Changelog](../CHANGELOG.md) | Read release history |
+| [Core changelog](../packages/core/CHANGELOG.md) | Read runtime release history |
 | [Legacy changelog](legacy-changelog.md) | Consult history predating the current implementation |
 
 ## Historical evidence

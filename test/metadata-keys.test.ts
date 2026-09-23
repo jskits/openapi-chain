@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
-import { compileOpenAPIMetadata } from '../src/metadata.js';
-import { createStrictClient } from '../src/strict.js';
+import { compileOpenAPIMetadata } from '../packages/core/src/metadata.js';
+import { createStrictClient } from '../packages/core/src/strict.js';
 
 test.each(['__proto__', 'constructor', 'toString'])(
   'preserves required parameter %s as an own key',

@@ -24,7 +24,9 @@ try {
       (_, i) =>
         `const r${i}: Promise<{ok:true}> = api.r${Math.floor((i * count) / 25)}('id').get({query:{q:'x'}}); void r${i};`,
     ).join('\n');
-    const specifier = JSON.stringify(join(root, 'dist/index.js').replaceAll('\\', '/'));
+    const specifier = JSON.stringify(
+      join(root, 'packages/core/dist/index.js').replaceAll('\\', '/'),
+    );
     writeFileSync(
       join(directory, 'consumer.mts'),
       `import {createClient} from ${specifier};

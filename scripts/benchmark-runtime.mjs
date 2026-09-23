@@ -1,8 +1,8 @@
 import { performance } from 'node:perf_hooks';
 import createFetchClient from 'openapi-fetch';
-import { createClient } from '../dist/index.js';
-import { createStrictClient } from '../dist/strict.js';
-import { compileOpenAPIMetadata } from '../dist/metadata.js';
+import { createClient } from '../packages/core/dist/index.js';
+import { createStrictClient } from '../packages/core/dist/strict.js';
+import { compileOpenAPIMetadata } from '../packages/core/dist/metadata.js';
 
 // Same Fetch replacement, URL, empty HTTP 204 response, warmup and sample count.
 const fetch = async () => new Response(null, { status: 204 });

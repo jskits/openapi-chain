@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { build } from 'tsdown';
-import { compileOpenAPIMetadata } from '../dist/metadata.js';
+import { compileOpenAPIMetadata } from '../packages/core/dist/metadata.js';
 
 // An explicitly incomplete build-time experiment, never a published package entry.
 // Remove all three roots of structured form serialization, including OAS 3.2 querystring.

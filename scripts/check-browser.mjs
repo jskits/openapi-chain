@@ -20,12 +20,14 @@ async function handle(request, response) {
   }
   if (url.pathname === '/query/index.js') {
     response.setHeader('content-type', 'text/javascript');
-    response.end(readFileSync(new URL('../query/dist/index.js', import.meta.url)));
+    response.end(readFileSync(new URL('../packages/query/dist/index.js', import.meta.url)));
     return;
   }
   if (url.pathname.startsWith('/dist/')) {
     response.setHeader('content-type', 'text/javascript');
-    response.end(readFileSync(new URL(`../dist/${basename(url.pathname)}`, import.meta.url)));
+    response.end(
+      readFileSync(new URL(`../packages/core/dist/${basename(url.pathname)}`, import.meta.url)),
+    );
     return;
   }
   if (url.pathname === '/') {
@@ -244,7 +246,10 @@ try {
     }
     return { errors, sent };
   }, origin);
-  assert.deepEqual(coreBoundary, { errors: Array(3).fill('Use openapi-chain/strict.'), sent: 0 });
+  assert.deepEqual(coreBoundary, {
+    errors: Array(3).fill('Use @openapi-chain/core/strict.'),
+    sent: 0,
+  });
   const result = await page.evaluate(
     async ({ origin, crossOrigin }) => {
       const { createClient } = await import(`${origin}/dist/index.js`);

@@ -1,6 +1,6 @@
-import { createClient } from '../src/index.js';
-import { createStrictClient } from '../src/strict.js';
-import { compileOpenAPIMetadata } from '../src/metadata.js';
+import { createClient } from '../packages/core/src/index.js';
+import { createStrictClient } from '../packages/core/src/strict.js';
+import { compileOpenAPIMetadata } from '../packages/core/src/metadata.js';
 import document from './fixtures/conformance.openapi.json' with { type: 'json' };
 import type { paths } from './fixtures/conformance-schema.js';
 const core = createClient<paths>({ baseUrl: 'https://example.test' });

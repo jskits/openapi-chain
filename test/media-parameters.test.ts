@@ -1,8 +1,12 @@
 import { expect, test, vi } from 'vitest';
-import { compileOpenAPIMetadata } from '../src/metadata.js';
-import { createStrictClient } from '../src/strict.js';
-import type { RequestInput, Transport } from '../src/index.js';
-import { mediaRangeMatches, parseMediaRange, selectMediaDeclaration } from '../src/media-range.js';
+import { compileOpenAPIMetadata } from '../packages/core/src/metadata.js';
+import { createStrictClient } from '../packages/core/src/strict.js';
+import type { RequestInput, Transport } from '../packages/core/src/index.js';
+import {
+  mediaRangeMatches,
+  parseMediaRange,
+  selectMediaDeclaration,
+} from '../packages/core/src/media-range.js';
 
 test('media matching preserves case-sensitive profile values and quoted semicolons', () => {
   expect(

@@ -1,8 +1,8 @@
-import { snapshotMetadata } from '../src/metadata-contract.js';
+import { snapshotMetadata } from '../packages/core/src/metadata-contract.js';
 import { expect, test } from 'vitest';
-import { compileOpenAPIMetadata } from '../src/metadata.js';
-import { createStrictClient } from '../src/strict.js';
-import type { CompiledOpenAPIMetadata, RequestInput } from '../src/index.js';
+import { compileOpenAPIMetadata } from '../packages/core/src/metadata.js';
+import { createStrictClient } from '../packages/core/src/strict.js';
+import type { CompiledOpenAPIMetadata, RequestInput } from '../packages/core/src/index.js';
 
 test('JSON-decoded metadata and its options can change without affecting an existing strict client', async () => {
   const metadata = JSON.parse(

@@ -1,4 +1,4 @@
-import { createClient } from '../src/index.js';
+import { createClient } from '../packages/core/src/index.js';
 import type { paths } from './schema.js';
 
 const api = createClient<paths>({

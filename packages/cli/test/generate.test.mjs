@@ -5,8 +5,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { compileOpenAPIMetadata } from 'openapi-chain/metadata';
-import { createStrictClient } from 'openapi-chain/strict';
+import { compileOpenAPIMetadata } from '@openapi-chain/core/metadata';
+import { createStrictClient } from '@openapi-chain/core/strict';
 import { generate } from '../src/generate.mjs';
 
 const document = {

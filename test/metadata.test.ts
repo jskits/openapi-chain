@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { compileOpenAPIMetadata, defineOpenAPIMetadata } from '../src/metadata.js';
+import { compileOpenAPIMetadata, defineOpenAPIMetadata } from '../packages/core/src/metadata.js';
 
 describe('compileOpenAPIMetadata', () => {
   test('resolves local refs and operation parameters override path parameters', () => {

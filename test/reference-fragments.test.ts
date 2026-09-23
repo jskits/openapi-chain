@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { compileOpenAPIMetadata } from '../src/metadata.js';
+import { compileOpenAPIMetadata } from '../packages/core/src/metadata.js';
 
 const parameter = { name: 'q', in: 'query', required: true, schema: { type: 'string' } };
 function compile(ref: string, fixtures: unknown = {}) {

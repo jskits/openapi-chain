@@ -1,5 +1,5 @@
-import { createStrictClient } from 'openapi-chain/strict';
-import type { Transport } from 'openapi-chain';
+import { createStrictClient } from '@openapi-chain/core/strict';
+import type { Transport } from '@openapi-chain/core';
 import { metadata } from './generated/metadata.js';
 import type { ScopedPaths } from './generated/scope.js';
 

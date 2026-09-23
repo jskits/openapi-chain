@@ -1,9 +1,9 @@
 import { runInNewContext } from 'node:vm';
 import { expect, test, vi } from 'vitest';
-import { createStrictClient } from '../src/strict.js';
-import { createClient, type RequestInput, type Transport } from '../src/index.js';
-import { compileOpenAPIMetadata } from '../src/metadata.js';
-import { isPlainRecord } from '../src/record.js';
+import { createStrictClient } from '../packages/core/src/strict.js';
+import { createClient, type RequestInput, type Transport } from '../packages/core/src/index.js';
+import { compileOpenAPIMetadata } from '../packages/core/src/metadata.js';
+import { isPlainRecord } from '../packages/core/src/record.js';
 
 class Instance {
   field = 'x';

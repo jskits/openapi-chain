@@ -1,4 +1,4 @@
-import type { OperationInputFor, OperationExtensionsFor } from '../src/index.js';
+import type { OperationInputFor, OperationExtensionsFor } from '../packages/core/src/index.js';
 
 type Paths = {
   '/x': {

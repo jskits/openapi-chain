@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { compileOpenAPIMetadata } from '../src/metadata.js';
+import { compileOpenAPIMetadata } from '../packages/core/src/metadata.js';
 
 function operation(value: unknown) {
   return compileOpenAPIMetadata({ openapi: '3.2.1', paths: { '/x': { post: value } } });

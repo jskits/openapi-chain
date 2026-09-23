@@ -1,7 +1,6 @@
 packages:
   - .
-  - cli
-  - query
+  - packages/*
 
 strictPeerDependencies: true
 saveExact: true

@@ -7,7 +7,7 @@ import {
   isArrayBuffer,
   isNativeBody,
   isFile,
-} from '../src/native-body.js';
+} from '../packages/core/src/native-body.js';
 
 test('platform brand checks reject toStringTag imitations', () => {
   expect(isBlob({ [Symbol.toStringTag]: 'Blob', size: 1 })).toBe(false);

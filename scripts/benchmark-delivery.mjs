@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { build } from 'tsdown';
-import { compileOpenAPIMetadata } from '../dist/metadata.js';
+import { compileOpenAPIMetadata } from '../packages/core/dist/metadata.js';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const directory = mkdtempSync(join(tmpdir(), 'openapi-chain-delivery-'));
@@ -48,12 +48,12 @@ try {
     const metadata = compileOpenAPIMetadata(document, paths ? { paths } : {});
     const header =
       mode === 'runtime-compile'
-        ? `import {compileOpenAPIMetadata} from ${JSON.stringify(join(root, 'dist/metadata.js').replaceAll('\\', '/'))};\nconst metadata = compileOpenAPIMetadata(${JSON.stringify(document)});`
+        ? `import {compileOpenAPIMetadata} from ${JSON.stringify(join(root, 'packages/core/dist/metadata.js').replaceAll('\\', '/'))};\nconst metadata = compileOpenAPIMetadata(${JSON.stringify(document)});`
         : `const metadata = ${JSON.stringify(metadata)};`;
     const entry = join(directory, `${mode}.mjs`);
     writeFileSync(
       entry,
-      `import {createStrictClient} from ${JSON.stringify(join(root, 'dist/strict.js').replaceAll('\\', '/'))};\n${header}\nexport const create = transport => createStrictClient({baseUrl:'https://api.test',metadata,transport});`,
+      `import {createStrictClient} from ${JSON.stringify(join(root, 'packages/core/dist/strict.js').replaceAll('\\', '/'))};\n${header}\nexport const create = transport => createStrictClient({baseUrl:'https://api.test',metadata,transport});`,
     );
     const modules = new Set();
     const outDir = join(directory, mode);
@@ -82,7 +82,7 @@ try {
     });
     const output = join(outDir, 'entry.js');
     const bytes = readFileSync(output);
-    const hasCompiler = [...modules].some((id) => id.endsWith('/dist/metadata.js'));
+    const hasCompiler = [...modules].some((id) => id.endsWith('/packages/core/dist/metadata.js'));
     assert.equal(hasCompiler, mode === 'runtime-compile');
     assert.equal(bytes.includes('BUILD_ONLY_SCHEMA_SENTINEL'), mode === 'runtime-compile');
     assert.equal(bytes.includes('/r999'), mode !== 'build-compile-50');

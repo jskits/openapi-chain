@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
-import { compileOpenAPIMetadata } from '../src/metadata.js';
-import { createStrictClient } from '../src/strict.js';
-import type { RequestInput } from '../src/index.js';
+import { compileOpenAPIMetadata } from '../packages/core/src/metadata.js';
+import { createStrictClient } from '../packages/core/src/strict.js';
+import type { RequestInput } from '../packages/core/src/index.js';
 
 const media = {
   schema: { type: 'object', properties: { tags: { type: 'array', items: { type: 'string' } } } },

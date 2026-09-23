@@ -1,7 +1,7 @@
 import { expect, test, vi } from 'vitest';
-import { compileOpenAPIMetadata } from '../src/metadata.js';
-import { createStrictClient } from '../src/strict.js';
-import type { RequestInput, Transport } from '../src/index.js';
+import { compileOpenAPIMetadata } from '../packages/core/src/metadata.js';
+import { createStrictClient } from '../packages/core/src/strict.js';
+import type { RequestInput, Transport } from '../packages/core/src/index.js';
 
 function client(contentType: string) {
   const metadata = compileOpenAPIMetadata({

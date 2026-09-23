@@ -1,5 +1,5 @@
 import { expect, test, vi } from 'vitest';
-import { createClient, type RequestInput, type Transport } from '../src/index.js';
+import { createClient, type RequestInput, type Transport } from '../packages/core/src/index.js';
 
 test.each(['*/*', 'text/*', 'application/*+json'])(
   'core rejects wildcard media %s before body extensions',

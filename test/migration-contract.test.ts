@@ -7,9 +7,9 @@ import {
   type OperationExtensionsFor,
   type RequestInput,
   type Transport,
-} from '../src/index.js';
-import { createStrictClient } from '../src/strict.js';
-import { compileOpenAPIMetadata } from '../src/metadata.js';
+} from '../packages/core/src/index.js';
+import { createStrictClient } from '../packages/core/src/strict.js';
+import { compileOpenAPIMetadata } from '../packages/core/src/metadata.js';
 
 const metadata = compileOpenAPIMetadata(document);
 const makeTransport = () =>

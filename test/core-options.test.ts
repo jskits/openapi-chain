@@ -1,5 +1,9 @@
 import { expect, test, vi } from 'vitest';
-import { createClient, type CoreClientOptions, type Transport } from '../src/index.js';
+import {
+  createClient,
+  type CoreClientOptions,
+  type Transport,
+} from '../packages/core/src/index.js';
 
 type Paths = { '/x': { get: { responses: { 204: { content?: never } } } } };
 
@@ -18,7 +22,7 @@ test.each([
       transport,
       ...extra,
     } as unknown as CoreClientOptions),
-  ).toThrow('Use openapi-chain/strict.');
+  ).toThrow('Use @openapi-chain/core/strict.');
   expect(transport).not.toHaveBeenCalled();
 });
 

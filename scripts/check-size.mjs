@@ -3,7 +3,7 @@ import { dirname, join, normalize } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 
-const root = new URL('../dist/', import.meta.url);
+const root = new URL('../packages/core/dist/', import.meta.url);
 const seen = new Set();
 const chunks = [];
 
