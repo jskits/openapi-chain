@@ -40,6 +40,8 @@ Compiled metadata and `paths` must come from the same schema revision. Treat met
 
 Advanced multipart per-part headers, ordered/nested encoding and content-transfer encodings that native FormData cannot represent are rejected or require a whole body extension. Arbitrary OpenAPI 3.2 additionalOperations are not supported.
 
+OpenAPI 3.2 Media Type Object references are resolved before compiling body and parameter-content serialization, including whole-query `querystring` content. Local references retain the referenced schema and Encoding rules; external, missing and cyclic references fail compilation.
+
 ## Qualification scope
 
 Local checks cover strict TypeScript, pinned real generator output, behavior and negative type tests, deterministic adversarial URL data, local HTTP, installed ESM/CJS tarballs, declaration resolution, coverage, core size and type-scale budgets. Chromium is a separate CI job. Node 22/24/26 and Windows/macOS/Linux are configured in the CI matrix; local success does not establish that those remote jobs passed.

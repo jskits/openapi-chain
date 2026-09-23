@@ -536,7 +536,7 @@ function compileMediaType(
       cause,
     });
   }
-  const mediaObject = asRecord(rawMedia, `Media Type Object for ${contentType}`);
+  const mediaObject = asRecord(dereference(rawMedia, root), `Media Type Object for ${contentType}`);
   const normalizedContentType = normalizeMediaTypeForCompiler(contentType);
   const multipart = normalizedContentType.startsWith('multipart/');
   const maySerializeForm =
