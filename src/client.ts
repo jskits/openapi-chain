@@ -100,16 +100,6 @@ function requestBody(
   return serialized;
 }
 
-async function parse(response: Response) {
-  if ([204, 205, 304].includes(response.status) || response.headers.get('content-length') === '0')
-    return undefined;
-  const text = await response.text();
-  if (!text) return undefined;
-  return isJsonMediaType(mediaType(response.headers.get('content-type') ?? ''))
-    ? JSON.parse(text)
-    : text;
-}
-
 async function executeRequest(
   runtime: Runtime,
   state: State,
@@ -163,12 +153,19 @@ async function executeRequest(
   if (extensions?.request) request = await extensions.request(request, input!);
   const response = await runtime.transport(request);
   const { status } = response;
+  if (status === 0) throw new TypeError('Response status 0');
   let data: unknown;
   if (extensions?.response) {
     const item = await extensions.response(response);
     if (item.status !== status) throw new TypeError('Response status mismatch');
     data = item.data;
-  } else data = await parse(response);
+  } else if (![204, 205, 304].includes(status) && response.headers.get('content-length') !== '0') {
+    const text = await response.text();
+    if (text)
+      data = isJsonMediaType(mediaType(response.headers.get('content-type') ?? ''))
+        ? JSON.parse(text)
+        : text;
+  }
   const ok = status >= 200 && status < 300;
   if (runtime.options.throwOnError === false) return { ok, status, data, response };
   if (!ok) throw new HttpError(`HTTP ${status}`, response, data);

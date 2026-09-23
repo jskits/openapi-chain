@@ -120,6 +120,8 @@ else console.error(result.data.error);
 
 These types assume the response follows the document. Matching precedence is exact status → `nXX` wildcard → `default`. Undocumented statuses and invalid data are not rejected by default. Empty `content` or `content: never` responses are typed as `undefined`.
 
+Both modes reject with `TypeError` for status-zero responses (including `opaque`, `opaqueredirect`, and `Response.error()`), before reading the body or invoking a response extension. These unreadable responses do not enter the HTTP result union.
+
 Both modes reject for transport failures, cancellation, invalid JSON, serialization errors and extension errors. Parsing happens before HTTP status handling, so a malformed JSON error response rejects with the parser error instead of `HttpError`.
 
 | Response                                        | Core default | Strict default |

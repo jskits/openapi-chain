@@ -176,6 +176,7 @@ async function execute(
   if (extensions?.request) request = await extensions.request(request, input ?? {});
 
   const response = await runtime.transport(request);
+  if (response.status === 0) throw new TypeError('Response status 0');
   let data: unknown;
   if (extensions?.response) {
     const parsed = await extensions.response(response);

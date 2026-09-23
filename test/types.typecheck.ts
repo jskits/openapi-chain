@@ -355,3 +355,17 @@ slashStrict.items.get();
 slashCore.other.get();
 void slashCore.$path('/items/').get();
 void slashStrict.$path('//other').get();
+
+// Status-zero transport responses reject before entering the HTTP result union.
+type ZeroResult = Extract<ApiResult<Paths['/default-only']['get']>, { status: 0 }>;
+// @ts-expect-error unreadable responses are never HTTP result values
+const zeroResult: ZeroResult = {
+  ok: false,
+  status: 0,
+  data: undefined,
+  response: Response.error(),
+};
+void zeroResult;
+// @ts-expect-error even a default response covers only HTTP statuses
+const zeroStatus: ApiResult<Paths['/default-only']['get']>['status'] = 0;
+void zeroStatus;

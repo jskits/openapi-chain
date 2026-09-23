@@ -28,6 +28,11 @@ async function handle(request, response) {
     response.end('<!doctype html><title>openapi-chain browser qualification</title>');
     return;
   }
+  if (url.pathname === '/redirect') {
+    response.writeHead(302, { location: '/' });
+    response.end();
+    return;
+  }
   if (url.pathname === '/misleading-text') {
     response.setHeader('content-type', 'text/plain; note="application/json"');
     response.end('hello');
@@ -315,8 +320,49 @@ try {
   );
   for (const result of mediaResults)
     assert.deepEqual(result, { text: 'hello', bytes: [99, 97, 102, 195, 169], rejection: true });
+  const unreadableResults = await page.evaluate(
+    async ({ origin, crossOrigin }) => {
+      const { createClient } = await import(`${origin}/dist/index.js`);
+      const { createStrictClient } = await import(`${origin}/dist/strict.js`);
+      const results = [];
+      for (const make of [createClient, createStrictClient]) {
+        for (const throwOnError of [false, true]) {
+          for (const redirect of [false, true]) {
+            let type;
+            const api = make({
+              baseUrl: origin,
+              throwOnError,
+              transport: async () => {
+                const response = await fetch(
+                  redirect ? `${origin}/redirect` : `${crossOrigin}/opaque`,
+                  redirect ? { redirect: 'manual' } : { mode: 'no-cors' },
+                );
+                type = response.type;
+                return response;
+              },
+            });
+            try {
+              await api.probe.get();
+              results.push({ type, rejected: false });
+            } catch (error) {
+              results.push({
+                type,
+                rejected: error instanceof TypeError && error.message === 'Response status 0',
+              });
+            }
+          }
+        }
+      }
+      return results;
+    },
+    { origin, crossOrigin },
+  );
+  assert.equal(unreadableResults.length, 8);
+  for (const [index, result] of unreadableResults.entries()) {
+    assert.deepEqual(result, { type: index % 2 ? 'opaqueredirect' : 'opaque', rejected: true });
+  }
   console.log(
-    'Chromium: strict-only core option rejection, core/strict ESM, multipart, Unicode, credentialed CORS, cookie omission, abort, streaming, multipart part fidelity, binary slices, response media and text charsets passed.',
+    'Chromium: strict-only core option rejection, core/strict ESM, multipart, Unicode, credentialed CORS, cookie omission, abort, streaming, multipart part fidelity, binary slices, response media, text charsets and unreadable status-zero responses passed.',
   );
 } finally {
   await browser?.close();
