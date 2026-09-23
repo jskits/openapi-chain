@@ -281,9 +281,21 @@ type ParameterLocationRecord<Params, Location extends PropertyKey> = Location ex
 
 type PresentRecord<T> = [T] extends [never] ? {} : T;
 
-type MergeRecords<Base, Override> = Base extends object
+type OverriddenKeys<Base, Override, IgnoreCase extends boolean> = IgnoreCase extends true
+  ? {
+      [Key in keyof Base]: Key extends string
+        ? Lowercase<Key> extends Lowercase<Extract<keyof Override, string>>
+          ? Key
+          : never
+        : Key extends keyof Override
+          ? Key
+          : never;
+    }[keyof Base]
+  : keyof Override;
+
+type MergeRecords<Base, Override, IgnoreCase extends boolean = false> = Base extends object
   ? Override extends object
-    ? Simplify<Omit<Base, keyof Override> & Override>
+    ? Simplify<Omit<Base, OverriddenKeys<Base, Override, IgnoreCase>> & Override>
     : Base
   : Override extends object
     ? Override
@@ -291,7 +303,8 @@ type MergeRecords<Base, Override> = Base extends object
 
 type LocationParameters<Item, Operation, Location extends PropertyKey> = MergeRecords<
   PresentRecord<ParameterLocationRecord<ParametersOf<Item>, Location>>,
-  PresentRecord<ParameterLocationRecord<ParametersOf<Operation>, Location>>
+  PresentRecord<ParameterLocationRecord<ParametersOf<Operation>, Location>>,
+  Location extends 'header' ? true : false
 >;
 
 type RequiredKeys<T> = T extends object
