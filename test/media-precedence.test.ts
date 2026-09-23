@@ -12,9 +12,17 @@ type Paths = {
 };
 const broad = { schema: { type: 'object', properties: { value: { type: 'object' } } } };
 const narrow = { schema: { type: 'object', additionalProperties: { type: 'string' } } };
-test.each(['multipart/form-data', 'Multipart/Form-Data; charset=utf-8', 'multipart/*'])(
+test.each([
+  ['multipart/form-data', 'multipart/form-data'],
+  ['Multipart/Form-Data', 'multipart/form-data'],
+  ['multipart/*', 'multipart/form-data'],
+  [
+    'Application/X-Www-Form-Urlencoded; charset=utf-8',
+    'application/x-www-form-urlencoded; charset=utf-8',
+  ],
+] as const)(
   'most-specific declaration shadows broader rules even without metadata: %s',
-  async (specific) => {
+  async (specific, contentType) => {
     for (const reverse of [false, true]) {
       const entries = [
         ['*/*', broad],
@@ -43,9 +51,7 @@ test.each(['multipart/form-data', 'Multipart/Form-Data; charset=utf-8', 'multipa
         },
       });
       await api.upload.post({
-        contentType: specific.includes(';')
-          ? 'multipart/form-data; charset=utf-8'
-          : 'multipart/form-data',
+        contentType,
         body: { value: 'hello' },
       });
     }

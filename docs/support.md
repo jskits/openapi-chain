@@ -84,6 +84,8 @@ Core and strict accept ArrayBuffer views (including Uint8Array, DataView and Nod
 
 Structured strict multipart bodies preserve File names when a declared part type requires replacing the File's media type. Arrays retain a separate part and name for each File. Anonymous Blob parts retain native FormData's default filename.
 
+Native FormData, including the result of a body extension or strict structured multipart serialization, requires an unparameterized `multipart/form-data` selection. Fetch generates its own boundary and would drop any selected media parameters. Incompatible media types and explicit multipart parameters fail before transport. A whole-body extension returning encoded bytes or text can supply the exact representation and matching header instead.
+
 An Encoding Object's single unparameterized media range, such as `image/*` or `*/*`, is resolved from each Blob/File's matching concrete type. Missing, nonmatching or wildcard Blob types, parameterized ranges and multiple declared choices require explicit application serialization. Ranges are never emitted as part Content-Type values.
 
 Generated textual multipart parts use UTF-8. Explicit `charset=utf-8` (including quoted, case-insensitive spelling) is supported and retained; other charsets fail before transport. Pre-encoded Blob/ArrayBuffer/view values can carry another charset without re-encoding their bytes. The application is responsible for that encoding. A whole-body extension can also implement another character encoding.

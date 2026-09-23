@@ -125,7 +125,7 @@ describe.each([false, true])('migrated request pipeline strict=%s', (strict) => 
     form.set('x', 'y');
     await api.post({
       body: {},
-      contentType: 'application/custom',
+      contentType: 'multipart/form-data',
       extensions: { body: () => form },
     });
     expect(new Headers(transport.mock.calls[2]![0].init.headers).has('content-type')).toBe(false);

@@ -42,6 +42,18 @@ for (const strict of [false, true]) {
   await assert.rejects(client.audit.post({ body: 'invalid', contentType: '*/*' }), {
     code: 'SERIALIZATION',
   });
+  await assert.rejects(
+    client.audit.post({ body: new FormData(), contentType: 'application/json' }),
+    { code: 'SERIALIZATION' },
+  );
+  await assert.rejects(
+    client.audit.post({
+      body: {},
+      contentType: 'application/json',
+      extensions: { body: () => new FormData() },
+    }),
+    { code: 'SERIALIZATION' },
+  );
   assert.equal(calls, 0);
   await assert.rejects(client.audit.post({ extensions: { response: () => ({ status: 204 }) } }), {
     code: 'EXTENSION_CONTRACT',

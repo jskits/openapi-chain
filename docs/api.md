@@ -68,6 +68,8 @@ Method inputs are derived from the exact operation. Required parameter locations
 
 Path parameters belong in the chain or `$path()` argument, not the method input. `init.method` and `init.body` are excluded from the public input; use the operation and `body` fields. `init.headers` is useful for authentication headers absent from the schema. Header precedence is client defaults → declared `header` values → `init.headers`, followed by cookie/body serialization. Body serialization can set Content-Type; native FormData removes it so Fetch can generate the boundary.
 
+Native FormData requires an unparameterized `multipart/form-data` selection, including when returned by a body extension. Other media types and explicit multipart parameters fail before transport because Fetch would replace them. To control a multipart boundary or representation parameter, use a body extension returning the complete encoded bytes or text with its matching `contentType`.
+
 The next example uses the repository's [Petstore schema](../examples/example.yaml), generated as `petstore-schema.d.ts` in your application:
 
 ```ts

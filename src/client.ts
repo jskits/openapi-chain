@@ -74,12 +74,13 @@ function requestBody(
 ) {
   if (body === undefined) return undefined;
   if (!contentType) throw new OpenAPIChainError('SERIALIZATION', 'Missing contentType.');
-  if (mediaType(contentType).includes('*'))
+  const media = mediaType(contentType);
+  if (media.includes('*'))
     throw new OpenAPIChainError('SERIALIZATION', 'Request body requires a concrete contentType.');
   let serialized: BodyInit | undefined;
   if (serialize) serialized = serialize({ body, contentType });
+  else if (isFormData(body)) serialized = body;
   else {
-    const media = mediaType(contentType);
     if (isJsonMediaType(media)) serialized = stringifyJson(body, `body (${contentType})`);
     else if (media.startsWith('text/') && typeof body !== 'object') serialized = String(body);
     else if (isNativeBody(body)) serialized = body;
@@ -87,8 +88,11 @@ function requestBody(
     if (typeof serialized === 'string' || isUrlSearchParams(serialized))
       validateTextCharset(contentType);
   }
-  if (isFormData(serialized)) headers.delete('content-type');
-  else headers.set('content-type', contentType);
+  if (isFormData(serialized)) {
+    if (media !== 'multipart/form-data' || contentType.includes(';'))
+      throw new OpenAPIChainError('SERIALIZATION', 'Invalid FormData contentType.');
+    headers.delete('content-type');
+  } else headers.set('content-type', contentType);
   return serialized;
 }
 

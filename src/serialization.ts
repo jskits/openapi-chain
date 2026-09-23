@@ -1084,10 +1084,18 @@ export function serializeBody(
   const media = findMediaMetadata(operation, contentType);
   if (customBody) {
     const serialized = customBody({ body, contentType, ...(operation ? { operation } : {}) });
-    if (isFormData(serialized)) headers.delete('content-type');
-    else headers.set('content-type', contentType);
+    if (isFormData(serialized)) {
+      if (normalized !== 'multipart/form-data' || contentType.includes(';'))
+        throw new OpenAPIChainError(
+          'SERIALIZATION',
+          'FormData requires unparameterized multipart/form-data; use a body extension returning bytes or text to control media parameters.',
+        );
+      headers.delete('content-type');
+    } else headers.set('content-type', contentType);
     return serialized;
   }
+  if (isFormData(body) && normalized !== 'multipart/form-data')
+    throw new OpenAPIChainError('SERIALIZATION', 'FormData requires multipart/form-data.');
   if (
     media?.requiresCustomSerializer &&
     (!media.customSerializerScope ||
@@ -1098,6 +1106,11 @@ export function serializeBody(
     throw new OpenAPIChainError('SERIALIZATION', media.requiresCustomSerializer);
   }
   if (normalized === 'multipart/form-data') {
+    if (contentType.includes(';'))
+      throw new OpenAPIChainError(
+        'SERIALIZATION',
+        'Native FormData cannot preserve multipart media parameters; use a body extension returning bytes or text.',
+      );
     headers.delete('content-type');
     return serializeMultipartBody(body, operation, contentType);
   }
@@ -1126,12 +1139,6 @@ export function serializeBody(
 
   if (isNativeBody(body)) {
     if (typeof body === 'string' || isUrlSearchParams(body)) validateTextCharset(contentType);
-    if (isFormData(body)) {
-      throw new OpenAPIChainError(
-        'SERIALIZATION',
-        `FormData cannot be sent as ${contentType}; use multipart/form-data.`,
-      );
-    }
     headers.set('content-type', contentType);
     return body;
   }

@@ -127,6 +127,7 @@ try {
       ['application/octet-stream', new realm.Uint8Array([65, 66]).buffer],
     ];
     const results = [];
+    const formErrors = [];
     for (const strict of [false, true]) {
       for (const [contentType, body] of cases) {
         const metadata = compileOpenAPIMetadata({
@@ -148,11 +149,38 @@ try {
         const api = strict ? createStrictClient({ ...options, metadata }) : createClient(options);
         await api.realm.post({ contentType, body });
       }
+      const metadata = compileOpenAPIMetadata({
+        openapi: '3.1.0',
+        paths: { '/realm': { post: { requestBody: { content: { '*/*': {} } } } } },
+      });
+      const options = {
+        baseUrl: origin,
+        transport: async () => {
+          throw new Error('Invalid FormData reached transport.');
+        },
+      };
+      const api = strict ? createStrictClient({ ...options, metadata }) : createClient(options);
+      for (const contentType of [
+        'text/plain',
+        'application/json',
+        'multipart/form-data; profile=A',
+      ]) {
+        for (const input of [{ body: form }, { body: {}, extensions: { body: () => form } }]) {
+          try {
+            await api.realm.post({ ...input, contentType });
+          } catch (error) {
+            formErrors.push(error.code);
+          }
+        }
+      }
     }
     frame.remove();
-    return results;
+    return { results, formErrors };
   }, origin);
-  assert.deepEqual(realmResults, ['blob', 'value', 'a=b', 'AB', 'blob', 'value', 'a=b', 'AB']);
+  assert.deepEqual(realmResults, {
+    results: ['blob', 'value', 'a=b', 'AB', 'blob', 'value', 'a=b', 'AB'],
+    formErrors: Array(12).fill('SERIALIZATION'),
+  });
   const adapterResult = await page.evaluate(async (origin) => {
     const { createQuery } = await import(`${origin}/query/index.js`);
     const { createStrictClient } = await import(`${origin}/dist/strict.js`);
