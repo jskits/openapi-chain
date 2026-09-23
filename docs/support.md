@@ -7,7 +7,7 @@ This is the maintained serialization contract. For usage, start with the [gettin
 | Surface | Core | Strict |
 | --- | --- | --- |
 | Fluent path tree | Operation-derived types, scalar path encoding | Same type model with metadata-driven path encoding |
-| Mixed templates and reserved segment names | Typed `$path()` | Typed `$path()` |
+| Mixed templates and reserved segment names | Typed `$path()` | Method names can be segments at nonconflicting nodes; `$path()` for remaining conflicts |
 | Query objects/arrays | Schema-free defaults or local extension | OpenAPI form, delimited and deepObject styles |
 | Whole-query `querystring` | Not supported by the core typed input | OpenAPI 3.2 metadata and extension support |
 | Headers/cookies | Basic serialization or extension | Metadata-driven styles/content; browser restrictions still apply |
@@ -30,7 +30,7 @@ See [extension invocation conditions](api.md#extension-invocation-conditions) fo
 
 The public type model supports fixed OpenAPI methods, including QUERY. Actual Fetch implementations can reject methods such as TRACE and GET/HEAD bodies. A custom transport must itself support any operation native Fetch cannot send. Browser Cookie headers, CORS and credentials follow browser policy; use credentials and server-set cookies for browser sessions.
 
-Paths containing whole literal or encoded dot segments are rejected. Native Fetch would normalize them and change the endpoint. Use `$path()` for `then`, HTTP method names, mixed templates and repeated slashes. Core also requires `$path()` for trailing slashes (except the root `/`). Strict supports one trailing slash when its metadata identifies a unique template for the selected method. If `/items` and `/items/` both declare GET, use `$path()` to choose; GET `/items` and POST `/items/` can use the chain independently. Strict hides ambiguous methods from chain types and rejects ambiguous calls before transport. Exact `$path()` calls preserve slash structure.
+Paths containing whole literal or encoded dot segments are rejected. Native Fetch would normalize them and change the endpoint. Use `$path()` for `then`, `$path`, mixed templates and repeated slashes. Core reserves all HTTP method names as segments. Strict allows a method name such as `query` as a segment when metadata declares that child path and the current node has no operation of that name; otherwise the operation takes priority. Core also requires `$path()` for trailing slashes (except the root `/`). Strict supports one trailing slash when its metadata identifies a unique template for the selected method. If `/items` and `/items/` both declare GET, use `$path()` to choose; GET `/items` and POST `/items/` can use the chain independently. Strict hides ambiguous methods from chain types and rejects ambiguous calls before transport. Exact `$path()` calls preserve slash structure.
 
 Generated binary types and actual parser values must agree. Use an operation response extension for binary/stream/vendor formats and configure your generator's type mapping accordingly. A generic `paths` parameter is not runtime validation.
 

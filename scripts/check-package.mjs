@@ -210,6 +210,8 @@ const trailing = createClient<{'/items/': CorpusPaths['/echo/{id}/']}>({baseUrl:
 void trailing;
 const strictTrailing = createStrictClient<{'/items/': {get: {responses: {204: {content: never}}}}}>({baseUrl:'https://example.test', metadata});
 void strictTrailing.items.get();
+const strictReserved = createStrictClient<{'/search/query': {get: {responses: {204: {content: never}}}}}>({baseUrl:'https://example.test', metadata});
+void strictReserved.search.query.get();
 `;
   for (const extension of ['mts', 'cts']) {
     writeFileSync(join(consumer, `consumer.${extension}`), typeConsumer);

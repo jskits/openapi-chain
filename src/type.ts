@@ -261,9 +261,9 @@ type LeafEntries<E> = E extends { segments: [] } ? E : never;
 
 type ReservedSegment = HttpMethod | '$path' | 'then';
 
-type IsSafeStaticSegment<S extends string> = S extends ''
+type IsSafeStaticSegment<S extends string, Reserved extends string = ReservedSegment> = S extends ''
   ? false
-  : S extends ReservedSegment
+  : S extends Reserved
     ? false
     : S extends `${string}{${string}` | `${string}}${string}`
       ? false
@@ -691,6 +691,7 @@ type DynamicNode<
   ThrowOnError extends boolean,
   InferSingleMedia extends boolean,
   MetadataRouting extends boolean,
+  RouteEntries,
 > = <Value extends TemplateArgument<Entries>>(
   value: Value,
 ) => Value extends unknown
@@ -698,10 +699,12 @@ type DynamicNode<
       AdvanceTemplates<FilterTemplateEntries<Entries, Value>>,
       ThrowOnError,
       InferSingleMedia,
-      MetadataRouting
+      MetadataRouting,
+      AdvanceTemplates<RouteEntries>
     >
   : never;
 
+type EntryMethods<E> = E extends { method: infer M extends HttpMethod } ? M : never;
 type EntryPaths<E> = E extends { path: infer P } ? P : never;
 type UnambiguousEntries<E, All = E> = E extends { method: infer M }
   ? true extends IsUnion<EntryPaths<Extract<All, { method: M }>>>
@@ -714,21 +717,41 @@ type BuildNode<
   ThrowOnError extends boolean,
   InferSingleMedia extends boolean,
   MetadataRouting extends boolean,
+  RouteEntries = Entries,
 > = OperationMethods<
-  MetadataRouting extends true ? UnambiguousEntries<LeafEntries<Entries>> : LeafEntries<Entries>,
+  MetadataRouting extends true
+    ? UnambiguousEntries<LeafEntries<Entries>, LeafEntries<RouteEntries>>
+    : LeafEntries<Entries>,
   ThrowOnError,
   InferSingleMedia
 > & {
   [
     Segment in FirstSegment<Entries> as Segment extends string
-      ? IsSafeStaticSegment<Segment> extends true
+      ? IsSafeStaticSegment<
+          Segment,
+          MetadataRouting extends true
+            ? '$path' | 'then' | EntryMethods<LeafEntries<RouteEntries>>
+            : ReservedSegment
+        > extends true
         ? Segment
         : never
       : never
-  ]: BuildNode<Advance<Entries, Segment>, ThrowOnError, InferSingleMedia, MetadataRouting>;
+  ]: BuildNode<
+    Advance<Entries, Segment>,
+    ThrowOnError,
+    InferSingleMedia,
+    MetadataRouting,
+    Advance<RouteEntries, Segment>
+  >;
 } & ([TemplateEntries<Entries>] extends [never]
     ? {}
-    : DynamicNode<TemplateEntries<Entries>, ThrowOnError, InferSingleMedia, MetadataRouting>);
+    : DynamicNode<
+        TemplateEntries<Entries>,
+        ThrowOnError,
+        InferSingleMedia,
+        MetadataRouting,
+        TemplateEntries<RouteEntries>
+      >);
 
 type TemplateNames<Path extends string> = Path extends `${string}{${infer Name}}${infer Rest}`
   ? Name | TemplateNames<Rest>

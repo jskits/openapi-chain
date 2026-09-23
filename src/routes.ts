@@ -12,10 +12,19 @@ export function splitPath(path: string): string[] {
   return normalized ? normalized.split('/') : [];
 }
 
+function chainShape(state: Extract<ProxyState, { kind: 'chain' }>) {
+  return state.segments.map((segment) => (segment.kind === 'dynamic' ? null : segment.value));
+}
+
+function chainKey(state: Extract<ProxyState, { kind: 'chain' }>, method: HttpMethod) {
+  return JSON.stringify([method, ...chainShape(state)]);
+}
+
 /** Snapshot the routing structure once; requests only inspect their own path depth. */
 export function createOperationResolver(metadata: OpenAPIMetadata | undefined) {
   const direct = new Map<string, Partial<Record<HttpMethod, OperationMetadata>>>();
   const chains = new Map<string, ResolvedOperation[]>();
+  const methodSegments = new Set<string>();
   const complete = metadata?.complete === true;
   for (const [template, methods] of Object.entries(metadata?.operations ?? {})) {
     direct.set(template, { ...methods });
@@ -24,6 +33,10 @@ export function createOperationResolver(metadata: OpenAPIMetadata | undefined) {
     const shape = splitPath(template).map((segment) =>
       /^\{[^{}]+\}$/.test(segment) ? null : segment,
     );
+    for (let index = 0; index < shape.length; index++) {
+      if (httpMethods.includes(shape[index] as HttpMethod))
+        methodSegments.add(JSON.stringify(shape.slice(0, index + 1)));
+    }
     for (const method of httpMethods) {
       const operation = methods[method];
       if (operation === undefined) continue;
@@ -33,7 +46,7 @@ export function createOperationResolver(metadata: OpenAPIMetadata | undefined) {
       chains.set(key, matches);
     }
   }
-  return (state: ProxyState, method: HttpMethod): ResolvedOperation => {
+  const resolve = (state: ProxyState, method: HttpMethod): ResolvedOperation => {
     if (!metadata) return {};
     if (state.kind === 'template') {
       const operation = direct.get(state.template)?.[method];
@@ -44,10 +57,7 @@ export function createOperationResolver(metadata: OpenAPIMetadata | undefined) {
       }
       return { template: state.template, metadata: operation };
     }
-    const key = JSON.stringify([
-      method,
-      ...state.segments.map((segment) => (segment.kind === 'dynamic' ? null : segment.value)),
-    ]);
+    const key = chainKey(state, method);
     const matches = chains.get(key);
     if (matches && matches.length > 1) {
       throw new TypeError(
@@ -61,4 +71,12 @@ export function createOperationResolver(metadata: OpenAPIMetadata | undefined) {
       );
     return {};
   };
+  return Object.assign(resolve, {
+    // Ambiguous methods still occupy the node: calling one fails in resolve().
+    // Incomplete/legacy metadata cannot prove absence, so retain method priority.
+    usesMethod: (state: Extract<ProxyState, { kind: 'chain' }>, method: HttpMethod) =>
+      !complete ||
+      chains.has(chainKey(state, method)) ||
+      !methodSegments.has(JSON.stringify([...chainShape(state), method])),
+  });
 }

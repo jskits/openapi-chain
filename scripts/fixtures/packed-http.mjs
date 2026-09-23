@@ -61,6 +61,14 @@ try {
     }),
   });
   assert.equal((await slashClient.tail('a/b').get()).url, '/tail/a%2Fb/');
+  const named = createStrictClient({
+    baseUrl,
+    metadata: compileOpenAPIMetadata({
+      openapi: '3.2.1',
+      paths: { '/search/query': { get: {} } },
+    }),
+  });
+  assert.equal((await named.search.query.get()).url, '/search/query');
   const strict = createStrictClient({ baseUrl, metadata });
   assert.equal(
     (await strict.search.get({ query: { color: ['blue', 'black', 'brown'] } })).url,

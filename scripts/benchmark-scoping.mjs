@@ -14,15 +14,20 @@ console.log(JSON.stringify(compilerInfo()));
 const directory = mkdtempSync(join(tmpdir(), 'openapi-chain-scope-types-'));
 try {
   let fullInstantiations;
-  for (const [routes, selected, calls] of [
-    [1000, 1000, 1],
-    [1000, 1000, 5],
-    [1000, 1000, 25],
-    [1000, 1000, 100],
-    [5000, 5000, 25],
-    [5000, 250, 25],
+  for (const [mode, routes, selected, calls] of [
+    ['core', 1000, 1000, 1],
+    ['core', 1000, 1000, 5],
+    ['core', 1000, 1000, 25],
+    ['core', 1000, 1000, 100],
+    ['core', 5000, 5000, 25],
+    ['core', 5000, 250, 25],
+    ['strict', 5000, 5000, 25],
+    ['strict', 5000, 250, 25],
   ]) {
-    writeFileSync(join(directory, 'consumer.mts'), typeFixture(root, routes, selected, calls));
+    writeFileSync(
+      join(directory, 'consumer.mts'),
+      typeFixture(root, routes, selected, calls, mode),
+    );
     const result = spawn.sync(
       compiler.command,
       [
@@ -53,6 +58,7 @@ try {
       );
     console.log(
       JSON.stringify({
+        mode,
         routes,
         selected,
         calls,

@@ -220,7 +220,10 @@ function createProxy(runtime: Runtime, state: ProxyState): unknown {
         return (template: string, params?: Record<string, unknown>) =>
           createProxy(runtime, { kind: 'template', template, params });
       }
-      if (isHttpMethod(prop)) {
+      if (
+        isHttpMethod(prop) &&
+        (state.kind !== 'chain' || runtime.resolveOperation.usesMethod(state, prop))
+      ) {
         return (input?: RequestInput) => execute(runtime, state, prop, input);
       }
       if (state.kind !== 'chain') {
