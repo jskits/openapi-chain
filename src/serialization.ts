@@ -421,7 +421,10 @@ export function serializeQuerystring(
 
   const normalized = normalizeMediaType(parameter.contentType);
   if (normalized === 'application/x-www-form-urlencoded') {
-    if (parameter.media?.requiresCustomSerializer) {
+    if (
+      parameter.media?.requiresCustomSerializer &&
+      parameter.media.customSerializerScope !== 'multipart'
+    ) {
       throw new TypeError(
         `${parameter.media.requiresCustomSerializer} Use the operation querystring extension to serialize the whole query string.`,
       );
@@ -1083,9 +1086,10 @@ export function serializeBody(
   }
   if (
     media?.requiresCustomSerializer &&
-    (media.customSerializerScope !== 'form' ||
+    (!media.customSerializerScope ||
       normalized.startsWith('multipart/') ||
-      normalized === 'application/x-www-form-urlencoded')
+      (media.customSerializerScope === 'form' &&
+        normalized === 'application/x-www-form-urlencoded'))
   ) {
     throw new TypeError(media.requiresCustomSerializer);
   }

@@ -46,8 +46,8 @@ export type MediaTypeMetadata = {
   propertyContentTypes?: Readonly<Record<string, string>>;
   /** A serialization requirement that built-in serializers cannot satisfy. */
   requiresCustomSerializer?: string;
-  /** Limit that requirement to actual multipart or URL-encoded media; omitted means all media. */
-  customSerializerScope?: 'form';
+  /** Limit that requirement to form media (multipart or URL-encoded), or multipart alone; omitted means all media. */
+  customSerializerScope?: 'form' | 'multipart';
 };
 
 export type RequestBodyMetadata = {

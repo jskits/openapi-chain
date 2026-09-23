@@ -362,11 +362,17 @@ function propertyMetadataForSchema(
 function compileEncoding(
   raw: unknown,
   version: OasMinor,
-): { encoding?: Record<string, EncodingMetadata>; requiresCustomSerializer?: string } {
+  defaults: Record<string, string> | undefined,
+): {
+  encoding?: Record<string, EncodingMetadata>;
+  requiresCustomSerializer?: string;
+  requiresCustomFormSerializer?: string;
+} {
   if (raw === undefined) return {};
   const record = asRecord(raw, 'OpenAPI encoding');
   const result: Record<string, EncodingMetadata> = dictionary();
   let customReason: string | undefined;
+  let nestedReason: string | undefined;
 
   for (const [name, value] of Object.entries(record)) {
     const encoding = asRecord(value, `encoding for ${name}`);
@@ -434,13 +440,22 @@ function compileEncoding(
     if (isRecord(encoding.headers) && Object.keys(encoding.headers).length)
       metadata.hasHeaders = true;
 
-    if (version === '3.2') {
+    if (version === '3.2' && !metadata.styleBased) {
+      const nestedMedia = normalizeMediaTypeForCompiler(
+        metadata.contentType ?? defaults?.[name] ?? 'application/octet-stream',
+      );
+      const nestedMultipart = nestedMedia.startsWith('multipart/');
       for (const advanced of ['prefixEncoding', 'itemEncoding', 'encoding'] as const) {
-        if (advanced in encoding) {
+        if (
+          advanced in encoding &&
+          (nestedMultipart ||
+            (advanced === 'encoding' && nestedMedia === 'application/x-www-form-urlencoded'))
+        ) {
           customReason =
             `OAS 3.2 ${advanced} on encoding ${name} requires ordered/nested part control ` +
             'that native FormData cannot represent.';
           metadata.requiresCustomSerializer = customReason;
+          nestedReason = customReason;
         }
       }
     }
@@ -450,6 +465,7 @@ function compileEncoding(
   return {
     ...(Object.keys(result).length ? { encoding: result } : {}),
     ...(customReason ? { requiresCustomSerializer: customReason } : {}),
+    ...(nestedReason ? { requiresCustomFormSerializer: nestedReason } : {}),
   };
 }
 
@@ -473,7 +489,6 @@ function compileMediaType(
     normalizedContentType === 'application/*';
   // JSON and other opaque bodies never need field-level form inference.
   if (!maySerializeForm) return undefined;
-  const compiledEncoding = compileEncoding(mediaObject.encoding, version);
   let properties: ReturnType<typeof propertyMetadataForSchema>;
   let formReason: string | undefined;
   try {
@@ -495,9 +510,12 @@ function compileMediaType(
     properties = { schemas: {} };
     formReason = `${error.message} Provide an operation body extension for form serialization.`;
   }
-  let customReason = multipart ? compiledEncoding.requiresCustomSerializer : undefined;
+  const compiledEncoding = compileEncoding(mediaObject.encoding, version, properties.contentTypes);
+  formReason ??= compiledEncoding.requiresCustomFormSerializer;
+  const maySerializeMultipart = multipart || normalizedContentType === '*/*';
+  let customReason = maySerializeMultipart ? compiledEncoding.requiresCustomSerializer : undefined;
 
-  if (version === '3.2') {
+  if (version === '3.2' && maySerializeMultipart) {
     for (const advanced of ['prefixEncoding', 'itemEncoding'] as const) {
       if (advanced in mediaObject) {
         customReason =
@@ -508,7 +526,7 @@ function compileMediaType(
   }
 
   if (
-    multipart &&
+    maySerializeMultipart &&
     compiledEncoding.encoding &&
     Object.values(compiledEncoding.encoding).some((item) => item.hasHeaders)
   ) {
@@ -517,7 +535,7 @@ function compileMediaType(
       'provide an operation body extension or a custom transport.';
   }
 
-  if (multipart) {
+  if (maySerializeMultipart) {
     const encodedProperty = Object.entries(properties.schemas).find(([, schema]) =>
       schemaUsesContentEncoding(schema, root),
     );
@@ -551,10 +569,10 @@ function compileMediaType(
     ...(compiledEncoding.encoding ? { encoding: compiledEncoding.encoding } : {}),
     ...(properties.kinds ? { propertyKinds: properties.kinds } : {}),
     ...(properties.contentTypes ? { propertyContentTypes: properties.contentTypes } : {}),
-    ...(customReason
-      ? { requiresCustomSerializer: customReason }
-      : formReason
-        ? { requiresCustomSerializer: formReason, customSerializerScope: 'form' as const }
+    ...(formReason
+      ? { requiresCustomSerializer: formReason, customSerializerScope: 'form' as const }
+      : customReason
+        ? { requiresCustomSerializer: customReason, customSerializerScope: 'multipart' as const }
         : {}),
   };
 }

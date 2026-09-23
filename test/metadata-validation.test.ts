@@ -140,7 +140,13 @@ test.each(['prefixEncoding', 'itemEncoding', 'encoding'])(
   'marks advanced part %s for explicit serialization',
   (key) => {
     const metadata = operation({
-      requestBody: { content: { 'multipart/form-data': { encoding: { field: { [key]: {} } } } } },
+      requestBody: {
+        content: {
+          'multipart/form-data': {
+            encoding: { field: { contentType: 'multipart/mixed', [key]: {} } },
+          },
+        },
+      },
     });
     expect(
       metadata.operations['/x']?.post?.requestBody?.media?.['multipart/form-data']

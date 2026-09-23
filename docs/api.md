@@ -261,7 +261,7 @@ Strict construction rejects absent or partial metadata, unsupported artifact ver
 
 ## Metadata compiler options
 
-Compiled media metadata may contain `requiresCustomSerializer`. Its default scope is all matching media. When paired with `customSerializerScope: 'form'`, the requirement applies only to the actual multipart or URL-encoded media selected for the request; JSON (including `+json`), text and binary selections from a wildcard declaration remain available. Other serializer requirements retain their unrestricted scope.
+Compiled media metadata may contain `requiresCustomSerializer`. Its default scope is all matching media. When paired with `customSerializerScope: 'form'`, the requirement applies only to the actual multipart or URL-encoded media selected for the request; JSON (including `+json`), text and binary selections from a wildcard declaration remain available. `customSerializerScope: 'multipart'` limits positional encodings and per-part header requirements to actual multipart requests. Applicable nested Encoding on a multipart or URL-encoded part requires a whole-body extension; nested annotations on JSON parts are ignored as required by OpenAPI.
 
 `compileOpenAPIMetadata(document, options?)` accepts `CompileOpenAPIMetadataOptions` from `openapi-chain/metadata`. `onAmbiguousTemplate` defaults to `'throw'`. Explicit `'allow'` preserves duplicate template hierarchies for nonconforming documents while runtime method-aware routing still rejects ambiguous chain calls. Exact `$path()` calls select the specified template. See [the compatibility recipe](troubleshooting.md#a-third-party-document-repeats-a-template-hierarchy).
 

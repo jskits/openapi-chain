@@ -260,7 +260,7 @@ test('a wildcard form restriction still blocks normalized form media and permits
   expect(transport).toHaveBeenCalledOnce();
 });
 
-test('general serialization requirements retain precedence over form-only ambiguity', async () => {
+test('multipart requirements on wildcard media do not block JSON', async () => {
   const metadata = compileOpenAPIMetadata({
     openapi: '3.2.1',
     paths: {
@@ -279,8 +279,8 @@ test('general serialization requirements retain precedence over form-only ambigu
     },
   });
   const media = metadata.operations['/upload']?.post?.requestBody?.media?.['*/*'];
-  expect(media?.customSerializerScope).toBeUndefined();
-  expect(media?.requiresCustomSerializer).toMatch(/prefixEncoding/);
+  expect(media?.customSerializerScope).toBe('form');
+  expect(media?.requiresCustomSerializer).toMatch(/Multiple non-null/);
   const transport = vi.fn<() => Promise<Response>>(async () => new Response(null, { status: 204 }));
   const api = createStrictClient<RangePaths>({
     baseUrl: 'https://example.test',
@@ -289,8 +289,8 @@ test('general serialization requirements retain precedence over form-only ambigu
   });
   await expect(
     api.upload.post({ contentType: 'application/json', body: { value: 'hello' } }),
-  ).rejects.toThrow(/prefixEncoding/);
-  expect(transport).not.toHaveBeenCalled();
+  ).resolves.toBeUndefined();
+  expect(transport).toHaveBeenCalledOnce();
 });
 
 test('querystring URL-encoded content remains fail-closed for ambiguous types', async () => {
