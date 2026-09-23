@@ -1,4 +1,4 @@
-# openapi-chain-cli
+# @openapi-chain/cli
 
 ## 0.2.0
 

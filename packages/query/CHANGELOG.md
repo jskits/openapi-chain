@@ -1,4 +1,4 @@
-# openapi-chain-query
+# @openapi-chain/query
 
 ## 0.2.0
 

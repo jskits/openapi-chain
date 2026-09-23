@@ -6,11 +6,11 @@
   "printWidth": 100,
   "ignorePatterns": [
     "dist/**",
-    "query/dist/**",
+    "packages/*/dist/**",
     "coverage/**",
     "pnpm-lock.yaml",
     ".changeset/*.md",
-    "CHANGELOG.md",
+    "packages/*/CHANGELOG.md",
     "examples/scoped/generated/**"
   ],
   "overrides": [

@@ -5,7 +5,9 @@ export default {
   '*.{json,jsonc,yaml,yml,md,css,scss,html}': (files) => {
     const targets = files.filter((file) => {
       const relative = path.relative(process.cwd(), file).split(path.sep).join('/');
-      return !/^(?:\.changeset\/[^/]+\.md|CHANGELOG\.md|pnpm-lock\.yaml)$/.test(relative);
+      return !/^(?:\.changeset\/[^/]+\.md|(?:packages\/[^/]+\/)?CHANGELOG\.md|pnpm-lock\.yaml)$/.test(
+        relative,
+      );
     });
     return targets.length
       ? `oxfmt --write ${targets.map((file) => JSON.stringify(file)).join(' ')}`
