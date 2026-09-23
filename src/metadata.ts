@@ -426,6 +426,7 @@ function compileEncoding(
       throw new TypeError(`${effectiveStyle} encoding ${name} requires explode=false.`);
     }
 
+    if ('headers' in encoding) asRecord(encoding.headers, `encoding.headers for ${name}`);
     if (isRecord(encoding.headers) && Object.keys(encoding.headers).length)
       metadata.hasHeaders = true;
 
@@ -458,7 +459,7 @@ function compileMediaType(
   version: OasMinor,
   contentType: string,
 ): MediaTypeMetadata | undefined {
-  const mediaObject = isRecord(rawMedia) ? rawMedia : {};
+  const mediaObject = asRecord(rawMedia, `Media Type Object for ${contentType}`);
   const normalizedContentType = normalizeMediaTypeForCompiler(contentType);
   const multipart = normalizedContentType.startsWith('multipart/');
   const maySerializeForm =
@@ -560,6 +561,8 @@ function compileParameter(
   version: OasMinor,
 ): ParameterMetadata {
   const value = asRecord(dereference(rawValue, root), 'OpenAPI parameter');
+  if ('required' in value && typeof value.required !== 'boolean')
+    throw new TypeError('OpenAPI parameter.required must be boolean.');
   const name = value.name;
   const location = value.in;
   if (typeof name !== 'string' || !name) {
@@ -702,12 +705,8 @@ function compileRequestBody(
 ): RequestBodyMetadata | undefined {
   if (rawValue === undefined) return undefined;
   const value = asRecord(dereference(rawValue, root), 'OpenAPI requestBody');
-  if (value.content === undefined) {
-    return {
-      mediaTypes: [],
-      ...(value.required === true ? { required: true } : {}),
-    };
-  }
+  if ('required' in value && typeof value.required !== 'boolean')
+    throw new TypeError('OpenAPI requestBody.required must be boolean.');
   const content = asRecord(value.content, 'OpenAPI requestBody.content');
   const mediaTypes = Object.keys(content);
   const media: Record<string, MediaTypeMetadata> = dictionary();

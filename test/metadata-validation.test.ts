@@ -152,7 +152,7 @@ test.each(['prefixEncoding', 'itemEncoding', 'encoding'])(
 test('empty paths, empty body metadata and escaped reference tokens', () => {
   expect(compileOpenAPIMetadata({ openapi: '3.1.0' }).operations).toEqual({});
   expect(
-    operation({ requestBody: { required: true } }).operations['/x']?.post?.requestBody,
+    operation({ requestBody: { required: true, content: {} } }).operations['/x']?.post?.requestBody,
   ).toEqual({ mediaTypes: [], required: true });
   const metadata = compileOpenAPIMetadata({
     openapi: '3.1.0',
