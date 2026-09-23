@@ -197,8 +197,8 @@ For validated parsing, copy the complete status-aware validator in [complete-cli
 
 The request lifecycle is:
 
-1. Resolve the operation and, in strict mode, validate required/declared inputs.
-2. Serialize path, parameter locations and body, using local extensions where supplied.
+1. Resolve the operation and, in strict mode, validate required/declared inputs, location object shapes, query/querystring exclusivity and explicit request media.
+2. Build and validate the path and service URL before other callbacks, then serialize parameter locations and body using local extensions. Media selection that depends on generated headers is validated after those headers exist.
 3. Run `extensions.request`.
 4. Run strict middleware, if configured, and the transport.
 5. Run `extensions.response` or the default parser.

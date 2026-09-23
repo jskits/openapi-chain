@@ -141,9 +141,6 @@ async function execute(
     localBodySerializer,
   );
 
-  if (input?.query && input?.querystring) {
-    throw new TypeError('OpenAPI query and querystring parameters cannot be used together.');
-  }
   if (input?.querystring && (extensions?.querystring || Object.keys(input.querystring).length)) {
     if (extensions?.querystring) {
       const custom = extensions.querystring(input.querystring);

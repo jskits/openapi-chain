@@ -526,6 +526,8 @@ function validateParameterLocation(
   completeMetadata: boolean,
 ): void {
   if (!completeMetadata) return;
+  if (values !== undefined && !isPlainRecord(values))
+    throw new TypeError(`Request ${location} input must be an object.`);
   const declared = operation?.parameters?.[location] ?? {};
   const supplied = values ?? {};
   const declaredEntries = Object.values(declared);
@@ -562,6 +564,16 @@ export function validateRuntimeInput(
   operation: OperationMetadata | undefined,
   completeMetadata: boolean,
 ): void {
+  if (input !== undefined && !isPlainRecord(input))
+    throw new TypeError('Request input must be an object.');
+  if (input?.query !== undefined && input?.querystring !== undefined)
+    throw new TypeError('OpenAPI query and querystring parameters cannot be used together.');
+  if (input?.body !== undefined && completeMetadata && !operation?.requestBody)
+    throw new TypeError(
+      'Compiled OpenAPI metadata does not declare a request body for this operation.',
+    );
+  if (input?.body !== undefined && input.contentType !== undefined)
+    validateRequestContentType(input.contentType, operation, completeMetadata);
   if (input?.body === undefined && input?.contentType !== undefined) {
     throw new TypeError('Request contentType cannot be provided without a request body.');
   }
@@ -1007,6 +1019,23 @@ function serializeMultipartBody(
   return form;
 }
 
+function validateRequestContentType(
+  contentType: string,
+  operation: OperationMetadata | undefined,
+  completeMetadata: boolean,
+) {
+  if (typeof contentType !== 'string' || !isConcreteMediaType(contentType)) {
+    throw new TypeError(
+      `Request body content type ${contentType} is a media range; provide a concrete media type.`,
+    );
+  }
+  if (completeMetadata && !requestBodyAcceptsMediaType(operation, contentType)) {
+    throw new TypeError(
+      `Request body content type ${contentType} is not declared by the compiled OpenAPI operation.`,
+    );
+  }
+}
+
 export function serializeBody(
   body: unknown,
   requestedContentType: string | undefined,
@@ -1039,16 +1068,7 @@ export function serializeBody(
       'Request body contentType is required without compiled single-concrete-media OpenAPI metadata.',
     );
   }
-  if (!isConcreteMediaType(contentType)) {
-    throw new TypeError(
-      `Request body content type ${contentType} is a media range; provide a concrete media type.`,
-    );
-  }
-  if (completeMetadata && !requestBodyAcceptsMediaType(operation, contentType)) {
-    throw new TypeError(
-      `Request body content type ${contentType} is not declared by the compiled OpenAPI operation.`,
-    );
-  }
+  validateRequestContentType(contentType, operation, completeMetadata);
 
   const normalized = normalizeMediaType(contentType);
   const media = findMediaMetadata(operation, contentType);
