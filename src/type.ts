@@ -638,15 +638,32 @@ export type SuccessData<Operation> =
       : never
     : never;
 
+type MediaEssence<Value extends string> = Value extends `${infer Essence};${string}`
+  ? Essence
+  : Value;
+type ConcreteMediaInput<Value extends string> =
+  Extract<MediaEssence<Value>, `${string}*${string}`> extends never
+    ? unknown
+    : { contentType: never };
+
+type CheckedOperationInput<
+  Item,
+  Operation,
+  InferSingleMedia extends boolean,
+  Media extends string,
+> = OperationInput<Item, Operation, InferSingleMedia> & {
+  contentType?: Media;
+} & ConcreteMediaInput<NoInfer<Media>>;
+
 type OperationCall<
   Item,
   Operation,
   ThrowOnError extends boolean,
   InferSingleMedia extends boolean,
-> = (
+> = <const Media extends string = string>(
   ...args: HasRequiredInput<Item, Operation> extends true
-    ? [options: OperationInput<Item, Operation, InferSingleMedia>]
-    : [options?: OperationInput<Item, Operation, InferSingleMedia>]
+    ? [options: CheckedOperationInput<Item, Operation, InferSingleMedia, Media>]
+    : [options?: CheckedOperationInput<Item, Operation, InferSingleMedia, Media>]
 ) => Promise<ThrowOnError extends true ? SuccessData<Operation> : ApiResult<Operation>>;
 
 type MethodForEntry<
