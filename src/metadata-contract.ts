@@ -40,6 +40,9 @@ export function snapshotMetadata(value: unknown): CompiledOpenAPIMetadata {
     const current = pending.pop()!;
     if (seen.has(current)) continue;
     seen.add(current);
+    // structuredClone restores Object.prototype on dictionaries. Missing field
+    // metadata must stay absent even for names such as constructor or __proto__.
+    if (record(current)) Object.setPrototypeOf(current, null);
     for (const item of Object.values(current)) {
       if (item !== null && typeof item === 'object') pending.push(item as object);
     }

@@ -47,3 +47,49 @@ test('the private metadata snapshot is recursively frozen', () => {
   expect(Object.isFrozen(operation.requestBody!.mediaTypes)).toBe(true);
   expect(Reflect.set(operation.requestBody!, 'required', true)).toBe(false);
 });
+
+test.each([false, true])(
+  'additional form fields never inherit serialization metadata, JSON-decoded=%s',
+  async (decoded) => {
+    const mediaTypes = ['multipart/form-data', 'application/x-www-form-urlencoded'];
+    const compiled = compileOpenAPIMetadata({
+      openapi: '3.1.0',
+      paths: {
+        '/x': {
+          post: {
+            requestBody: {
+              content: Object.fromEntries(
+                mediaTypes.map((media) => [
+                  media,
+                  {
+                    schema: {
+                      type: 'object',
+                      properties: { known: { type: 'string' } },
+                      additionalProperties: { type: 'string' },
+                    },
+                    encoding: { known: { contentType: 'text/plain' } },
+                  },
+                ]),
+              ),
+            },
+          },
+        },
+      },
+    });
+    const metadata = decoded
+      ? (JSON.parse(JSON.stringify(compiled)) as CompiledOpenAPIMetadata)
+      : compiled;
+    const received: [string, FormDataEntryValue][][] = [];
+    const api = createStrictClient({
+      baseUrl: 'https://api.test',
+      metadata,
+      transport: async ({ url, init }) => {
+        received.push([...(await new Request(url, init).formData())]);
+        return new Response(null, { status: 204 });
+      },
+    }) as unknown as { x: { post(input: RequestInput): Promise<unknown> } };
+    const body = { known: 'declared', constructor: 'a', toString: 'b', ['__proto__']: 'c' };
+    for (const contentType of mediaTypes) await api.x.post({ body, contentType });
+    expect(received).toEqual(mediaTypes.map(() => Object.entries(body)));
+  },
+);
