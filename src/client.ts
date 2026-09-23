@@ -1,3 +1,4 @@
+import { isPlainRecord } from './record.js';
 /* oxlint-disable typescript/no-base-to-string -- Core scalar coercion intentionally follows String(); structured serialization uses typed extensions. */
 import { stringifyJson } from './json.js';
 import { safePath, safeUrl } from './path.js';
@@ -42,15 +43,15 @@ const isNativeBody = (v: unknown): v is BodyInit =>
   ArrayBuffer.isView(v);
 
 function serializeQuery(input: Record<string, unknown>) {
+  if (!isPlainRecord(input)) throw new TypeError('Query must be a plain record.');
   const query = new URLSearchParams();
   for (const [name, value] of entries(input)) {
     if (value == null) continue;
     if (Array.isArray(value)) value.forEach((item) => query.append(name, String(item)));
-    else if (typeof value === 'object')
-      entries(value as Record<string, unknown>).forEach(
-        ([key, entry]) => entry != null && query.append(key, String(entry)),
-      );
-    else query.append(name, String(value));
+    else if (typeof value === 'object') {
+      if (!isPlainRecord(value)) throw new TypeError(`Query ${name} must be a plain record.`);
+      entries(value).forEach(([key, entry]) => entry != null && query.append(key, String(entry)));
+    } else query.append(name, String(value));
   }
   return query.toString();
 }

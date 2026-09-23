@@ -1,3 +1,4 @@
+import { isPlainRecord } from './record.js';
 import { stringifyJson } from './json.js';
 import { safePath } from './path.js';
 import { validateTextCharset } from './media.js';
@@ -130,10 +131,6 @@ export function appendRawQuery(url: string, raw: string): string {
   const separator =
     target.endsWith('?') || target.endsWith('&') ? '' : target.includes('?') ? '&' : '?';
   return `${target}${separator}${raw}${hash}`;
-}
-
-function isPlainRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function primitive(value: unknown, context: string): string {
