@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
 import { readFileSync } from 'node:fs';
-import { createClient } from 'openapi-chain';
+import { createClient, OpenAPIChainError } from 'openapi-chain';
 import { createStrictClient } from 'openapi-chain/strict';
 import { compileOpenAPIMetadata } from 'openapi-chain/metadata';
 
@@ -13,6 +13,39 @@ for (const metadata of [undefined, null, { version: 1, complete: false, operatio
     () => createStrictClient({ baseUrl: 'https://example.test', metadata }),
     /metadata/,
   );
+}
+
+const auditMetadata = compileOpenAPIMetadata({
+  openapi: '3.1.0',
+  paths: { '/audit': { post: { requestBody: { content: { 'application/json': {} } } } } },
+});
+for (const strict of [false, true]) {
+  let calls = 0;
+  const options = {
+    baseUrl: 'https://example.test',
+    transport: async () => {
+      calls++;
+      return new Response(null, { status: 204 });
+    },
+  };
+  const client = strict
+    ? createStrictClient({ ...options, metadata: auditMetadata })
+    : createClient(options);
+  await assert.rejects(
+    client.audit.post({ body: Symbol('invalid'), contentType: 'application/json' }),
+    (error) =>
+      error instanceof OpenAPIChainError &&
+      error.code === 'SERIALIZATION' &&
+      error.method === 'POST' &&
+      error.pathTemplate === '/audit',
+  );
+  await assert.rejects(client.audit.post({ body: 'invalid', contentType: '*/*' }), {
+    code: 'SERIALIZATION',
+  });
+  assert.equal(calls, 0);
+  await assert.rejects(client.audit.post({ extensions: { response: () => ({ status: 204 }) } }), {
+    code: 'EXTENSION_CONTRACT',
+  });
 }
 
 const document = JSON.parse(

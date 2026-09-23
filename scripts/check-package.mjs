@@ -212,6 +212,16 @@ const strictTrailing = createStrictClient<{'/items/': {get: {responses: {204: {c
 void strictTrailing.items.get();
 const strictReserved = createStrictClient<{'/search/query': {get: {responses: {204: {content: never}}}}}>({baseUrl:'https://example.test', metadata});
 void strictReserved.search.query.get();
+type AuditedPaths = {'/audit': {
+  parameters: {header: {'X-Mode': string}},
+  post: {parameters: {header: {'x-mode': number}}, requestBody: {content: {'*/*': unknown}}, responses: {204: {content: never}}}
+}};
+const audited = createClient<AuditedPaths>({baseUrl:'https://example.test'});
+void audited.audit.post({header:{'x-mode':1}, body:{}, contentType:'application/json'});
+// @ts-expect-error operation header overrides path-level spelling and type
+void audited.audit.post({header:{'x-mode':'wrong'}, body:{}, contentType:'application/json'});
+// @ts-expect-error wildcard declarations require a concrete request media type
+void audited.audit.post({header:{'x-mode':1}, body:{}, contentType:'*/*'});
 `;
   for (const extension of ['mts', 'cts']) {
     writeFileSync(join(consumer, `consumer.${extension}`), typeConsumer);
