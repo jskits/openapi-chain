@@ -143,6 +143,8 @@ function allowedStyles(
   return BASE_STYLES[location];
 }
 
+class SchemaInferenceError extends TypeError {}
+
 // Track traversal across schema applicators, not only adjacent $ref chains.
 function visitSchema<T>(
   value: unknown,
@@ -156,11 +158,13 @@ function visitSchema<T>(
   // Reference spelling identifies reusable results, not the node being visited.
   // Distinct schema objects may legally apply the same reference in siblings.
   if (active.has(value))
-    throw new TypeError('Recursive OpenAPI schema serialization metadata cannot be inferred.');
+    throw new SchemaInferenceError(
+      'Recursive OpenAPI schema serialization metadata cannot be inferred.',
+    );
   const cacheKey = isRecord(value) && Object.keys(value).length === 1 ? key : value;
   const cached = root.caches[analysis].get(cacheKey);
   if (active.size + (cached?.height ?? 1) > 128)
-    throw new TypeError('OpenAPI schema serialization depth exceeds 128.');
+    throw new SchemaInferenceError('OpenAPI schema serialization depth exceeds 128.');
   const parent = root.stack.at(-1);
   if (cached) {
     if (parent) parent.height = Math.max(parent.height, cached.height + 1);
@@ -455,7 +459,6 @@ function compileMediaType(
   contentType: string,
 ): MediaTypeMetadata | undefined {
   const mediaObject = isRecord(rawMedia) ? rawMedia : {};
-  const compiledEncoding = compileEncoding(mediaObject.encoding, version);
   const normalizedContentType = normalizeMediaTypeForCompiler(contentType);
   const multipart = normalizedContentType.startsWith('multipart/');
   const maySerializeForm =
@@ -463,21 +466,31 @@ function compileMediaType(
     normalizedContentType === 'application/x-www-form-urlencoded' ||
     normalizedContentType === '*/*' ||
     normalizedContentType === 'application/*';
-  const schemas = collectPropertySchemas(mediaObject.schema, root);
-  const ambiguous =
-    (maySerializeForm && hasAmbiguousType(mediaObject.schema, root)) ||
-    Object.values(schemas).some((schema) => hasAmbiguousType(schema, root));
-  const properties = ambiguous
-    ? { schemas, kinds: undefined, contentTypes: undefined }
-    : propertyMetadataForSchema(mediaObject.schema, root, version);
-  // Multiple per-property media choices are inherently ambiguous for multipart
-  // parts, but they do not by themselves make a urlencoded scalar/binary field
-  // unrepresentable on the wire. Let the form serializer decide per value.
+  // JSON and other opaque bodies never need field-level form inference.
+  if (!maySerializeForm) return undefined;
+  const compiledEncoding = compileEncoding(mediaObject.encoding, version);
+  let properties: ReturnType<typeof propertyMetadataForSchema>;
+  let formReason: string | undefined;
+  try {
+    const schemas = collectPropertySchemas(mediaObject.schema, root);
+    const ambiguous =
+      hasAmbiguousType(mediaObject.schema, root) ||
+      Object.values(schemas).some((schema) => hasAmbiguousType(schema, root));
+    properties = ambiguous
+      ? { schemas }
+      : propertyMetadataForSchema(mediaObject.schema, root, version);
+    if (ambiguous)
+      formReason =
+        'Multiple non-null schema types cannot determine form serialization; provide an operation body extension.';
+  } catch (error) {
+    // Wildcards can select JSON at runtime. Preserve that valid path while
+    // keeping unsupported form inference fail-closed. Invalid refs still fail.
+    if (!(error instanceof SchemaInferenceError) || !normalizedContentType.includes('*'))
+      throw error;
+    properties = { schemas: {} };
+    formReason = `${error.message} Provide an operation body extension for form serialization.`;
+  }
   let customReason = multipart ? compiledEncoding.requiresCustomSerializer : undefined;
-  const formReason =
-    ambiguous && maySerializeForm
-      ? 'Multiple non-null schema types cannot determine form serialization; provide an operation body extension.'
-      : undefined;
 
   if (version === '3.2') {
     for (const advanced of ['prefixEncoding', 'itemEncoding'] as const) {

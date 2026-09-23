@@ -69,3 +69,38 @@ test('bounds long acyclic reference chains before recursive dereferencing overfl
     }),
   ).toThrow(/reference depth exceeds 128/);
 });
+
+test.each([
+  'application/json',
+  'application/problem+json',
+  'text/plain',
+  'application/octet-stream',
+  '*/*',
+])('does not infer recursive form fields for %s', (contentType) => {
+  const metadata = compileOpenAPIMetadata({
+    openapi: '3.1.0',
+    components: {
+      schemas: { Node: { type: 'array', items: { $ref: '#/components/schemas/Node' } } },
+    },
+    paths: {
+      '/x': {
+        post: {
+          requestBody: {
+            content: {
+              [contentType]: {
+                schema: { properties: { node: { $ref: '#/components/schemas/Node' } } },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+  const media = metadata.operations['/x']!.post!.requestBody!.media?.[contentType];
+  const reason = expect.stringMatching(/Recursive/);
+  expect(media).toEqual(
+    contentType === '*/*'
+      ? { customSerializerScope: 'form', requiresCustomSerializer: reason }
+      : undefined,
+  );
+});
