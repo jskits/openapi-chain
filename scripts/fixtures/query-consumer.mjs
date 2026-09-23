@@ -27,6 +27,8 @@ try {
     key: ['account-a', 'GET', '/items/{id}'],
     fetcher: (input, { signal }) => api.items(input.id).get({ init: { signal } }),
   });
+  assert.throws(() => item.queryOptions({ id: 'a', ['__proto__']: { account: 'b' } }), /__proto__/);
+  assert.throws(() => item.key(Object.assign(['a'], { account: 'b' })), /array/);
   const input = { id: 'a/b' };
   const options = item.queryOptions(input);
   input.id = 'changed';

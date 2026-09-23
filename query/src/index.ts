@@ -24,10 +24,22 @@ function snapshot(value: unknown, ancestors = new Set<object>()): QueryValue {
     throw new TypeError('Query keys and inputs must use plain objects or arrays.');
   if (Object.getOwnPropertySymbols(value).length)
     throw new TypeError('Query keys and inputs must not contain symbol keys.');
+  // TanStack's default sorted-object hash drops this own property.
+  if (Object.hasOwn(value, '__proto__'))
+    throw new TypeError('Query keys and inputs must not contain __proto__ keys.');
   ancestors.add(value);
   try {
-    if (Array.isArray(value))
-      return Object.freeze(Array.from(value, (entry) => snapshot(entry, ancestors)));
+    if (Array.isArray(value)) {
+      const names = Object.getOwnPropertyNames(value);
+      if (
+        names.length !== value.length + 1 ||
+        names.some((name, index) => name !== (index === value.length ? 'length' : String(index)))
+      )
+        throw new TypeError('Query arrays must be dense and contain no extra properties.');
+      return Object.freeze(
+        Array.from({ length: value.length }, (_, index) => snapshot(value[index], ancestors)),
+      );
+    }
     return Object.freeze(
       Object.fromEntries(
         Object.keys(value)
