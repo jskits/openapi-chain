@@ -36,6 +36,9 @@ try {
     ![...modules].some(
       (id) =>
         id.endsWith('/src/metadata.ts') ||
+        id.endsWith('/dist/metadata.js') ||
+        id.includes('/cli/src/') ||
+        id.includes('/node_modules/openapi-typescript/') ||
         id.endsWith('/openapi.json') ||
         id.endsWith('/schema.d.ts'),
     ),

@@ -1,0 +1,5 @@
+{
+  "schema": "./openapi.json",
+  "outDir": "./generated",
+  "paths": ["/items", "/items/{id}"]
+}

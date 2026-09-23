@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import { createCatalog } from '../examples/scoped/client.js';
-import { selectedPaths } from '../examples/scoped/scope.js';
-import { metadata } from '../examples/scoped/metadata.js';
+import { selectedPaths } from '../examples/scoped/generated/scope.js';
+import { metadata } from '../examples/scoped/generated/metadata.js';
 
 test('the documented scope drives collection and item requests', async () => {
   expect(Object.keys(metadata.operations)).toEqual([...selectedPaths]);

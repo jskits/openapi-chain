@@ -1,24 +1,31 @@
 # Large schemas and build-time metadata
 
-[Documentation index](README.md) · [Performance](performance.md) · [Compiler options](api.md#metadata-compiler-options)
+[Documentation index](README.md) · [Official CLI](cli.md) · [Performance](performance.md) · [Compiler options](api.md#metadata-compiler-options)
 
 Use one explicit scope for both client types and runtime metadata. This controls cost by the selected schema subset, not automatically by source-code call sites. If every route is selected, the full cost remains. Dynamic metadata lookups do not give a bundler enough information to eliminate uncalled operations reliably.
 
-## Runnable example
+## Official generation workflow
 
-The checked-in [catalog example](../examples/scoped/client.ts) selects a collection and its item endpoint, leaving `/admin` out. Run:
+The [CLI guide](cli.md) covers installed applications. The checked-in [catalog example](../examples/scoped/client.ts) uses the same CLI and public package imports:
 
 ```sh
-pnpm generate:example
 pnpm generate:scoped
-pnpm test:generated
-pnpm typecheck
 pnpm test:scoped
 ```
 
-`test:scoped` checks reproducibility, bundles the browser entry, verifies that its module graph excludes the source OpenAPI document and compiler, executes selected requests, and checks that an unselected route fails before transport. It runs in `pnpm check`. The build script uses the supported Node runtime's TypeScript stripping to import the scope definition; browser applications need only the emitted metadata module.
+Its only scope definition is [openapi-chain.config.json](../examples/scoped/openapi-chain.config.json):
 
-## One scope definition
+```json
+{
+  "schema": "./openapi.json",
+  "outDir": "./generated",
+  "paths": ["/items", "/items/{id}"]
+}
+```
+
+The collection endpoint is a separate key. Selecting `/items/{id}` does not include `/items`. Exact keys avoid synchronizing a runtime regular expression and an independently written type pattern. For larger prefix-based scopes, generate an exact key list and verify it rather than maintaining two selectors.
+
+The CLI generates `schema.d.ts`, `scope.ts`, `metadata.ts`, and `manifest.json` together. The scoped type is equivalent to:
 
 ```ts
 import type { paths } from './schema.js';
@@ -26,24 +33,18 @@ export const selectedPaths = ['/items', '/items/{id}'] as const satisfies readon
 export type ScopedPaths = Pick<paths, (typeof selectedPaths)[number]>;
 ```
 
-The collection endpoint is a separate key. A pattern such as `/items/${string}` would omit `/items`. Exact keys avoid having to synchronize a runtime regular expression and an independently written type pattern. For larger prefix-based scopes, generate an exact key list and verify it, rather than maintaining two selectors.
+The full source document remains available for local references, including references into unselected path items. The type generator emits full declarations; the selected `Pick` narrows client types, and only selected operations enter runtime metadata. This is not declaration pruning or source-call-site tree shaking.
 
-At build time, compile the full source document with that selection:
+Create the client with `createStrictClient<ScopedPaths>({ baseUrl, metadata })`. The generic is essential: merely declaring ScopedPaths does not narrow an untyped client. Both chain nodes and `$path()` completion narrow to the selected keys.
 
-```ts
-const metadata = compileOpenAPIMetadata(document, { paths: selectedPaths });
-```
+## Checks and deployment
 
-Do not prune the input document first. References can point into components **or other path items**; the compiler retains the full document as the resolution root but only emits selected operations. Unrelated operations are not validated. Required reference failures in selected operations remain errors.
+`pnpm test:scoped` invokes the CLI's read-only `--check`, bundles the browser entry, verifies that its module graph excludes the source document, compiler and CLI, executes selected requests, and checks that an unselected route fails before transport. It runs in `pnpm check`. Generated files are excluded from formatter/linter writes to preserve byte-for-byte reproducibility.
 
-Generate declarations from that same source revision and create the runtime client with `createStrictClient<ScopedPaths>({ baseUrl, metadata })`. The generic is essential: merely declaring ScopedPaths does not narrow an untyped client. Both chain nodes and `$path()` completion narrow to the selected keys.
+The manifest binds the normalized source hash, config, selected paths, tool versions and artifact hashes. `--check` regenerates all outputs in memory, so hand-editing an artifact or its manifest cannot make stale output pass. The release version command regenerates this fixture after changing package versions.
 
-## Artifact provenance and deployment
+The generated metadata module uses a `CompiledOpenAPIMetadata` assertion because JSON output cannot carry a TypeScript brand. The assertion itself does not validate data. Use it only for compiler-produced artifacts under your build's control; arbitrary remote JSON or a cast is not equivalent to successful compilation. Keep runtime metadata immutable.
 
-[The build script](../scripts/build-scoped-example.mjs) emits a deterministic TypeScript module containing plain metadata and a source SHA-256 after normalizing CRLF to LF. It checks that emitted route keys match the selection; `--check` rejects stale output. The schema generator check independently rejects stale declarations. Together these checks bind the source, scope, declarations and metadata in the repository build.
+Browser and edge clients import only the generated metadata module and `openapi-chain/strict`. They should not import the source document, CLI or `openapi-chain/metadata` at runtime. The generated metadata module's import from that entry is type-only and is erased.
 
-The generated module uses a CompiledOpenAPIMetadata assertion because JSON output cannot carry a TypeScript brand. The assertion itself does not validate data. Use it only for compiler-produced artifacts under your build's control; arbitrary remote JSON or a cast is not equivalent to successful compilation. Keep runtime metadata immutable.
-
-Compile and generate in the build environment. Browser and edge clients import only the generated module and `openapi-chain/strict`; they should not import the source document or `openapi-chain/metadata`. The example uses local source imports for repository checks; installed applications use the public package entries.
-
-A scoped result remains `complete: true` for its selected operations. A type/metadata mismatch that reaches an omitted route fails before transport. This is a safety net, not a replacement for keeping the two outputs synchronized. Explicit `onAmbiguousTemplate: 'allow'` remains available when selected third-party paths have duplicate hierarchies; it does not bypass other compilation errors.
+A scoped result remains `complete: true` for its selected operations. Calls outside it fail before transport. This is a safety net, not a replacement for synchronized generation. The programmatic compiler skips unrelated operations, but the CLI also generates full type declarations and may reject invalid unselected portions of the document. Its upstream type generator currently limits CLI input to OpenAPI 3.0/3.1; the programmatic metadata compiler continues to support 3.2.

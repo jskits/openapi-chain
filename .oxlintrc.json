@@ -11,7 +11,7 @@
     "builtin": true,
     "node": true
   },
-  "ignorePatterns": ["dist/**", "coverage/**", "node_modules/**"],
+  "ignorePatterns": ["dist/**", "coverage/**", "node_modules/**", "examples/scoped/generated/**"],
   "rules": {
     "typescript/consistent-type-imports": "error",
     "typescript/no-explicit-any": "error",

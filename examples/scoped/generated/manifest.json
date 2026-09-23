@@ -1,0 +1,22 @@
+{
+  "formatVersion": 1,
+  "generator": "openapi-chain-cli",
+  "versions": {
+    "cli": "0.1.0",
+    "runtime": "0.4.0",
+    "generator": "7.13.0",
+    "typescript": "5.9.3",
+    "yaml": "2.9.1"
+  },
+  "schemaSha256": "8e7004722103284c3fb8ff0d87bbc6501a04f106a4869b6bd1083850ca11dd64",
+  "configSha256": "34ec661019778a10cb7fe6656f0e223af4e441dbb71511679db84e34db39cb23",
+  "selectedPaths": [
+    "/items",
+    "/items/{id}"
+  ],
+  "artifacts": {
+    "schema.d.ts": "e91d20cd4ec2acdf78717d44d19feb1f1e2d294ba4b6e7a16db612e058baf832",
+    "scope.ts": "fa2597a4a6ae875b1c61ae29970e27d3b6019a83c39142b75dbeff21dccd3d06",
+    "metadata.ts": "1dd54d30114ab084b2153a7b69b0a1cc9199a595eeb13e755dbf95283127acaf"
+  }
+}
