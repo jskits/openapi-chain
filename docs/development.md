@@ -102,3 +102,7 @@ After correcting the setting, rerun the failed jobs and confirm that Changesets 
 The workflow adds recovery guidance to the job summary when the version action fails, while preserving the original failure status. It does not query or change repository administration settings using `GITHUB_TOKEN`; that endpoint requires administration access beyond this job's permissions. See [GitHub's workflow-permissions API](https://docs.github.com/en/rest/actions/permissions#get-default-workflow-permissions-for-a-repository).
 
 Reference: [Changesets automation](https://changesets.dev/guide/automating), [npm Trusted Publishing](https://docs.npmjs.com/trusted-publishers/), [tsdown package validation](https://tsdown.dev/options/lint).
+
+## Query adapter package
+
+`pnpm build` builds both runtime and the separate `openapi-chain-query` package. `pnpm test:query:package` installs packed artifacts into a fresh consumer, checks ESM/CommonJS and TanStack/SWR types, performs real HTTP requests and checks browser bundle isolation. `pnpm check` repeats consumer verification with TS 6 and TS 7. Changesets includes this workspace package; the release packing job builds it through the root build command. The adapter has no runtime dependencies and does not alter the core gzip budget.

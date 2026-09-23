@@ -18,6 +18,11 @@ async function handle(request, response) {
     response.end();
     return;
   }
+  if (url.pathname === '/query/index.js') {
+    response.setHeader('content-type', 'text/javascript');
+    response.end(readFileSync(new URL('../query/dist/index.js', import.meta.url)));
+    return;
+  }
   if (url.pathname.startsWith('/dist/')) {
     response.setHeader('content-type', 'text/javascript');
     response.end(readFileSync(new URL(`../dist/${basename(url.pathname)}`, import.meta.url)));
@@ -106,6 +111,44 @@ try {
   browser = await chromium.launch({ channel: 'chromium' });
   const page = await browser.newPage();
   await page.goto(origin);
+  const adapterResult = await page.evaluate(async (origin) => {
+    const { createQuery } = await import(`${origin}/query/index.js`);
+    const { createStrictClient } = await import(`${origin}/dist/strict.js`);
+    const { compileOpenAPIMetadata } = await import(`${origin}/dist/metadata.js`);
+    const urls = [];
+    const api = createStrictClient({
+      baseUrl: origin,
+      metadata: compileOpenAPIMetadata({
+        openapi: '3.1.1',
+        paths: {
+          '/search/query/': {
+            get: { parameters: [{ name: 'q', in: 'query', schema: { type: 'string' } }] },
+          },
+        },
+      }),
+      fetch: async (url, init) => {
+        urls.push(String(url));
+        return fetch(url, init);
+      },
+    });
+    const operation = createQuery({
+      key: ['browser', 'GET', '/search/query/'],
+      fetcher: (input, { signal }) =>
+        api.search.query.get({ query: { q: input.q }, init: { signal } }),
+    });
+    const input = { q: 'original' };
+    const options = operation.queryOptions(input);
+    input.q = 'mutated';
+    const result = await options.queryFn({ signal: new AbortController().signal });
+    const swr = operation.swr({ q: 'swr' });
+    const second = await swr.fetcher(swr.key);
+    return { query: result.query, swr: second.query, urls };
+  }, origin);
+  assert.deepEqual(adapterResult, {
+    query: 'original',
+    swr: 'swr',
+    urls: [`${origin}/search/query/?q=original`, `${origin}/search/query/?q=swr`],
+  });
   const coreBoundary = await page.evaluate(async (origin) => {
     const { createClient } = await import(`${origin}/dist/index.js`);
     let sent = 0;
@@ -362,7 +405,7 @@ try {
     assert.deepEqual(result, { type: index % 2 ? 'opaqueredirect' : 'opaque', rejected: true });
   }
   console.log(
-    'Chromium: strict-only core option rejection, core/strict ESM, multipart, Unicode, credentialed CORS, cookie omission, abort, streaming, multipart part fidelity, binary slices, response media, text charsets and unreadable status-zero responses passed.',
+    'Chromium: query adapter snapshots/fetchers with strict method-name and trailing-slash routing, strict-only core option rejection, core/strict ESM, multipart, Unicode, credentialed CORS, cookie omission, abort, streaming, multipart part fidelity, binary slices, response media, text charsets and unreadable status-zero responses passed.',
   );
 } finally {
   await browser?.close();

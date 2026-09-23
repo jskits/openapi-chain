@@ -96,3 +96,7 @@ Strict clients index route shapes and HTTP methods at creation. Both chain and `
 - `type.ts`: public contracts and operation-derived type computation.
 
 Shared behavior is qualified through core/strict contract tests rather than merging the whole strict serializer into the core dependency graph.
+
+## Optional query integration
+
+`openapi-chain-query` is a separate workspace/package with no runtime dependencies. Its explicit operation key and callback API supports TanStack Query and SWR without inspecting client Proxies or changing the core. It copies and freezes JSON inputs to keep cache identity aligned with the eventual request. Framework lifecycle, retries and invalidation remain application policy. See [integration recipes](integrations.md).

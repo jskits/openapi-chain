@@ -1,9 +1,7 @@
 import type { Catalog, DetailInput } from './api.js';
+import { catalogDetail } from './query.js';
 
 export function catalogSWR(api: Catalog, cacheScope: string) {
-  return (input: DetailInput | null) => ({
-    key: input === null ? null : ([cacheScope, 'GET', '/items/{id}', input] as const),
-    fetcher: ([, , , params]: readonly [string, string, string, DetailInput]) =>
-      api.items(params.id).get({ query: { locale: params.locale } }),
-  });
+  const detail = catalogDetail(api, cacheScope);
+  return (input: DetailInput | null) => detail.swr(input);
 }

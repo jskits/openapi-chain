@@ -11,7 +11,13 @@
     "builtin": true,
     "node": true
   },
-  "ignorePatterns": ["dist/**", "coverage/**", "node_modules/**", "examples/scoped/generated/**"],
+  "ignorePatterns": [
+    "dist/**",
+    "coverage/**",
+    "node_modules/**",
+    "examples/scoped/generated/**",
+    "query/dist/**"
+  ],
   "rules": {
     "typescript/consistent-type-imports": "error",
     "typescript/no-explicit-any": "error",

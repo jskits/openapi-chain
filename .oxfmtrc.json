@@ -6,6 +6,7 @@
   "printWidth": 100,
   "ignorePatterns": [
     "dist/**",
+    "query/dist/**",
     "coverage/**",
     "pnpm-lock.yaml",
     ".changeset/*.md",
