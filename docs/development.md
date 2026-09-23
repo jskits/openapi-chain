@@ -2,7 +2,7 @@
 
 [Documentation index](README.md) · [Contributing](../CONTRIBUTING.md) · [Architecture](architecture.md)
 
-Use Node.js **24.16.0** (see `.node-version`) and **pnpm 10.34.5**. CI also checks Node.js 22.22.1 and 26, plus Windows and macOS on Node.js 24.
+Use Node.js **24.16.0** (see `.node-version`) and **pnpm 10.34.5**. CI also checks Node.js 22.22.2 and 26, plus Windows and macOS on Node.js 24.
 
 ```sh
 corepack enable
