@@ -88,6 +88,8 @@ Core serializes JSON, scalar text and supported native bodies. For structured UR
 
 Strict can omit `contentType` when compiled metadata and the operation type both establish one concrete media type. Multiple media types or media ranges require an explicit concrete selection. A body extension does not remove this requirement. See [binary and multipart support](support.md#binary-bodies-and-multipart-parts) for byte slices, filenames and encoding limits.
 
+Parameterized media ranges follow the same rule: a declaration such as `application/*; profile=v1` requires a concrete selection such as `application/json; profile=v1`. Typed inputs retain the declared parameter suffix when replacing the wildcard. A wildcard inside a parameter value does not make an otherwise concrete media type a range.
+
 ## Responses and errors
 
 With the default `throwOnError: true`, a parsed 2xx response returns its data. Other parsed HTTP responses throw `HttpError`, with `status`, `data` and `response`:

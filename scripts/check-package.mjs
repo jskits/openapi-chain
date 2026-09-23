@@ -222,6 +222,15 @@ void audited.audit.post({header:{'x-mode':1}, body:{}, contentType:'application/
 void audited.audit.post({header:{'x-mode':'wrong'}, body:{}, contentType:'application/json'});
 // @ts-expect-error wildcard declarations require a concrete request media type
 void audited.audit.post({header:{'x-mode':1}, body:{}, contentType:'*/*'});
+type ProfilePaths = {'/profile': {post: {requestBody: {content: {'application/*; profile=v1': {value:string}}}, responses: {204: {content:never}}}}};
+const profileCore = createClient<ProfilePaths>({baseUrl:'https://example.test'});
+const profileStrict = createStrictClient<ProfilePaths>({baseUrl:'https://example.test', metadata});
+void profileCore.profile.post({body:{value:'x'}, contentType:'application/json; profile=v1'});
+void profileStrict.profile.post({body:{value:'x'}, contentType:'application/json; profile=v1'});
+// @ts-expect-error parameterized media ranges cannot infer a concrete request media type
+void profileStrict.profile.post({body:{value:'x'}});
+// @ts-expect-error the selected representation must retain the declared profile
+void profileCore.profile.post({body:{value:'x'}, contentType:'application/json'});
 `;
   for (const extension of ['mts', 'cts']) {
     writeFileSync(join(consumer, `consumer.${extension}`), typeConsumer);

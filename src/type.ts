@@ -369,17 +369,21 @@ type RequestBodyContent<Operation> =
 
 type IsUnion<T, Whole = T> = T extends unknown ? ([Whole] extends [T] ? false : true) : never;
 
-type ConcreteContentTypeForMedia<Media extends string> = Media extends '*/*'
-  ? `${string}/${string}`
-  : Media extends `${infer Type}/*`
-    ? `${Type}/${string}`
-    : Media;
+type MediaEssence<Value extends string> = Value extends `${infer Essence};${string}`
+  ? Essence
+  : Value;
 
-type CanInferConcreteMedia<Media extends string> = Media extends '*/*'
-  ? false
-  : Media extends `${string}/*`
-    ? false
-    : true;
+type ConcreteContentTypeForMedia<Media extends string> =
+  Media extends `${infer Essence};${infer Parameters}`
+    ? `${ConcreteContentTypeForMedia<Essence>};${Parameters}`
+    : Media extends '*/*'
+      ? `${string}/${string}`
+      : Media extends `${infer Type}/*`
+        ? `${Type}/${string}`
+        : Media;
+
+type CanInferConcreteMedia<Media extends string> =
+  MediaEssence<Media> extends `${string}*${string}` ? false : true;
 
 type BodyForMedia<
   Content,
@@ -638,9 +642,6 @@ export type SuccessData<Operation> =
       : never
     : never;
 
-type MediaEssence<Value extends string> = Value extends `${infer Essence};${string}`
-  ? Essence
-  : Value;
 type ConcreteMediaInput<Value extends string> =
   Extract<MediaEssence<Value>, `${string}*${string}`> extends never
     ? unknown
