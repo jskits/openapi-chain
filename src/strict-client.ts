@@ -1,3 +1,4 @@
+import { responseExtensionData } from './response-contract.js';
 import {
   joinUrl,
   appendRawQuery,
@@ -178,16 +179,7 @@ async function execute(
   if (response.status === 0) throw new TypeError('Response status 0');
   let data: unknown;
   if (extensions?.response) {
-    const parsed = await extensions.response(response);
-    if (
-      !parsed ||
-      typeof parsed !== 'object' ||
-      parsed.status !== response.status ||
-      !('data' in parsed)
-    ) {
-      throw new TypeError('Response status mismatch');
-    }
-    data = parsed.data;
+    data = responseExtensionData(await extensions.response(response), response.status);
   } else {
     data = await defaultResponseParser(response);
   }

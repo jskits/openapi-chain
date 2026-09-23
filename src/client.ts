@@ -1,3 +1,4 @@
+import { responseExtensionData } from './response-contract.js';
 import { joinUrl, appendRawQuery } from './url.js';
 import { isPlainRecord } from './record.js';
 /* oxlint-disable typescript/no-base-to-string -- Core scalar coercion intentionally follows String(); structured serialization uses typed extensions. */
@@ -151,9 +152,7 @@ async function executeRequest(
   if (status === 0) throw new TypeError('Response status 0');
   let data: unknown;
   if (extensions?.response) {
-    const item = await extensions.response(response);
-    if (item.status !== status) throw new TypeError('Response status mismatch');
-    data = item.data;
+    data = responseExtensionData(await extensions.response(response), status);
   } else if (![204, 205, 304].includes(status) && response.headers.get('content-length') !== '0') {
     const text = await response.text();
     if (text)
