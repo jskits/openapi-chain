@@ -85,10 +85,16 @@ try {
   assert.ok(!readdirSync(join(consumer, 'node_modules/openapi-chain-cli')).includes('test'));
   assert.ok(!packed.files.some(({ path }) => path.startsWith('cli/')));
   assert.equal(runCli('--version').trim(), cliManifest.version);
-  writeFileSync(
-    join(consumer, 'openapi.json'),
-    readFileSync(join(root, 'examples/scoped/openapi.json')),
+  const sourceDocument = JSON.parse(
+    readFileSync(join(root, 'examples/scoped/openapi.json'), 'utf8'),
   );
+  sourceDocument.paths['/items'].get.parameters.push({
+    name: '__proto__',
+    in: 'query',
+    required: true,
+    schema: { type: 'string' },
+  });
+  writeFileSync(join(consumer, 'openapi.json'), JSON.stringify(sourceDocument));
   writeFileSync(
     join(consumer, 'openapi-chain.config.json'),
     JSON.stringify({
@@ -115,6 +121,8 @@ export const createCatalog = (baseUrl: string, transport?: Transport) => createS
     join(consumer, 'contract.ts'),
     `import {createCatalog} from './client.js';
 const api = createCatalog('https://api.test');
+void api.items.get({query:{filter:{name:'book'},['__proto__']:'value'}});
+// @ts-expect-error generated prototype-like names remain required
 void api.items.get({query:{filter:{name:'book'}}});
 void api.items('42').get();
 // @ts-expect-error unselected paths are absent
@@ -189,10 +197,15 @@ void api.items.get({query:{unknown:'x'}});
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');
   const api = createCatalog(`http://127.0.0.1:${server.address().port}`);
-  await api.items.get({ query: { filter: { name: 'book' } } });
+  await assert.rejects(
+    api.items.get({ query: { filter: { name: 'book' } } }),
+    /Missing required.*__proto__/,
+  );
+  assert.equal(received.length, 0);
+  await api.items.get({ query: { filter: { name: 'book' }, ['__proto__']: 'value' } });
   assert.equal((await api.items('42').get()).name, 'book');
   await assert.rejects(api.$path('/admin').get(), /does not contain/);
-  assert.deepEqual(received, ['/items?filter%5Bname%5D=book', '/items/42']);
+  assert.deepEqual(received, ['/items?filter%5Bname%5D=book&__proto__=value', '/items/42']);
   console.log(
     `Installed CLI verified: npm bin, full generation/check, private TS 5.9 generator, TS 6${compiler.major === 7 ? '/7' : ''} scoped consumer, browser module isolation and real HTTP.`,
   );

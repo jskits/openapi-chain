@@ -73,7 +73,7 @@ const api = createStrictClient<ScopedPaths>({
 });
 ```
 
-Do not omit `<ScopedPaths>`: runtime metadata cannot reconstruct erased TypeScript types. Calls outside the scope are absent from the generated client type and fail before transport if made from JavaScript. Browser/edge applications import the generated runtime metadata; they never need to import the CLI, source schema, manifest or compiler. The metadata module's type assertion preserves the compiled-metadata brand but does not validate arbitrary JSON.
+Do not omit `<ScopedPaths>`: runtime metadata cannot reconstruct erased TypeScript types. Calls outside the scope are absent from the generated client type and fail before transport if made from JavaScript. Browser/edge applications import the generated runtime metadata; they never need to import the CLI, source schema, manifest or compiler. The metadata module decodes embedded JSON with `JSON.parse`, preserving names such as `__proto__` as ordinary own properties. Its type assertion preserves the compiled-metadata brand but does not validate arbitrary JSON.
 
 The CLI pins its own TypeScript 5.9.3 for generation, separately from the application's compiler. Installed consumers are checked with TypeScript 6 and 7. Consumers do not need to relax the generator's TypeScript peer dependency or copy the repository's pnpm settings.
 

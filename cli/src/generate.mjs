@@ -137,7 +137,7 @@ export async function render(configFile) {
   const outputs = {
     'schema.d.ts': banner + declarations,
     'scope.ts': `${banner}import type { paths } from './schema.js';\n\nexport const selectedPaths = ${JSON.stringify(selectedPaths)} as const satisfies readonly (keyof paths)[];\nexport type ScopedPaths = Pick<paths, (typeof selectedPaths)[number]>;\n`,
-    'metadata.ts': `${banner}import type { CompiledOpenAPIMetadata } from 'openapi-chain/metadata';\n\nexport const metadata = ${JSON.stringify(metadata, null, 2)} as unknown as CompiledOpenAPIMetadata;\n`,
+    'metadata.ts': `${banner}import type { CompiledOpenAPIMetadata } from 'openapi-chain/metadata';\n\nexport const metadata = JSON.parse(${JSON.stringify(JSON.stringify(metadata))}) as CompiledOpenAPIMetadata;\n`,
   };
   outputs['manifest.json'] = json({
     formatVersion: 1,

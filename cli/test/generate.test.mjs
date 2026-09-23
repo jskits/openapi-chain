@@ -4,7 +4,9 @@ import { mkdtemp, writeFile, readFile, readdir, rm, stat, symlink } from 'node:f
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { compileOpenAPIMetadata } from 'openapi-chain/metadata';
+import { createStrictClient } from 'openapi-chain/strict';
 import { generate } from '../src/generate.mjs';
 
 const document = {
@@ -239,4 +241,82 @@ await test('ambiguous hierarchy policy is explicit and survives full type genera
   const config = JSON.parse(await readFile(f.config, 'utf8'));
   await writeFile(f.config, JSON.stringify({ ...config, onAmbiguousTemplate: 'allow' }));
   assert.deepEqual((await generate(f.config)).selectedPaths, ['/x/{id}', '/x/{name}']);
+});
+
+await test('generated metadata preserves prototype-like keys and strict runtime contracts', async (t) => {
+  const f = await fixture(t, { paths: ['/items'] });
+  const names = ['__proto__', 'constructor', 'toString'];
+  const properties = Object.fromEntries(names.map((name) => [name, { type: 'object' }]));
+  const encoding = Object.fromEntries(
+    names.map((name) => [name, { contentType: 'application/json' }]),
+  );
+  const source = {
+    ...document,
+    paths: {
+      '/items': {
+        get: {
+          parameters: names.map((name) => ({
+            name,
+            in: 'query',
+            required: true,
+            schema: { type: 'string' },
+          })),
+          responses: { 204: { description: 'OK' } },
+        },
+        post: {
+          requestBody: {
+            content: {
+              'multipart/form-data': { schema: { type: 'object', properties }, encoding },
+            },
+          },
+          responses: { 204: { description: 'OK' } },
+        },
+      },
+    },
+  };
+  await writeFile(f.input, JSON.stringify(source));
+  await generate(f.config);
+  await generate(f.config, { check: true });
+  const { metadata } = await import(pathToFileURL(join(f.output, 'metadata.ts')).href);
+  const expected = JSON.parse(JSON.stringify(compileOpenAPIMetadata(source)));
+  assert.deepEqual(metadata, expected);
+  const query = metadata.operations['/items'].get.parameters.query;
+  const media = metadata.operations['/items'].post.requestBody.media['multipart/form-data'];
+  for (const name of names) {
+    assert.ok(Object.hasOwn(query, name));
+    assert.ok(Object.hasOwn(media.propertyKinds, name));
+    assert.ok(Object.hasOwn(media.propertyContentTypes, name));
+    assert.ok(Object.hasOwn(media.encoding, name));
+  }
+  assert.equal(Object.getPrototypeOf(query), Object.prototype);
+  const requests = [];
+  const api = createStrictClient({
+    baseUrl: 'https://api.test',
+    metadata,
+    transport: async (request) => {
+      requests.push(request);
+      return new Response(null, { status: 204 });
+    },
+  });
+  const values = Object.fromEntries(names.map((name) => [name, 'value']));
+  for (const name of names) {
+    const missing = { ...values };
+    delete missing[name];
+    await assert.rejects(api.items.get({ query: missing }), /Missing required/);
+  }
+  assert.equal(requests.length, 0);
+  await api.items.get({ query: values });
+  assert.deepEqual(
+    [...new URL(requests[0].url).searchParams],
+    names.map((name) => [name, 'value']),
+  );
+  const body = Object.fromEntries(names.map((name) => [name, { message: '"__proto__": true' }]));
+  await api.items.post({ contentType: 'multipart/form-data', body });
+  const request = new Request(requests[1].url, requests[1].init);
+  const form = await request.formData();
+  for (const name of names) {
+    const part = form.get(name);
+    assert.equal(part.type, 'application/json');
+    assert.deepEqual(JSON.parse(await part.text()), body[name]);
+  }
 });
