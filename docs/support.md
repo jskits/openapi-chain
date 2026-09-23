@@ -67,7 +67,8 @@ The compiler extracts serialization hints; it does not evaluate every JSON Schem
 | Ordinary recursive object properties | Object can be represented as a JSON part | Validate recursive data separately if needed |
 | Recursive allOf/items inference; excessive depth or work | Controlled compilation error | Simplify/preprocess the serialization schema |
 | Nullable type array with one non-null type | Uses the non-null type for hints | Null-value serialization remains subject to the location/body serializer |
-| Multiple non-null types in type; oneOf; anyOf; conditional schemas | No complete branch analysis; a type array currently uses its first non-null entry | Do not depend on automatic media inference; provide explicit media/encoding and a whole-body extension where necessary |
+| Multiple non-null types in `type` | No kind or content-type hints are inferred; multipart/form and URL-encoded bodies require a whole-body extension | Applies through local references, `allOf`, and array items; explicit JSON serialization remains supported |
+| `oneOf`; `anyOf`; conditional schemas | No complete branch analysis | Do not depend on automatic media inference; provide explicit media/encoding and a whole-body extension where necessary |
 | additionalProperties / patternProperties | No per-key schema inference for dynamic property names | Use named properties or a body extension for schema-dependent map encoding |
 | enum, bounds, required object properties, formats and response schemas | Not a data-validation pass | Validate request/response data in application code |
 | OAS 3.0 string format: binary | Binary part hint | Supply the supported binary body value |

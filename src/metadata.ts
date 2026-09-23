@@ -13,7 +13,7 @@ import type {
 } from './type.js';
 
 type AnyRecord = Record<string, unknown>;
-type Analysis = 'kind' | 'content' | 'properties' | 'encoding';
+type Analysis = 'kind' | 'content' | 'properties' | 'encoding' | 'ambiguous';
 type CachedAnalysis = { value: unknown; height: number };
 type CompilationContext = {
   document: AnyRecord;
@@ -180,6 +180,34 @@ function visitSchema<T>(
   }
 }
 
+// JSON Schema type arrays describe alternatives, never a preferred first type.
+function schemaType(schema: AnyRecord): unknown {
+  if (!Array.isArray(schema.type)) return schema.type;
+  const types = new Set(schema.type.filter((item) => item !== 'null'));
+  return types.size === 1 ? types.values().next().value : undefined;
+}
+
+function hasAmbiguousType(
+  schemaValue: unknown,
+  root: CompilationContext,
+  active = new Set<unknown>(),
+): boolean {
+  return visitSchema(schemaValue, active, root, 'ambiguous', () => {
+    const schema = dereference(schemaValue, root, 'schema');
+    if (!isRecord(schema)) return false;
+    if (
+      Array.isArray(schema.type) &&
+      new Set(schema.type.filter((item) => item !== 'null')).size > 1
+    )
+      return true;
+    const children = [
+      ...(Array.isArray(schema.allOf) ? schema.allOf : []),
+      ...('items' in schema ? [schema.items] : []),
+    ];
+    return children.some((child) => hasAmbiguousType(child, root, active));
+  });
+}
+
 function schemaKind(
   schemaValue: unknown,
   root: CompilationContext,
@@ -196,9 +224,7 @@ function schemaKind(
       if (kinds.includes('binary')) return 'binary';
       if (kinds.includes('primitive')) return 'primitive';
     }
-    const type = Array.isArray(schema.type)
-      ? schema.type.find((item) => item !== 'null')
-      : schema.type;
+    const type = schemaType(schema);
     if (type === 'object' || isRecord(schema.properties)) return 'object';
     if (type === 'array' || 'items' in schema) return 'array';
     if (
@@ -232,9 +258,7 @@ function inferContentType(
   return visitSchema(schemaValue, active, root, 'content', () => {
     const schema = dereference(schemaValue, root, 'schema');
     if (!isRecord(schema)) return undefined;
-    const type = Array.isArray(schema.type)
-      ? schema.type.find((item) => item !== 'null')
-      : schema.type;
+    const type = schemaType(schema);
     // An explicit type determines the default; applicators do not imply object.
     if (type === 'array' || 'items' in schema) {
       return inferContentType(schema.items, root, version, active);
@@ -432,12 +456,28 @@ function compileMediaType(
 ): MediaTypeMetadata | undefined {
   const mediaObject = isRecord(rawMedia) ? rawMedia : {};
   const compiledEncoding = compileEncoding(mediaObject.encoding, version);
-  const properties = propertyMetadataForSchema(mediaObject.schema, root, version);
-  const multipart = normalizeMediaTypeForCompiler(contentType).startsWith('multipart/');
+  const normalizedContentType = normalizeMediaTypeForCompiler(contentType);
+  const multipart = normalizedContentType.startsWith('multipart/');
+  const maySerializeForm =
+    multipart ||
+    normalizedContentType === 'application/x-www-form-urlencoded' ||
+    normalizedContentType === '*/*' ||
+    normalizedContentType === 'application/*';
+  const schemas = collectPropertySchemas(mediaObject.schema, root);
+  const ambiguous =
+    (maySerializeForm && hasAmbiguousType(mediaObject.schema, root)) ||
+    Object.values(schemas).some((schema) => hasAmbiguousType(schema, root));
+  const properties = ambiguous
+    ? { schemas, kinds: undefined, contentTypes: undefined }
+    : propertyMetadataForSchema(mediaObject.schema, root, version);
   // Multiple per-property media choices are inherently ambiguous for multipart
   // parts, but they do not by themselves make a urlencoded scalar/binary field
   // unrepresentable on the wire. Let the form serializer decide per value.
   let customReason = multipart ? compiledEncoding.requiresCustomSerializer : undefined;
+  if (ambiguous && maySerializeForm) {
+    customReason =
+      'Multiple non-null schema types cannot determine form serialization; provide an operation body extension.';
+  }
 
   if (version === '3.2') {
     for (const advanced of ['prefixEncoding', 'itemEncoding'] as const) {
@@ -749,7 +789,13 @@ export function compileOpenAPIMetadata(
     version,
     work: 0,
     stack: [],
-    caches: { kind: new Map(), content: new Map(), properties: new Map(), encoding: new Map() },
+    caches: {
+      kind: new Map(),
+      content: new Map(),
+      properties: new Map(),
+      encoding: new Map(),
+      ambiguous: new Map(),
+    },
   };
   const paths = asRecord(source.paths ?? {}, 'OpenAPI paths');
   const operations: Record<string, Partial<Record<HttpMethod, OperationMetadata>>> = dictionary();
