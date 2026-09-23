@@ -74,6 +74,8 @@ function requestBody(
 ) {
   if (body === undefined) return undefined;
   if (!contentType) throw new OpenAPIChainError('SERIALIZATION', 'Missing contentType.');
+  if (mediaType(contentType).includes('*'))
+    throw new OpenAPIChainError('SERIALIZATION', 'Request body requires a concrete contentType.');
   let serialized: BodyInit | undefined;
   if (serialize) serialized = serialize({ body, contentType });
   else {
