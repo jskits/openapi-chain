@@ -16,7 +16,7 @@ console.log(item.name);
 This example uses the [Items schema](examples/service.openapi.json). Your chain follows your own schema: static path segments become properties, `{parameters}` become function calls, and HTTP methods become request functions.
 
 - **Typed requests and responses:** infer parameters, request media types and status-correlated results from the selected operation.
-- **Small default runtime:** the complete emitted core has a **2.5KB gzip budget**, enforced by a [reproducible size check](docs/performance.md#size).
+- **Small default runtime:** the complete emitted core has a **3KB gzip budget**, enforced by a [reproducible size check](docs/performance.md#size).
 - **Opt-in OpenAPI serialization:** a separate strict client handles supported styles, Encoding Objects and OpenAPI 3.0/3.1/3.2 serialization metadata.
 - **Customizable requests:** operation-typed extensions and Fetch-compatible transports support application-specific serialization, authentication and parsing.
 

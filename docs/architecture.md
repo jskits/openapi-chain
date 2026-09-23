@@ -24,7 +24,7 @@ The package separates compile-time API structure, the tiny schema-free runtime, 
 
 The core intentionally omits runtime features that would require preserving the whole OpenAPI serialization model. Type erasure is treated as a hard boundary: if a value cannot be serialized faithfully without metadata, the core requires either explicit information or an operation-local extension.
 
-The transitive ESM core is gzip-gated at 2560 bytes. The size script recursively follows local ESM imports from `dist/index.js`, gzips the complete reachable runtime, and fails CI on regression.
+The transitive ESM core is gzip-gated at 3072 bytes. The size script recursively follows local ESM imports from `dist/index.js`, gzips the complete reachable runtime, and fails CI on regression.
 
 ### Strict entry
 
@@ -50,7 +50,7 @@ The callback types are computed from the selected OpenAPI item/operation:
 
 At runtime these callbacks are ordinary functions. Their safety exists entirely at compile time and therefore adds no generated endpoint code.
 
-When invoked, local extensions have precedence over built-in serialization in both core and strict clients. Both clients invoke query extensions for explicitly supplied empty records; strict validates required and undeclared inputs first. See the [invocation contract](api.md#extension-invocation-conditions). A body extension takes ownership of the entire body; nested strict serializers either handle their field/part exactly or fail closed so a typed whole-body extension can take over before final request construction. This makes the long tail composable instead of forcing rare OpenAPI/vendor semantics into the 2.5KB core.
+When invoked, local extensions have precedence over built-in serialization in both core and strict clients. Both clients invoke query extensions for explicitly supplied empty records; strict validates required and undeclared inputs first. See the [invocation contract](api.md#extension-invocation-conditions). A body extension takes ownership of the entire body; nested strict serializers either handle their field/part exactly or fail closed so a typed whole-body extension can take over before final request construction. This makes the long tail composable instead of forcing rare OpenAPI/vendor semantics into the 3KB core.
 
 ## Strict serialization model
 
@@ -81,7 +81,7 @@ Serialization inference tracks active schema references through `allOf` and `ite
 
 Rendered paths containing whole `.` or `..` segments (including `%2e` spellings) are rejected before transport. Fetch normalizes these segments, so encoding a dot is insufficient to preserve the intended endpoint. This check also applies to operation path extensions; filenames such as `file.txt` remain valid.
 
-Strict clients index route shapes and HTTP methods at creation. Both chain and `$path()` routing use that snapshot; changing the routing table requires creating a new client. Request matching is proportional to path depth rather than total schema route count. Metadata records must remain immutable for the client's lifetime.
+Strict clients index route shapes and HTTP methods at creation. Both chain and `$path()` routing use that snapshot; changing the routing table requires creating a new client. Request matching is proportional to path depth rather than total schema route count. Strict construction deep-clones and freezes the metadata, so routing and serialization read the same private snapshot for the client's lifetime. Mutating a caller-owned artifact cannot change an existing client.
 
 ## Implementation map
 

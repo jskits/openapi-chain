@@ -19,7 +19,7 @@ Vitest uses explicit imports instead of globals. Put tests under `test/` and kee
 
 `pnpm check` covers formatting, typed lint, generated-fixture freshness, type checking, tests with coverage, build validation, installed-tarball consumers, core gzip size and type-scale budgets. Do not replace these checks with tests that only import source files: exports and declaration paths can fail only after packing. Package checks exercise all three entry points in ESM and CommonJS, including typed operations and mocked requests.
 
-Keep the default runtime dependency-free and at or below 2560 bytes transitive gzip. Runtime OpenAPI serialization metadata belongs in `/strict`; prefer operation-derived extensions or a custom transport for vendor behavior. See [architecture](docs/architecture.md).
+Keep the default runtime dependency-free and at or below 3072 bytes transitive gzip. Runtime OpenAPI serialization metadata belongs in `/strict`; prefer operation-derived extensions or a custom transport for vendor behavior. See [architecture](docs/architecture.md).
 
 ## Releases
 

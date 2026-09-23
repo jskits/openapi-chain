@@ -27,7 +27,7 @@ If your Node.js installation does not include Corepack, install pnpm 10.34.5 usi
 | `pnpm test:cli` | Run CLI filesystem, generation and command-contract regressions after building |
 | `pnpm test:cli:package` | Install runtime/CLI tarballs and verify the installed command, generated types and browser bundle |
 | `pnpm test:package` / `pnpm verify:package` | Verify all three entries in an isolated tarball consumer |
-| `pnpm size:check` | Enforce the 2560-byte transitive core gzip limit after building |
+| `pnpm size:check` | Enforce the 3072-byte transitive core gzip limit after building |
 | `pnpm check` | Run the complete local quality gate, including a fresh build |
 | `pnpm commit` | Create a Conventional Commit using Commitizen |
 | `pnpm changeset` | Describe a user-facing change and its version impact |
