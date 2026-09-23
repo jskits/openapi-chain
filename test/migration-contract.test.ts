@@ -36,7 +36,7 @@ test('generated core inputs remain callable with complete strict metadata', asyn
     },
   } satisfies OperationInputFor<paths, '/upload', 'post'>;
   for (const api of [core, strict]) {
-    const echo = await api.echo('a b').get();
+    const echo = await api.$path('/echo/{id}', { id: 'a b' }).get();
     expect(echo.url).toBe('https://api.test/echo/a%20b');
     await api.upload.post(input);
     expect((transport.mock.lastCall![0].init.body as FormData).get('value')).toBe('hello');

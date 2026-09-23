@@ -654,7 +654,7 @@ export function buildChainPath(
             customContent,
           );
     });
-    return rendered.length ? `/${rendered.join('/')}` : '/';
+    return rendered.length ? `/${rendered.join('/')}${template.endsWith('/') ? '/' : ''}` : '/';
   }
 
   if (!state.segments.length) return '/';

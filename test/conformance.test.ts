@@ -49,7 +49,7 @@ test.each(['3.0.4', '3.1.1', '3.2.1'])(
       expect((await api.$path('/reports/{year}-{month}', { year: 2026, month: 9 }).get()).url).toBe(
         '/reports/2026-9',
       );
-      const chain = await api.echo('a/b').get();
+      const chain = await api.$path('/echo/{id}', { id: 'a/b' }).get();
       const template = await api.$path('/echo/{id}', { id: 'a/b' }).get();
       const trailing = await api.$path('/echo/{id}/', { id: 'a/b' }).get();
       expect(chain).toEqual({ url: '/echo/a%2Fb', body: '', contentType: '' });

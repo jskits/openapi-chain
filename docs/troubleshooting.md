@@ -10,7 +10,7 @@ openapi-typescript 7.13.0 declares `typescript: ^5.x`. Installing it with TypeSc
 
 Regenerate `paths` from the document used by your service and check the operation's exact spelling and parameter type. Operation-level parameter declarations override path-level declarations. A path parameter accepting a string needs `'42'`, not `42`.
 
-Mixed templates (`/files/{id}.json`), reserved names (`get`, `then`, `$path`), trailing slashes and repeated leading slashes need the typed `$path()` API. Do not append chain segments after `$path()`.
+Mixed templates (`/files/{id}.json`), reserved names (`get`, `then`, `$path`) and repeated slashes need the typed `$path()` API. Core requires it for trailing slashes too. Strict supports a single trailing slash unless multiple templates match the same chain and method; use `$path()` for those collisions. Do not append chain segments after `$path()`.
 
 ## A body requires contentType
 

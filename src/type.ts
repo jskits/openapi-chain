@@ -167,7 +167,11 @@ type RemoveLeadingSlash<S extends string> = S extends `/${infer Rest}`
   ? RemoveLeadingSlash<Rest>
   : S;
 
-type OperationEntryForPath<Path extends string, Item> = Item extends object
+type OperationEntryForPath<
+  Path extends string,
+  Item,
+  MetadataRouting extends boolean = false,
+> = Item extends object
   ? {
       [Method in Extract<keyof Item, HttpMethod>]: [Defined<Item[Method]>] extends [never]
         ? never
@@ -176,13 +180,23 @@ type OperationEntryForPath<Path extends string, Item> = Item extends object
             item: Item;
             operation: Defined<Item[Method]>;
             method: Method;
-            segments: Path extends `//${string}` ? [''] : SplitSegments<RemoveLeadingSlash<Path>>;
+            segments: Path extends `//${string}`
+              ? ['']
+              : SplitSegments<
+                  RemoveLeadingSlash<
+                    MetadataRouting extends true
+                      ? Path extends `${infer Base}/`
+                        ? Base
+                        : Path
+                      : Path
+                  >
+                >;
           };
     }[Extract<keyof Item, HttpMethod>]
   : never;
 
-type OperationEntries<Paths extends OpenAPIPaths> = {
-  [Path in StringKeyOf<Paths>]: OperationEntryForPath<Path, Paths[Path]>;
+type OperationEntries<Paths extends OpenAPIPaths, MetadataRouting extends boolean = false> = {
+  [Path in StringKeyOf<Paths>]: OperationEntryForPath<Path, Paths[Path], MetadataRouting>;
 }[StringKeyOf<Paths>];
 
 type FirstSegment<E> = E extends {
@@ -672,33 +686,49 @@ type FilterTemplateEntries<Entries, Value> = Entries extends unknown
     : never
   : never;
 
-type DynamicNode<Entries, ThrowOnError extends boolean, InferSingleMedia extends boolean> = <
-  Value extends TemplateArgument<Entries>,
->(
+type DynamicNode<
+  Entries,
+  ThrowOnError extends boolean,
+  InferSingleMedia extends boolean,
+  MetadataRouting extends boolean,
+> = <Value extends TemplateArgument<Entries>>(
   value: Value,
 ) => Value extends unknown
   ? BuildNode<
       AdvanceTemplates<FilterTemplateEntries<Entries, Value>>,
       ThrowOnError,
-      InferSingleMedia
+      InferSingleMedia,
+      MetadataRouting
     >
+  : never;
+
+type EntryPaths<E> = E extends { path: infer P } ? P : never;
+type UnambiguousEntries<E, All = E> = E extends { method: infer M }
+  ? true extends IsUnion<EntryPaths<Extract<All, { method: M }>>>
+    ? never
+    : E
   : never;
 
 type BuildNode<
   Entries,
   ThrowOnError extends boolean,
   InferSingleMedia extends boolean,
-> = OperationMethods<LeafEntries<Entries>, ThrowOnError, InferSingleMedia> & {
+  MetadataRouting extends boolean,
+> = OperationMethods<
+  MetadataRouting extends true ? UnambiguousEntries<LeafEntries<Entries>> : LeafEntries<Entries>,
+  ThrowOnError,
+  InferSingleMedia
+> & {
   [
     Segment in FirstSegment<Entries> as Segment extends string
       ? IsSafeStaticSegment<Segment> extends true
         ? Segment
         : never
       : never
-  ]: BuildNode<Advance<Entries, Segment>, ThrowOnError, InferSingleMedia>;
+  ]: BuildNode<Advance<Entries, Segment>, ThrowOnError, InferSingleMedia, MetadataRouting>;
 } & ([TemplateEntries<Entries>] extends [never]
     ? {}
-    : DynamicNode<TemplateEntries<Entries>, ThrowOnError, InferSingleMedia>);
+    : DynamicNode<TemplateEntries<Entries>, ThrowOnError, InferSingleMedia, MetadataRouting>);
 
 type TemplateNames<Path extends string> = Path extends `${string}{${infer Name}}${infer Rest}`
   ? Name | TemplateNames<Rest>
@@ -766,5 +796,11 @@ export type API<
   Paths extends OpenAPIPaths,
   ThrowOnError extends boolean = true,
   InferSingleMedia extends boolean = false,
-> = BuildNode<OperationEntries<Paths>, ThrowOnError, InferSingleMedia> &
+  MetadataRouting extends boolean = false,
+> = BuildNode<
+  OperationEntries<Paths, MetadataRouting>,
+  ThrowOnError,
+  InferSingleMedia,
+  MetadataRouting
+> &
   PathEscape<Paths, ThrowOnError, InferSingleMedia>;

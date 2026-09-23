@@ -208,6 +208,8 @@ void corpus.search.get();
 // @ts-expect-error significant trailing slash cannot expose a chain method
 const trailing = createClient<{'/items/': CorpusPaths['/echo/{id}/']}>({baseUrl:'https://example.test'}).items.get;
 void trailing;
+const strictTrailing = createStrictClient<{'/items/': {get: {responses: {204: {content: never}}}}}>({baseUrl:'https://example.test', metadata});
+void strictTrailing.items.get();
 `;
   for (const extension of ['mts', 'cts']) {
     writeFileSync(join(consumer, `consumer.${extension}`), typeConsumer);

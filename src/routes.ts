@@ -20,7 +20,7 @@ export function createOperationResolver(metadata: OpenAPIMetadata | undefined) {
   for (const [template, methods] of Object.entries(metadata?.operations ?? {})) {
     direct.set(template, { ...methods });
     // These paths cannot be represented losslessly by a property chain.
-    if (template !== '/' && (template.endsWith('/') || template.startsWith('//'))) continue;
+    if (template !== '/' && (template.endsWith('//') || template.startsWith('//'))) continue;
     const shape = splitPath(template).map((segment) =>
       /^\{[^{}]+\}$/.test(segment) ? null : segment,
     );

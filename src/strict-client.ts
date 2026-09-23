@@ -266,18 +266,18 @@ function createRuntime(options: ClientOptions): Runtime {
 
 export function createStrictClient<Paths extends OpenAPIPaths>(
   options: StrictClientOptions & { throwOnError: false },
-): API<Paths, false, true>;
+): API<Paths, false, true, true>;
 export function createStrictClient<Paths extends OpenAPIPaths>(
   options: StrictClientOptions & { throwOnError?: true | undefined },
-): API<Paths, true, true>;
+): API<Paths, true, true, true>;
 export function createStrictClient<Paths extends OpenAPIPaths>(
   options: StrictClientOptions,
-): API<Paths, boolean, true>;
+): API<Paths, boolean, true, true>;
 export function createStrictClient<Paths extends OpenAPIPaths>(
   options: StrictClientOptions,
-): API<Paths, boolean, true> {
+): API<Paths, boolean, true, true> {
   return createProxy(createRuntime(options), {
     kind: 'chain',
     segments: [],
-  }) as API<Paths, boolean, true>;
+  }) as API<Paths, boolean, true, true>;
 }

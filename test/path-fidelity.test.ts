@@ -27,7 +27,7 @@ test.each([false, true])(
     const api = strict
       ? createStrictClient<Paths>({ ...options, metadata })
       : createClient<Paths>(options);
-    await api.items.get();
+    await api.$path('/items').get();
     await api.$path('/items/').get();
     await api.$path('//items').get();
     await api.get();

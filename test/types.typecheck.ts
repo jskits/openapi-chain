@@ -349,8 +349,7 @@ const slashStrict = createStrictClient<SlashPaths>({
 });
 // @ts-expect-error trailing slash is not representable by a chain
 slashCore.items.get();
-// @ts-expect-error trailing slash is not representable by a chain
-slashStrict.items.get();
+void slashStrict.items.get();
 // @ts-expect-error repeated leading slash is not representable by a chain
 slashCore.other.get();
 void slashCore.$path('/items/').get();

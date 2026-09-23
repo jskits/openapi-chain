@@ -44,9 +44,23 @@ try {
   const baseUrl = `http://127.0.0.1:${address.port}`;
   const metadata = compileOpenAPIMetadata(document);
   for (const api of [createClient({ baseUrl }), createStrictClient({ baseUrl, metadata })]) {
-    assert.equal((await api.echo('a/b').get()).url, '/echo/a%2Fb');
+    assert.equal((await api.$path('/echo/{id}', { id: 'a/b' }).get()).url, '/echo/a%2Fb');
     assert.equal((await api.$path('/echo/{id}/', { id: 'a/b' }).get()).url, '/echo/a%2Fb/');
   }
+  const slashClient = createStrictClient({
+    baseUrl,
+    metadata: compileOpenAPIMetadata({
+      openapi: '3.1.1',
+      paths: {
+        '/tail/{id}/': {
+          get: {
+            parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          },
+        },
+      },
+    }),
+  });
+  assert.equal((await slashClient.tail('a/b').get()).url, '/tail/a%2Fb/');
   const strict = createStrictClient({ baseUrl, metadata });
   assert.equal(
     (await strict.search.get({ query: { color: ['blue', 'black', 'brown'] } })).url,

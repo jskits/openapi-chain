@@ -48,6 +48,7 @@ test('allow retains precise template rules, method routing and fail-closed ambig
     ['get', 'https://api.test/x/abc'],
     ['get', 'https://api.test/x/.abc'],
   ]);
+  // @ts-expect-error ambiguous same-method chains require an exact template
   await expect(api.x('abc').get()).rejects.toThrow(/Ambiguous/);
   expect(transport).toHaveBeenCalledTimes(4);
 });

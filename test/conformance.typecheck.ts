@@ -9,7 +9,7 @@ const strict = createStrictClient<paths>({
   metadata: compileOpenAPIMetadata(document),
 });
 for (const api of [core, strict]) {
-  void api.echo('a/b').get();
+  void api.$path('/echo/{id}', { id: 'a/b' }).get();
   void api.$path('/reports/{year}-{month}', { year: 2026, month: 9 }).get();
   // @ts-expect-error mixed templates do not expose a callable chain
   void api.reports('not-two-integers').get();
