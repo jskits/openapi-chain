@@ -1,6 +1,6 @@
 {
   "name": "openapi-chain-query",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Explicit operation query keys and fetchers for TanStack Query and SWR.",
   "license": "MIT",
   "repository": {
