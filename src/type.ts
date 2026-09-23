@@ -44,8 +44,10 @@ export type MediaTypeMetadata = {
   propertyKinds?: Readonly<Record<string, 'primitive' | 'object' | 'array' | 'binary' | 'unknown'>>;
   /** Default Encoding Object contentType for each request-body property. */
   propertyContentTypes?: Readonly<Record<string, string>>;
-  /** Advanced OAS 3.2 multipart features that require a custom serializer. */
+  /** A serialization requirement that built-in serializers cannot satisfy. */
   requiresCustomSerializer?: string;
+  /** Limit that requirement to actual multipart or URL-encoded media; omitted means all media. */
+  customSerializerScope?: 'form';
 };
 
 export type RequestBodyMetadata = {

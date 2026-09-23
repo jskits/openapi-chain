@@ -474,10 +474,10 @@ function compileMediaType(
   // parts, but they do not by themselves make a urlencoded scalar/binary field
   // unrepresentable on the wire. Let the form serializer decide per value.
   let customReason = multipart ? compiledEncoding.requiresCustomSerializer : undefined;
-  if (ambiguous && maySerializeForm) {
-    customReason =
-      'Multiple non-null schema types cannot determine form serialization; provide an operation body extension.';
-  }
+  const formReason =
+    ambiguous && maySerializeForm
+      ? 'Multiple non-null schema types cannot determine form serialization; provide an operation body extension.'
+      : undefined;
 
   if (version === '3.2') {
     for (const advanced of ['prefixEncoding', 'itemEncoding'] as const) {
@@ -523,7 +523,8 @@ function compileMediaType(
     !compiledEncoding.encoding &&
     !properties.kinds &&
     !properties.contentTypes &&
-    !customReason
+    !customReason &&
+    !formReason
   ) {
     return undefined;
   }
@@ -532,7 +533,11 @@ function compileMediaType(
     ...(compiledEncoding.encoding ? { encoding: compiledEncoding.encoding } : {}),
     ...(properties.kinds ? { propertyKinds: properties.kinds } : {}),
     ...(properties.contentTypes ? { propertyContentTypes: properties.contentTypes } : {}),
-    ...(customReason ? { requiresCustomSerializer: customReason } : {}),
+    ...(customReason
+      ? { requiresCustomSerializer: customReason }
+      : formReason
+        ? { requiresCustomSerializer: formReason, customSerializerScope: 'form' as const }
+        : {}),
   };
 }
 

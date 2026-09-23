@@ -1057,7 +1057,12 @@ export function serializeBody(
     else headers.set('content-type', contentType);
     return serialized;
   }
-  if (media?.requiresCustomSerializer) {
+  if (
+    media?.requiresCustomSerializer &&
+    (media.customSerializerScope !== 'form' ||
+      normalized.startsWith('multipart/') ||
+      normalized === 'application/x-www-form-urlencoded')
+  ) {
     throw new TypeError(media.requiresCustomSerializer);
   }
   if (normalized === 'multipart/form-data') {
