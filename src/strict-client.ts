@@ -11,7 +11,7 @@ import {
   serializeBody,
 } from './serialization.js';
 import { createOperationResolver, type ProxyState } from './routes.js';
-import { safePath } from './path.js';
+import { safePath, safeUrl } from './path.js';
 import { mediaType, isJsonMediaType } from './media.js';
 import { httpMethods } from './constant.js';
 import {
@@ -110,6 +110,8 @@ async function execute(
       ? buildTemplatePath(state.template, state.params, operation, undefined, extensions?.path)
       : buildChainPath(state, resolved.template, operation, undefined, extensions?.path);
 
+  let url = safeUrl(runtime.options.baseUrl, joinUrl(runtime.options.baseUrl, safePath(path)));
+
   const headers = await resolveHeaders(runtime.options.headers);
   if (input?.header && extensions?.header) {
     new Headers(extensions.header(input.header)).forEach((value, key) => headers.set(key, value));
@@ -138,7 +140,6 @@ async function execute(
     localBodySerializer,
   );
 
-  let url = joinUrl(runtime.options.baseUrl, safePath(path));
   if (input?.query && input?.querystring) {
     throw new TypeError('OpenAPI query and querystring parameters cannot be used together.');
   }

@@ -23,7 +23,7 @@ function visit(file) {
 
 visit(fileURLToPath(new URL('index.js', root)));
 const bytes = gzipSync(chunks.join('\n'), { level: 9 }).byteLength;
-const limit = 2048;
+const limit = 2560;
 console.log(
   `core transitive gzip: ${bytes} B / ${limit} B (${seen.size} file${seen.size === 1 ? '' : 's'})`,
 );

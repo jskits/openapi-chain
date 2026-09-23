@@ -24,7 +24,7 @@ The package separates compile-time API structure, the tiny schema-free runtime, 
 
 The core intentionally omits runtime features that would require preserving the whole OpenAPI serialization model. Type erasure is treated as a hard boundary: if a value cannot be serialized faithfully without metadata, the core requires either explicit information or an operation-local extension.
 
-The transitive ESM core is gzip-gated at 2048 bytes. The size script recursively follows local ESM imports from `dist/index.js`, gzips the complete reachable runtime, and fails CI on regression.
+The transitive ESM core is gzip-gated at 2560 bytes. The size script recursively follows local ESM imports from `dist/index.js`, gzips the complete reachable runtime, and fails CI on regression.
 
 ### Strict entry
 
@@ -50,7 +50,7 @@ The callback types are computed from the selected OpenAPI item/operation:
 
 At runtime these callbacks are ordinary functions. Their safety exists entirely at compile time and therefore adds no generated endpoint code.
 
-When invoked, local extensions have precedence over built-in serialization in both core and strict clients. Both clients invoke query extensions for explicitly supplied empty records; strict validates required and undeclared inputs first. See the [invocation contract](api.md#extension-invocation-conditions). A body extension takes ownership of the entire body; nested strict serializers either handle their field/part exactly or fail closed so a typed whole-body extension can take over before final request construction. This makes the long tail composable instead of forcing rare OpenAPI/vendor semantics into the 2KB core.
+When invoked, local extensions have precedence over built-in serialization in both core and strict clients. Both clients invoke query extensions for explicitly supplied empty records; strict validates required and undeclared inputs first. See the [invocation contract](api.md#extension-invocation-conditions). A body extension takes ownership of the entire body; nested strict serializers either handle their field/part exactly or fail closed so a typed whole-body extension can take over before final request construction. This makes the long tail composable instead of forcing rare OpenAPI/vendor semantics into the 2.5KB core.
 
 ## Strict serialization model
 

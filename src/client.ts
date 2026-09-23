@@ -1,5 +1,5 @@
 /* oxlint-disable typescript/no-base-to-string -- Core scalar coercion intentionally follows String(); structured serialization uses typed extensions. */
-import { safePath } from './path.js';
+import { safePath, safeUrl } from './path.js';
 import { mediaType, isJsonMediaType, validateTextCharset } from './media.js';
 import { httpMethods } from './constant.js';
 import {
@@ -66,7 +66,7 @@ function appendQuery(url: string, query: string) {
 function renderPath(state: State, serialize?: RuntimeExtensions['path']) {
   let dynamicIndex = 0;
   const encode = (value: unknown) =>
-    serialize ? serialize(value, { index: dynamicIndex++ }) : encodeScalar(value);
+    serialize ? safePath(serialize(value, { index: dynamicIndex++ }), true) : encodeScalar(value);
   if (!Array.isArray(state))
     return state.template.replace(/\{([^{}]+)\}/g, (_m, name: string) => {
       if (!state.params || !Object.hasOwn(state.params, name))
@@ -107,6 +107,12 @@ async function executeRequest(
   input?: RequestInput,
 ) {
   const extensions = input?.extensions as RuntimeExtensions | undefined;
+  let url = safeUrl(
+    runtime.options.baseUrl,
+    runtime.options.baseUrl.replace(/\/?(?=[?#]|$)/, () =>
+      safePath(renderPath(state, extensions?.path)),
+    ),
+  );
   const headers = new Headers(runtime.options.headers);
   const mergeHeaders = (value: HeadersInit) =>
     new Headers(value).forEach((entry, name) => headers.set(name, entry));
@@ -130,9 +136,6 @@ async function executeRequest(
       if (cookies.length) headers.set('cookie', cookies.join('; '));
     }
   }
-  let url = runtime.options.baseUrl.replace(/\/?(?=[?#]|$)/, () =>
-    safePath(renderPath(state, extensions?.path)),
-  );
   if (input?.query)
     url = appendQuery(
       url,

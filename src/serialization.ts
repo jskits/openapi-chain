@@ -1,3 +1,4 @@
+import { safePath } from './path.js';
 import { validateTextCharset } from './media.js';
 import { splitPath, type ProxyState } from './routes.js';
 import type {
@@ -617,7 +618,7 @@ export function buildTemplatePath(
       throw new TypeError(`Missing path parameter: ${name}`);
     }
     return customPath
-      ? customPath(params[name], { index: index++ })
+      ? safePath(customPath(params[name], { index: index++ }), true)
       : serializePathParameter(
           name,
           params[name],
@@ -646,7 +647,7 @@ export function buildChainPath(
         throw new TypeError(`Missing dynamic path value for ${name}.`);
       }
       return customPath
-        ? customPath(actual.value, { index: dynamicIndex++ })
+        ? safePath(customPath(actual.value, { index: dynamicIndex++ }), true)
         : serializePathParameter(
             name,
             actual.value,
@@ -664,7 +665,7 @@ export function buildChainPath(
       segment.kind === 'static'
         ? segment.value
         : customPath
-          ? customPath(segment.value, { index: index++ })
+          ? safePath(customPath(segment.value, { index: index++ }), true)
           : serializePathStyle('value', segment.value, 'simple', false),
     )
     .join('/')}`;
