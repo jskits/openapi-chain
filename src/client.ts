@@ -1,3 +1,4 @@
+import { joinUrl, appendRawQuery } from './url.js';
 import { isPlainRecord } from './record.js';
 /* oxlint-disable typescript/no-base-to-string -- Core scalar coercion intentionally follows String(); structured serialization uses typed extensions. */
 import { stringifyJson } from './json.js';
@@ -56,15 +57,6 @@ function serializeQuery(input: Record<string, unknown>) {
   return query.toString();
 }
 
-function appendQuery(url: string, query: string) {
-  if (!query) return url;
-  return url.replace(
-    /^([^#]*)(.*)$/s,
-    (_match, base: string, hash: string) =>
-      `${base}${base.includes('?') ? '&' : '?'}${query}${hash}`,
-  );
-}
-
 function renderPath(state: State, serialize?: RuntimeExtensions['path']) {
   let dynamicIndex = 0;
   const encode = (value: unknown) =>
@@ -111,9 +103,7 @@ async function executeRequest(
   const extensions = input?.extensions as RuntimeExtensions | undefined;
   let url = safeUrl(
     runtime.options.baseUrl,
-    runtime.options.baseUrl.replace(/\/?(?=[?#]|$)/, () =>
-      safePath(renderPath(state, extensions?.path)),
-    ),
+    joinUrl(runtime.options.baseUrl, safePath(renderPath(state, extensions?.path))),
   );
   const headers = new Headers(runtime.options.headers);
   const mergeHeaders = (value: HeadersInit) =>
@@ -139,7 +129,7 @@ async function executeRequest(
     }
   }
   if (input?.query)
-    url = appendQuery(
+    url = appendRawQuery(
       url,
       extensions?.query
         ? String(extensions.query(input.query)).replace(/^\?/, '')
