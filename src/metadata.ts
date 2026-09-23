@@ -374,10 +374,14 @@ function compileEncoding(
       styleBased: 'style' in encoding || 'explode' in encoding || 'allowReserved' in encoding,
     };
 
-    if ('contentType' in encoding && typeof encoding.contentType !== 'string') {
+    if (
+      !metadata.styleBased &&
+      'contentType' in encoding &&
+      typeof encoding.contentType !== 'string'
+    ) {
       throw new TypeError(`encoding.contentType for ${name} must be a string.`);
     }
-    if (typeof encoding.contentType === 'string') {
+    if (!metadata.styleBased && typeof encoding.contentType === 'string') {
       metadata.contentType = encoding.contentType;
       if (
         encoding.contentType
