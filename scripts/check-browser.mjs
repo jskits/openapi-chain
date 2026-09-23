@@ -111,6 +111,48 @@ try {
   browser = await chromium.launch({ channel: 'chromium' });
   const page = await browser.newPage();
   await page.goto(origin);
+  const realmResults = await page.evaluate(async (origin) => {
+    const { createClient } = await import(`${origin}/dist/index.js`);
+    const { createStrictClient } = await import(`${origin}/dist/strict.js`);
+    const { compileOpenAPIMetadata } = await import(`${origin}/dist/metadata.js`);
+    const frame = document.createElement('iframe');
+    document.body.append(frame);
+    const realm = frame.contentWindow;
+    const form = new realm.FormData();
+    form.append('field', 'value');
+    const cases = [
+      ['application/octet-stream', new realm.Blob(['blob'])],
+      ['multipart/form-data', form],
+      ['application/x-www-form-urlencoded', new realm.URLSearchParams({ a: 'b' })],
+      ['application/octet-stream', new realm.Uint8Array([65, 66]).buffer],
+    ];
+    const results = [];
+    for (const strict of [false, true]) {
+      for (const [contentType, body] of cases) {
+        const metadata = compileOpenAPIMetadata({
+          openapi: '3.1.0',
+          paths: { '/realm': { post: { requestBody: { content: { [contentType]: {} } } } } },
+        });
+        const options = {
+          baseUrl: origin,
+          transport: async ({ init }) => {
+            const wire = new Request(`${origin}/realm`, { method: 'POST', ...init });
+            const actual =
+              contentType === 'multipart/form-data'
+                ? (await wire.formData()).get('field')
+                : await wire.text();
+            results.push(actual);
+            return new Response(null, { status: 204 });
+          },
+        };
+        const api = strict ? createStrictClient({ ...options, metadata }) : createClient(options);
+        await api.realm.post({ contentType, body });
+      }
+    }
+    frame.remove();
+    return results;
+  }, origin);
+  assert.deepEqual(realmResults, ['blob', 'value', 'a=b', 'AB', 'blob', 'value', 'a=b', 'AB']);
   const adapterResult = await page.evaluate(async (origin) => {
     const { createQuery } = await import(`${origin}/query/index.js`);
     const { createStrictClient } = await import(`${origin}/dist/strict.js`);
@@ -367,6 +409,11 @@ try {
     async ({ origin, crossOrigin }) => {
       const { createClient } = await import(`${origin}/dist/index.js`);
       const { createStrictClient } = await import(`${origin}/dist/strict.js`);
+      const { compileOpenAPIMetadata } = await import(`${origin}/dist/metadata.js`);
+      const metadata = compileOpenAPIMetadata({
+        openapi: '3.1.0',
+        paths: { '/probe': { get: {} } },
+      });
       const results = [];
       for (const make of [createClient, createStrictClient]) {
         for (const throwOnError of [false, true]) {
@@ -374,6 +421,7 @@ try {
             let type;
             const api = make({
               baseUrl: origin,
+              ...(make === createStrictClient ? { metadata } : {}),
               throwOnError,
               transport: async () => {
                 const response = await fetch(

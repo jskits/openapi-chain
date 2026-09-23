@@ -1,3 +1,11 @@
+import {
+  isBlob,
+  isFormData,
+  isArrayBuffer,
+  isUrlSearchParams,
+  isNativeBody,
+  isFile,
+} from './native-body.js';
 export { joinUrl, appendRawQuery } from './url.js';
 import { isPlainRecord } from './record.js';
 import { stringifyJson } from './json.js';
@@ -656,33 +664,6 @@ export function buildChainPath(
     .join('/')}`;
 }
 
-function isBlob(value: unknown): value is Blob {
-  return typeof Blob !== 'undefined' && value instanceof Blob;
-}
-
-function isFormData(value: unknown): value is FormData {
-  return typeof FormData !== 'undefined' && value instanceof FormData;
-}
-
-function isArrayBuffer(value: unknown): value is ArrayBuffer {
-  return typeof ArrayBuffer !== 'undefined' && value instanceof ArrayBuffer;
-}
-
-function isUrlSearchParams(value: unknown): value is URLSearchParams {
-  return typeof URLSearchParams !== 'undefined' && value instanceof URLSearchParams;
-}
-
-function isNativeBody(value: unknown): value is BodyInit {
-  return (
-    typeof value === 'string' ||
-    isBlob(value) ||
-    isFormData(value) ||
-    isArrayBuffer(value) ||
-    (typeof ArrayBuffer !== 'undefined' && ArrayBuffer.isView(value)) ||
-    isUrlSearchParams(value)
-  );
-}
-
 function normalizeMediaType(contentType: string): string {
   return contentType.split(';', 1)[0]!.trim().toLowerCase();
 }
@@ -898,7 +879,7 @@ function appendMultipartContentPart(
   const normalized = normalizeMediaType(contentType);
   if (isBlob(value)) {
     const part = value.type === contentType ? value : new Blob([value], { type: contentType });
-    if (typeof File !== 'undefined' && value instanceof File) form.append(name, part, value.name);
+    if (isFile(value)) form.append(name, part, value.name);
     else form.append(name, part);
     return;
   }

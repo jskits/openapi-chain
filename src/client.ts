@@ -1,3 +1,4 @@
+import { isNativeBody, isFormData, isUrlSearchParams } from './native-body.js';
 import { responseExtensionData } from './response-contract.js';
 import { joinUrl, appendRawQuery } from './url.js';
 import { isPlainRecord } from './record.js';
@@ -35,15 +36,6 @@ type Runtime = { options: CoreClientOptions; transport: Transport };
 
 const entries = Object.entries;
 const encodeScalar = (v: unknown) => encodeURIComponent(String(v));
-// Supported Node and browser runtimes provide the standard Fetch body classes.
-const isNativeBody = (v: unknown): v is BodyInit =>
-  typeof v === 'string' ||
-  v instanceof Blob ||
-  v instanceof FormData ||
-  v instanceof URLSearchParams ||
-  v instanceof ArrayBuffer ||
-  ArrayBuffer.isView(v);
-
 function serializeQuery(input: Record<string, unknown>) {
   if (!isPlainRecord(input)) throw new TypeError('Query must be a plain record.');
   const query = new URLSearchParams();
@@ -87,10 +79,10 @@ function requestBody(
     else if (media.startsWith('text/') && typeof body !== 'object') serialized = String(body);
     else if (isNativeBody(body)) serialized = body;
     else throw new TypeError(`Need body extension: ${contentType}`);
-    if (typeof serialized === 'string' || serialized instanceof URLSearchParams)
+    if (typeof serialized === 'string' || isUrlSearchParams(serialized))
       validateTextCharset(contentType);
   }
-  if (serialized instanceof FormData) headers.delete('content-type');
+  if (isFormData(serialized)) headers.delete('content-type');
   else headers.set('content-type', contentType);
   return serialized;
 }
