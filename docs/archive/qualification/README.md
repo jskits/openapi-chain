@@ -12,6 +12,7 @@ Listed from the most recent baseline to the earliest. Each report retains one ba
 
 | Report | Focus |
 | --- | --- |
+| [GitHub REST consumer probe](github-openapi-consumer-2026-09-24.md) | Pinned external schema, installed client, drift, real HTTP and query cache |
 | [Media and charset](media-qualification.md) | Response media recognition and UTF-8 request behavior |
 | [Multipart and binary](multipart-qualification.md) | Filenames, part media and byte slices |
 | [Paths and references](path-reference-qualification.md) | Path fidelity, shared references and incremental type checks |
