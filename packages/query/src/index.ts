@@ -8,6 +8,38 @@ export type QueryValue =
 export type OperationQueryKey<Input> = readonly [...QueryValue[], Input];
 export type QueryContext = { signal: AbortSignal | null };
 
+type JsonMember<T, Depth extends readonly unknown[]> = T extends string | number | boolean | null
+  ? true
+  : T extends (...args: never[]) => unknown
+    ? false
+    : T extends readonly (infer Item)[]
+      ? JsonInput<Item, [...Depth, unknown]>
+      : T extends object
+        ? keyof T extends never
+          ? true
+          : false extends {
+                [Key in keyof T]-?: Key extends symbol
+                  ? false
+                  : JsonInput<
+                      {} extends Pick<T, Key> ? Exclude<T[Key], undefined> : T[Key],
+                      [...Depth, unknown]
+                    >;
+              }[keyof T]
+            ? false
+            : true
+        : false;
+
+// Keep editor checking bounded for recursive application input types.
+type JsonInput<T, Depth extends readonly unknown[] = []> = Depth['length'] extends 6
+  ? true
+  : unknown extends T
+    ? true
+    : [T] extends [never]
+      ? false
+      : false extends (T extends unknown ? JsonMember<T, Depth> : never)
+        ? false
+        : true;
+
 // Snapshot inputs so later caller mutation cannot change the request behind a key.
 // Reject values that JSON caches would silently drop or alias.
 function snapshot(value: unknown, ancestors = new Set<object>()): QueryValue {
@@ -53,10 +85,12 @@ function snapshot(value: unknown, ancestors = new Set<object>()): QueryValue {
 }
 
 /** Define an explicit read operation. Use a non-secret server/account scope in key. */
-export function createQuery<Input, Data>(options: {
-  key: readonly QueryValue[];
-  fetcher: (input: Input, context: QueryContext) => Promise<Data>;
-}) {
+export function createQuery<Input, Data>(
+  options: {
+    key: readonly QueryValue[];
+    fetcher: (input: Input, context: QueryContext) => Promise<Data>;
+  } & (JsonInput<Input> extends true ? unknown : { readonly invalidInputMustBeJson: never }),
+) {
   if (!Array.isArray(options.key) || options.key.length === 0)
     throw new TypeError('A nonempty operation query key is required.');
   const prefix = snapshot(options.key) as readonly QueryValue[];
