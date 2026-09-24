@@ -34,7 +34,7 @@ pnpm add -D --save-exact typescript@6.0.3 typescript7@npm:typescript@7.0.2 opena
 pnpm exec openapi-typescript ./openapi.json -o ./schema.d.ts
 ```
 
-These docs describe the current source API. Check [package.json](package.json) for the checkout version; an installed npm release may expose a different API. To try this exact implementation, follow [the local tarball installation](docs/getting-started.md#install-this-checkout). Type generation produces declarations only; no endpoint client code is generated.
+These docs describe the current source API. Check the published packages' manifests for the checkout versions: [runtime](packages/core/package.json), [CLI](packages/cli/package.json), and [query adapter](packages/query/package.json). An installed npm release may expose a different API. To try this exact implementation, follow [the local tarball installation](docs/getting-started.md#install-this-checkout). Type generation produces declarations only; no endpoint client code is generated.
 
 The package exports ESM and CommonJS. Its Node.js engine range is `^22.22.1 || ^24.11.0 || >=26.0.0`. Browser use requires standard Fetch APIs and a bundler or ESM setup; Chromium has an integration suite. Enable TypeScript strict mode and include DOM types. See [setup and compatibility](docs/getting-started.md).
 

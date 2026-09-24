@@ -58,7 +58,7 @@ Automatically serialized strings use UTF-8. For another charset, provide correct
 
 ## An installed package has a different API
 
-Check its installed version and entry exports against this checkout's `package.json`. The authoritative source version is in [package.json](../package.json); historical registry packages may use another API. Reproduce against a [locally built tarball](getting-started.md#install-this-checkout) before assuming a source example describes the version you installed.
+Check its installed version and entry exports against this checkout's [runtime package manifest](../packages/core/package.json); historical registry packages may use another API. Reproduce against a [locally built tarball](getting-started.md#install-this-checkout) before assuming a source example describes the version you installed.
 
 For repository failures, start with [development checks](development.md#choose-the-right-check). For a bug report, include the version, entry point, runtime, generator version, minimal synthetic schema and expected/actual request or response. Use [GitHub Issues](https://github.com/jskits/openapi-chain/issues) for ordinary bugs and the [security process](../SECURITY.md) for vulnerabilities.
 

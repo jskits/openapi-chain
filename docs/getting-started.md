@@ -53,7 +53,7 @@ pnpm add openapi-chain
 pnpm add -D --save-exact typescript@6.0.3 typescript7@npm:typescript@7.0.2 openapi-typescript@7.13.0
 ```
 
-See [package.json](../package.json) for the source checkout version; these docs do not establish which API is available from the npm registry. Use the tarball route below to test this checkout. The generator is a development dependency, not a runtime requirement.
+See the [runtime package manifest](../packages/core/package.json) for the source checkout version; these docs do not establish which API is available from the npm registry. Use the tarball route below to test this checkout. The generator is a development dependency, not a runtime requirement.
 
 ## Install this checkout
 
@@ -63,7 +63,7 @@ From the repository root, using [the development toolchain](development.md):
 pnpm install --frozen-lockfile
 pnpm build
 pnpm test:package
-pnpm pack --out /tmp/openapi-chain-local.tgz
+pnpm --dir packages/core pack --out /tmp/openapi-chain-local.tgz
 ```
 
 Then, from a separate application directory with [generator compatibility](#generator-and-typescript-compatibility) configured:
@@ -146,7 +146,7 @@ try {
 
 Alternatively, load and parse the document with your application's tooling before compilation. The compiler accepts an object, not a filename or YAML string. External references must be bundled into supported local JSON Pointer references or dereferenced before compilation.
 
-Treat metadata as immutable and recreate the client when its schema changes. Build-time compilation can avoid shipping the original document and compiler, but this package provides no metadata-generation CLI. A build integration must preserve the compiler-produced artifact and its type; an arbitrary JSON cast does not prove that metadata matches the `paths` generic.
+Treat metadata as immutable and recreate the client when its schema changes. For build-time generation, the separate [`@openapi-chain/cli`](cli.md) package generates types, a selected path scope, and metadata from the same local OpenAPI 3.0/3.1 document. That workflow keeps the document and compiler out of the browser bundle. The manual compiler shown here also supports OpenAPI 3.2 metadata, but its output must be paired with types generated from the same document; an arbitrary JSON cast does not prove that pairing.
 
 ## Run the offline repository example
 
@@ -164,6 +164,7 @@ The declarations in [service-schema.d.ts](../examples/service-schema.d.ts) are a
 
 ## Next steps
 
+- Generate types and metadata together with the [build-time CLI](cli.md).
 - Add [authentication or cancellation](api.md#transport-authentication-and-cancellation).
 - Learn the [response and error contract](api.md#responses-and-errors).
 - Check [serialization and platform limits](support.md) before using forms or binary data.
