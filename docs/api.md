@@ -9,8 +9,8 @@ Examples using `./schema.js` and `./openapi.json` refer to the [Items schema](..
 | Import | Runtime exports | Purpose |
 | --- | --- | --- |
 | `openapi-chain` | `createClient`, `HttpError`, `httpMethods` | Schema-free client and shared public types |
-| `@openapi-chain/core/strict` | `createStrictClient` | Metadata-driven client and selected operation types |
-| `@openapi-chain/core/metadata` | `compileOpenAPIMetadata`, `defineOpenAPIMetadata` | Metadata compiler and metadata types |
+| `openapi-chain/strict` | `createStrictClient` | Metadata-driven client and selected operation types |
+| `openapi-chain/metadata` | `compileOpenAPIMetadata`, `defineOpenAPIMetadata` | Metadata compiler and metadata types |
 
 Import `HttpError`, `Transport` and `Middleware` from the root entry, including when using a strict client. All three entries have ESM and CommonJS exports. Use `import type` for declarations.
 
@@ -37,7 +37,7 @@ The client does not select an OpenAPI server, execute security schemes, retry, c
 For `GET /items/{id}`, the following calls select the same operation:
 
 ```ts
-import { createClient } from '@openapi-chain/core';
+import { createClient } from 'openapi-chain';
 import type { paths } from './schema.js';
 
 const api = createClient<paths>({ baseUrl: 'https://api.example.com' });
@@ -73,7 +73,7 @@ Native FormData requires an unparameterized `multipart/form-data` selection, inc
 The next example uses the repository's [Petstore schema](../examples/example.yaml), generated as `petstore-schema.d.ts` in your application:
 
 ```ts
-import { createClient } from '@openapi-chain/core';
+import { createClient } from 'openapi-chain';
 import type { paths } from './petstore-schema.js';
 
 const api = createClient<paths>({ baseUrl: 'https://petstore3.swagger.io/api/v3' });
@@ -95,7 +95,7 @@ Parameterized media ranges follow the same rule: a declaration such as `applicat
 With the default `throwOnError: true`, a parsed 2xx response returns its data. Other parsed HTTP responses throw `HttpError`, with `status`, `data` and `response`:
 
 ```ts
-import { createClient, HttpError } from '@openapi-chain/core';
+import { createClient, HttpError } from 'openapi-chain';
 import type { paths } from './schema.js';
 
 const api = createClient<paths>({ baseUrl: 'https://api.example.com' });
@@ -110,7 +110,7 @@ try {
 Caught error data is `unknown` unless you validate or narrow it; a catch clause cannot infer the operation's response type. Use `throwOnError: false` for a status-correlated `{ ok, status, data, response }` union:
 
 ```ts
-import { createClient } from '@openapi-chain/core';
+import { createClient } from 'openapi-chain';
 import type { paths } from './schema.js';
 
 const api = createClient<paths>({
@@ -180,7 +180,7 @@ Encoded strings are owned by the callback; do not expect a second escaping pass.
 A reusable request extension for the Items operation:
 
 ```ts
-import { createClient, type OperationExtensionsFor } from '@openapi-chain/core';
+import { createClient, type OperationExtensionsFor } from 'openapi-chain';
 import type { paths } from './schema.js';
 
 const traced = {
@@ -215,7 +215,7 @@ A final request extension, middleware or transport cannot recover an earlier val
 A transport receives `{ url, method, init }`. `method` is lowercase; `init.method` is the uppercase Fetch method. Preserve the supplied `init` options so headers, request bodies, cancellation and credentials survive wrapping:
 
 ```ts
-import { createClient, type Transport } from '@openapi-chain/core';
+import { createClient, type Transport } from 'openapi-chain';
 import type { paths } from './schema.js';
 
 function authenticatedTransport(getToken: () => Promise<string>): Transport {
@@ -237,7 +237,7 @@ export function createAuthenticatedClient(getToken: () => Promise<string>) {
 For a static token, client `headers` also works. Strict additionally supports an async header factory. Browser session cookies use `init.credentials` and server cookie/CORS policy, not a manually authored Cookie header:
 
 ```ts
-import { createClient } from '@openapi-chain/core';
+import { createClient } from 'openapi-chain';
 import type { paths } from './schema.js';
 
 const api = createClient<paths>({ baseUrl: 'https://api.example.com' });
@@ -267,7 +267,7 @@ Strict construction rejects absent or partial metadata, unsupported artifact ver
 
 Compiled media metadata may contain `requiresCustomSerializer`. Its default scope is all matching media. When paired with `customSerializerScope: 'form'`, the requirement applies only to the actual multipart or URL-encoded media selected for the request; JSON (including `+json`), text and binary selections from a wildcard declaration remain available. `customSerializerScope: 'multipart'` limits positional encodings and per-part header requirements to actual multipart requests. Applicable nested Encoding on a multipart or URL-encoded part requires a whole-body extension; nested annotations on JSON parts are ignored as required by OpenAPI.
 
-`compileOpenAPIMetadata(document, options?)` accepts `CompileOpenAPIMetadataOptions` from `@openapi-chain/core/metadata`. `onAmbiguousTemplate` defaults to `'throw'`. Explicit `'allow'` preserves duplicate template hierarchies for nonconforming documents while runtime method-aware routing still rejects ambiguous chain calls. Exact `$path()` calls select the specified template. See [the compatibility recipe](troubleshooting.md#a-third-party-document-repeats-a-template-hierarchy).
+`compileOpenAPIMetadata(document, options?)` accepts `CompileOpenAPIMetadataOptions` from `openapi-chain/metadata`. `onAmbiguousTemplate` defaults to `'throw'`. Explicit `'allow'` preserves duplicate template hierarchies for nonconforming documents while runtime method-aware routing still rejects ambiguous chain calls. Exact `$path()` calls select the specified template. See [the compatibility recipe](troubleshooting.md#a-third-party-document-repeats-a-template-hierarchy).
 
 `paths?: readonly string[]` selects exact path keys (all their declared methods). Omission compiles all paths; `[]` produces an empty complete table. Unknown keys fail, duplicate selections are deduplicated, and output follows document order. References resolve against the **full input document**, including unselected path items. Unselected operations are not compiled or validated; failures in references needed by selected operations still fail. The resulting `complete: true` means complete for the selected subset, so calls outside it fail before transport. Keep the generated client type scoped to the same keys. Do not delete source path items before compiling: that can break local JSON Pointer references.
 

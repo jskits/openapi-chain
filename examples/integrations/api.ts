@@ -18,7 +18,7 @@ type Paths = {
   };
 };
 
-// Application code imports createClient from '@openapi-chain/core'.
+// Application code imports createClient from 'openapi-chain'.
 export function createCatalog(baseUrl: string, token: string) {
   return createClient<Paths>({ baseUrl, headers: { authorization: `Bearer ${token}` } });
 }

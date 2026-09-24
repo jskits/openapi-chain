@@ -247,7 +247,7 @@ try {
     return { errors, sent };
   }, origin);
   assert.deepEqual(coreBoundary, {
-    errors: Array(3).fill('Use @openapi-chain/core/strict.'),
+    errors: Array(3).fill('Use openapi-chain/strict.'),
     sent: 0,
   });
   const result = await page.evaluate(

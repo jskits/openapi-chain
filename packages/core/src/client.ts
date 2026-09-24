@@ -204,7 +204,7 @@ function createRuntime(options: CoreClientOptions): Runtime {
     options.metadata !== undefined ||
     typeof options.headers === 'function'
   )
-    throw new TypeError('Use @openapi-chain/core/strict.');
+    throw new TypeError('Use openapi-chain/strict.');
   const fetchImplementation = options.fetch ?? globalThis.fetch;
   if (!options.transport && typeof fetchImplementation !== 'function')
     throw new TypeError('Missing fetch.');

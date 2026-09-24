@@ -1,5 +1,5 @@
 {
-  "name": "@openapi-chain/core",
+  "name": "openapi-chain",
   "version": "0.5.0",
   "description": "A tiny, type-safe OpenAPI client with fluent chain APIs, strict wire semantics, and a small dependency-free core.",
   "keywords": [

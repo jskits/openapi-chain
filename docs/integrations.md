@@ -15,7 +15,7 @@ pnpm add -D msw
 
 The shared operation factory in these recipes uses the optional `@openapi-chain/query` package (`pnpm add @openapi-chain/query`). It snapshots JSON inputs and exposes both TanStack options and SWR fetchers without framework dependencies. See the [adapter API and constraints](../packages/query/README.md). Local source/tarball verification does not imply registry availability.
 
-React is a peer dependency of the React integrations. The library core does not depend on any of these packages. The examples import repository source; use `@openapi-chain/core` and `@openapi-chain/query` in your application and generate your own `paths` type. These recipes use core-compatible JSON operations; the same pattern works with a metadata-backed strict client.
+React is a peer dependency of the React integrations. The library core does not depend on any of these packages. The examples import repository source; use `openapi-chain` and `@openapi-chain/query` in your application and generate your own `paths` type. These recipes use core-compatible JSON operations; the same pattern works with a metadata-backed strict client.
 
 ## TanStack Query
 

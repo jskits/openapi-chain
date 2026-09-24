@@ -3,7 +3,7 @@
 Build-time type declarations, scoped client types and serialization metadata for [openapi-chain](https://github.com/jskits/openapi-chain).
 
 ```sh
-pnpm add @openapi-chain/core
+pnpm add openapi-chain
 pnpm add -D @openapi-chain/cli
 pnpm exec openapi-chain generate --config openapi-chain.config.json
 pnpm exec openapi-chain generate --config openapi-chain.config.json --check
@@ -20,7 +20,7 @@ pnpm exec openapi-chain generate --config openapi-chain.config.json --check
 Paths are relative to the config file. Omit `paths` to select all paths; `[]` selects none. Each selected path includes all its operations. The output directory is owned exclusively by the generator. Do not put hand-written files there.
 
 ```ts
-import { createStrictClient } from '@openapi-chain/core/strict';
+import { createStrictClient } from 'openapi-chain/strict';
 import { metadata } from './generated/api/metadata.js';
 import type { ScopedPaths } from './generated/api/scope.js';
 

@@ -27,7 +27,6 @@ If your Node.js installation does not include Corepack, install pnpm 10.34.5 usi
 | `pnpm test:cli` | Run CLI filesystem, generation and command-contract regressions after building |
 | `pnpm test:cli:package` | Install runtime/CLI tarballs and verify the installed command, generated types and browser bundle |
 | `pnpm test:package` / `pnpm verify:package` | Verify all three entries in an isolated tarball consumer |
-| `pnpm test:legacy:package` | Verify the old package's ESM, CommonJS and declaration compatibility entries |
 | `pnpm size:check` | Enforce the 3072-byte transitive core gzip limit after building |
 | `pnpm check` | Run the complete local quality gate, including a fresh build |
 | `pnpm commit` | Create a Conventional Commit using Commitizen |
@@ -64,7 +63,7 @@ For schema changes, run `pnpm generate:example`, format the generated declaratio
 - Use explicit `.js` extensions for relative TypeScript imports under NodeNext.
 - The runtime package has no dependencies. The separate `packages/cli/` workspace owns Node-only generation dependencies and pins a private TypeScript 5.9.3 compatible with its generator. Keep those dependencies out of runtime entries.
 - TypeScript 6.0.3 remains the compiler API/build dependency; `typescript7` is a pinned npm alias to TypeScript 7.0.2 for the recommended performance baseline. Both are checked. Use named scripts, not bare `tsc`, because their executable names collide. `pnpm-workspace.yaml` permits this exact version for openapi-typescript 7.13.0, whose declared peer range is `^5.x`, while retaining strict peer checks. Independent applications need their own [scoped configuration](getting-started.md#generator-and-typescript-compatibility). Compiler upgrades must pass declaration, generated fixture, installed-consumer and type-scale checks.
-- Only built output and package metadata, README, license and an optional changelog ship from the core and query packages. The CLI ships its Node source; the legacy package ships only compatibility entry points.
+- Only built output and package metadata, README, license and an optional changelog ship from the core and query packages. The CLI ships its Node source.
 - `pnpm install` installs Husky hooks. Pre-commit runs lint-staged; commit-msg runs commitlint. The full type-aware check runs in `pnpm check` and CI.
 - `sideEffects: false` assumes library modules do not perform import-time side effects. Update the declaration if future modules require them.
 - Dependency lifecycle scripts are denied by default. Review and explicitly allow any future dependency that needs a build script in `pnpm-workspace.yaml`.
@@ -77,10 +76,10 @@ Changesets v3 and its v2 GitHub Actions manage version PRs, changelogs, package 
 
 The [release workflow](../.github/workflows/release.yml) runs on `main` and supports an existing `v<core version>` tag for recovery. During the new npm scope bootstrap it is gated by the repository variable `SCOPED_PUBLISH_ENABLED=true`; this prevents a Changesets publish job from trying to publish packages before npm can authorize them.
 
-1. Review the four package versions, `pnpm changeset status`, the packed artifacts, and the public registry versions. Run `pnpm check` and the Chromium suite first.
-2. Authenticate as a maintainer of the `openapi-chain` npm organization. The repository contains `@openapi-chain/core`, `@openapi-chain/cli`, `@openapi-chain/query`, and the compatibility package `openapi-chain`. Each first release is a real public publish; publish the scoped core first, then the CLI, query adapter, and compatibility package. Use the package's current version and public access. The CLI and compatibility package require the scoped core version to be available on npm.
+1. Review the three package versions, `pnpm changeset status`, the packed artifacts, and the public registry versions. Run `pnpm check` and the Chromium suite first.
+2. Confirm publishing access to the existing `openapi-chain` npm package and authenticate as a maintainer of the `openapi-chain` npm organization for `@openapi-chain/cli` and `@openapi-chain/query`. Publish the runtime version required by the CLI before publishing the CLI. Bootstrap the two scoped packages with their current versions and public access; each first release is a real public publish.
 3. For **each** package, configure a Trusted Publisher in its npm package settings: GitHub owner `jskits`, repository `openapi-chain`, workflow filename `release.yml`, no environment name, and direct `npm publish` allowed. Publishing authorization is per package; the old package's publisher does not authorize the new scoped packages.
-4. In GitHub Actions settings, enable **Allow GitHub Actions to create and approve pull requests**. Set the repository variable `SCOPED_PUBLISH_ENABLED=true` only after all four packages and Trusted Publishers are ready. Releases are enabled by default after that; set `RELEASE_ENABLED=false` for an emergency stop.
+4. In GitHub Actions settings, enable **Allow GitHub Actions to create and approve pull requests**. Set the repository variable `SCOPED_PUBLISH_ENABLED=true` only after all three packages and Trusted Publishers are ready. Releases are enabled by default after that; set `RELEASE_ENABLED=false` for an emergency stop.
 
 Local tarball checks do not prove npm publication or organization ownership. The first public publish requires a maintainer login; this checkout intentionally cannot publish while unauthenticated. `version:packages` versions all packages through Changesets and refreshes the generated scoped fixture. The `v<version>` tag recovery path validates the core package version; use the normal Changesets flow for independent CLI and query releases.
 

@@ -54,14 +54,14 @@ try {
     JSON.stringify({
       private: true,
       type: 'module',
-      dependencies: { '@openapi-chain/core': `file:./${packed.filename}` },
+      dependencies: { 'openapi-chain': `file:./${packed.filename}` },
       devDependencies: {
         '@openapi-chain/cli': `file:./${cliTarball}`,
         typescript: manifest.devDependencies.typescript,
       },
       pnpm: {
         overrides: {
-          '@openapi-chain/core': `file:${join(consumer, packed.filename).replaceAll('\\', '/')}`,
+          'openapi-chain': `file:${join(consumer, packed.filename).replaceAll('\\', '/')}`,
         },
       },
     }),
@@ -80,13 +80,13 @@ try {
       : run('npm', ['exec', '--offline', '--', 'openapi-chain', ...args]);
   const cliRequire = createRequire(join(consumer, 'node_modules/@openapi-chain/cli/src/cli.mjs'));
   assert.equal(
-    readFileSync(cliRequire.resolve('@openapi-chain/core/metadata'), 'utf8'),
+    readFileSync(cliRequire.resolve('openapi-chain/metadata'), 'utf8'),
     readFileSync(join(root, 'packages/core/dist/metadata.cjs'), 'utf8'),
   );
   const installed = JSON.parse(
     readFileSync(join(consumer, 'node_modules/@openapi-chain/cli/package.json'), 'utf8'),
   );
-  assert.equal(installed.dependencies['@openapi-chain/core'], `^${manifest.version}`);
+  assert.equal(installed.dependencies['openapi-chain'], `^${manifest.version}`);
   assert.equal(installed.bin['openapi-chain'], 'src/cli.mjs');
   assert.ok(
     readFileSync(join(consumer, 'node_modules/@openapi-chain/cli/LICENSE'), 'utf8').includes('MIT'),
@@ -119,8 +119,8 @@ try {
   assert.equal(provenance.versions.runtime, manifest.version);
   writeFileSync(
     join(consumer, 'client.ts'),
-    `import {createStrictClient} from '@openapi-chain/core/strict';
-import type {Transport} from '@openapi-chain/core';
+    `import {createStrictClient} from 'openapi-chain/strict';
+import type {Transport} from 'openapi-chain';
 import type {ScopedPaths} from './generated/scope.js';
 import {metadata} from './generated/metadata.js';
 export const createCatalog = (baseUrl: string, transport?: Transport) => createStrictClient<ScopedPaths>({baseUrl, metadata, ...(transport ? {transport} : {})});

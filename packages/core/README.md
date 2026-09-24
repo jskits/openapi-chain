@@ -1,11 +1,11 @@
-# @openapi-chain/core
+# openapi-chain
 
-[![npm version](https://img.shields.io/npm/v/%40openapi-chain%2Fcore.svg)](https://www.npmjs.com/package/@openapi-chain/core) [![npm downloads](https://img.shields.io/npm/dm/%40openapi-chain%2Fcore.svg)](https://www.npmjs.com/package/@openapi-chain/core) [![CI](https://github.com/jskits/openapi-chain/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jskits/openapi-chain/actions/workflows/ci.yml) [![TypeScript](https://img.shields.io/badge/TypeScript-typed-3178C6?logo=typescript&logoColor=white)](https://github.com/jskits/openapi-chain/blob/main/docs/api.md) [![Modules](https://img.shields.io/badge/modules-ESM%20%2B%20CommonJS-blue)](https://github.com/jskits/openapi-chain/blob/main/docs/api.md#entry-points) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/jskits/openapi-chain/blob/main/LICENSE)
+[![npm version](https://img.shields.io/npm/v/openapi-chain.svg)](https://www.npmjs.com/package/openapi-chain) [![npm downloads](https://img.shields.io/npm/dm/openapi-chain.svg)](https://www.npmjs.com/package/openapi-chain) [![CI](https://github.com/jskits/openapi-chain/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jskits/openapi-chain/actions/workflows/ci.yml) [![TypeScript](https://img.shields.io/badge/TypeScript-typed-3178C6?logo=typescript&logoColor=white)](https://github.com/jskits/openapi-chain/blob/main/docs/api.md) [![Modules](https://img.shields.io/badge/modules-ESM%20%2B%20CommonJS-blue)](https://github.com/jskits/openapi-chain/blob/main/docs/api.md#entry-points) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/jskits/openapi-chain/blob/main/LICENSE)
 
 A TypeScript OpenAPI client with a fluent path API, zero generated client code, and no runtime dependencies. Generate a `paths` type, then call your API through typed properties and functions:
 
 ```ts
-import { createClient } from '@openapi-chain/core';
+import { createClient } from 'openapi-chain';
 import type { paths } from './schema.js';
 
 const api = createClient<paths>({ baseUrl: 'https://api.example.com' });
@@ -27,7 +27,7 @@ This example uses the [Items schema](https://github.com/jskits/openapi-chain/blo
 For an npm release that contains the API documented here:
 
 ```sh
-pnpm add @openapi-chain/core
+pnpm add openapi-chain
 pnpm add -D --save-exact typescript@6.0.3 typescript7@npm:typescript@7.0.2 openapi-typescript@7.13.0
 pnpm exec openapi-typescript ./openapi.json -o ./schema.d.ts
 ```
@@ -40,16 +40,16 @@ The package exports ESM and CommonJS. Its Node.js engine range is `^22.22.1 || ^
 
 | Need | Entry point | Runtime schema |
 | --- | --- | --- |
-| Fluent typed calls with schema-free serialization defaults | `@openapi-chain/core` → `createClient` | None |
-| OpenAPI parameter styles, structured forms or multipart encoding | `@openapi-chain/core/strict` → `createStrictClient` | Compiled metadata |
-| Compile serialization metadata from an OpenAPI document | `@openapi-chain/core/metadata` → `compileOpenAPIMetadata` | OpenAPI 3.0, 3.1 or 3.2 object |
+| Fluent typed calls with schema-free serialization defaults | `openapi-chain` → `createClient` | None |
+| OpenAPI parameter styles, structured forms or multipart encoding | `openapi-chain/strict` → `createStrictClient` | Compiled metadata |
+| Compile serialization metadata from an OpenAPI document | `openapi-chain/metadata` → `compileOpenAPIMetadata` | OpenAPI 3.0, 3.1 or 3.2 object |
 
 Core requires an explicit `contentType` whenever a body is supplied. Strict can infer a single declared concrete media type and implements additional serialization rules. Both expose the same fluent path API and operation-local extensions. See the [support matrix](https://github.com/jskits/openapi-chain/blob/main/docs/support.md) before choosing serialization behavior.
 
 ```ts
 import document from './openapi.json' with { type: 'json' };
-import { createStrictClient } from '@openapi-chain/core/strict';
-import { compileOpenAPIMetadata } from '@openapi-chain/core/metadata';
+import { createStrictClient } from 'openapi-chain/strict';
+import { compileOpenAPIMetadata } from 'openapi-chain/metadata';
 import type { paths } from './schema.js';
 
 const api = createStrictClient<paths>({
@@ -71,7 +71,7 @@ Generate `paths` and metadata from the same schema revision. Strict checks reque
 By default, calls return parsed success data and throw `HttpError` for non-2xx responses. Use `throwOnError: false` to receive a typed result instead:
 
 ```ts
-import { createClient } from '@openapi-chain/core';
+import { createClient } from 'openapi-chain';
 import type { paths } from './schema.js';
 
 const api = createClient<paths>({

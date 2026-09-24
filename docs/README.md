@@ -7,7 +7,7 @@
 | Read | When you need |
 | --- | --- |
 | [Getting started](getting-started.md) | Install, generate types and run an offline example |
-| [Scope migration](migration-to-scope.md) | Move imports to the npm organization scope and understand the compatibility package |
+| [Package names](migration-to-scope.md) | Keep runtime imports and migrate CLI and query dependencies |
 | [Query libraries and mocks](integrations.md) | Integrate TanStack Query, SWR and MSW with executable recipes |
 | [Official CLI](cli.md) | Generate synchronized types, scopes and metadata; check drift in CI |
 | [API reference](api.md) | Options, path calls, request bodies, errors, extensions and transport |

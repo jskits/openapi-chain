@@ -7,7 +7,7 @@
 ## Install and generate
 
 ```sh
-pnpm add @openapi-chain/core
+pnpm add openapi-chain
 pnpm add -D @openapi-chain/cli
 ```
 
@@ -63,7 +63,7 @@ The CLI generates full schema declarations, so upstream type validation can reje
 Use the generated type and metadata together:
 
 ```ts
-import { createStrictClient } from '@openapi-chain/core/strict';
+import { createStrictClient } from 'openapi-chain/strict';
 import { metadata } from './generated/catalog/metadata.js';
 import type { ScopedPaths } from './generated/catalog/scope.js';
 

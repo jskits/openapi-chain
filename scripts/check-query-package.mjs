@@ -52,7 +52,7 @@ try {
       private: true,
       type: 'module',
       dependencies: {
-        '@openapi-chain/core': `file:./${runtime.filename}`,
+        'openapi-chain': `file:./${runtime.filename}`,
         '@openapi-chain/query': `file:./${adapter.filename}`,
         ...Object.fromEntries(
           ['@tanstack/react-query', 'swr', 'react', '@types/react'].map((name) => [

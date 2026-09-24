@@ -4,12 +4,11 @@
 
 The packages separate compile-time API structure, the tiny schema-free runtime, and the opt-in exact-wire runtime. The repository root is a private pnpm workspace; Turbo builds the publishable packages under `packages/`.
 
-| Workspace         | npm package            | Role                                         |
-| ----------------- | ---------------------- | -------------------------------------------- |
-| `packages/core`   | `@openapi-chain/core`  | Runtime, strict client and metadata compiler |
-| `packages/cli`    | `@openapi-chain/cli`   | Node-only generation command                 |
-| `packages/query`  | `@openapi-chain/query` | Optional TanStack Query and SWR adapter      |
-| `packages/legacy` | `openapi-chain`        | Compatibility exports for existing consumers |
+| Workspace        | npm package            | Role                                         |
+| ---------------- | ---------------------- | -------------------------------------------- |
+| `packages/core`  | `openapi-chain`        | Runtime, strict client and metadata compiler |
+| `packages/cli`   | `@openapi-chain/cli`   | Node-only generation command                 |
+| `packages/query` | `@openapi-chain/query` | Optional TanStack Query and SWR adapter      |
 
 ## Type layer
 
@@ -27,7 +26,7 @@ The packages separate compile-time API structure, the tiny schema-free runtime, 
 
 ### Core entry
 
-`@openapi-chain/core` contains only the schema-free Proxy/path/request engine and mainstream defaults. It does **not** import the metadata compiler or exact-wire serializer.
+`openapi-chain` contains only the schema-free Proxy/path/request engine and mainstream defaults. It does **not** import the metadata compiler or exact-wire serializer.
 
 The core intentionally omits runtime features that would require preserving the whole OpenAPI serialization model. Type erasure is treated as a hard boundary: if a value cannot be serialized faithfully without metadata, the core requires either explicit information or an operation-local extension.
 
@@ -35,11 +34,11 @@ The transitive ESM core is gzip-gated at 3072 bytes. The size script recursively
 
 ### Strict entry
 
-`@openapi-chain/core/strict` owns the exact-wire serializer. It consumes branded `CompiledOpenAPIMetadata` and implements runtime-only OpenAPI semantics such as parameter styles, `explode`, `allowReserved`, Parameter `content`, request-body Encoding Objects, multipart/form-urlencoded details, and OpenAPI 3.2 `querystring`/`cookie` behavior.
+`openapi-chain/strict` owns the exact-wire serializer. It consumes branded `CompiledOpenAPIMetadata` and implements runtime-only OpenAPI semantics such as parameter styles, `explode`, `allowReserved`, Parameter `content`, request-body Encoding Objects, multipart/form-urlencoded details, and OpenAPI 3.2 `querystring`/`cookie` behavior.
 
 ### Metadata entry
 
-`@openapi-chain/core/metadata` compiles only serialization-relevant OpenAPI data. It is independent from both client entry points, so importing the tiny core cannot pull the compiler into an application bundle.
+`openapi-chain/metadata` compiles only serialization-relevant OpenAPI data. It is independent from both client entry points, so importing the tiny core cannot pull the compiler into an application bundle.
 
 ## Operation-derived extensions
 

@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
 import { createQuery } from '@openapi-chain/query';
-import { createClient, HttpError } from '@openapi-chain/core';
+import { createClient, HttpError } from 'openapi-chain';
 import { QueryClient } from '@tanstack/react-query';
 
 assert.equal(typeof createRequire(import.meta.url)('@openapi-chain/query').createQuery, 'function');

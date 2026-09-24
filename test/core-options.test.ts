@@ -22,7 +22,7 @@ test.each([
       transport,
       ...extra,
     } as unknown as CoreClientOptions),
-  ).toThrow('Use @openapi-chain/core/strict.');
+  ).toThrow('Use openapi-chain/strict.');
   expect(transport).not.toHaveBeenCalled();
 });
 

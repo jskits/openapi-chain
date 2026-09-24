@@ -148,7 +148,7 @@ async function main() {
   const metadata = compileOpenAPIMetadata(document, {paths:['/x/{id}']});
   assert.deepEqual(Object.keys(metadata.operations), ['/x/{id}']);
   for (const extra of [{metadata}, {middleware:[]}, {headers:()=>({authorization:'token'})}]) {
-    assert.throws(() => createClient({baseUrl:'https://example.test',...extra}), {message:'Use @openapi-chain/core/strict.'});
+    assert.throws(() => createClient({baseUrl:'https://example.test',...extra}), {message:'Use openapi-chain/strict.'});
   }
   const compatible = compileOpenAPIMetadata({openapi:'3.1.0',paths:{
     '/x/{id}':document.paths['/x/{id}'],
