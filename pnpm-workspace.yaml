@@ -1,7 +1,6 @@
 packages:
   - .
   - packages/*
-  - '!packages/legacy'
 
 strictPeerDependencies: true
 saveExact: true
