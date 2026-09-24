@@ -41,21 +41,32 @@ afterAll(async () => {
 test.each(['3.0.4', '3.1.1', '3.2.1'])(
   'generated types and real HTTP preserve equivalent paths in %s',
   async (openapi) => {
-    const metadata = compileOpenAPIMetadata({ ...document, openapi });
-    for (const api of [
-      createClient<paths>({ baseUrl }),
-      createStrictClient<paths>({ baseUrl, metadata }),
-    ]) {
+    const source = { ...document, openapi };
+    const metadata = compileOpenAPIMetadata(source);
+    const core = createClient<paths>({ baseUrl });
+    const strict = createStrictClient<paths>({ baseUrl, metadata });
+    for (const api of [core, strict]) {
       expect((await api.$path('/reports/{year}-{month}', { year: 2026, month: 9 }).get()).url).toBe(
         '/reports/2026-9',
       );
-      const chain = await api.$path('/echo/{id}', { id: 'a/b' }).get();
       const template = await api.$path('/echo/{id}', { id: 'a/b' }).get();
       const trailing = await api.$path('/echo/{id}/', { id: 'a/b' }).get();
-      expect(chain).toEqual({ url: '/echo/a%2Fb', body: '', contentType: '' });
-      expect(template).toEqual(chain);
-      expect(trailing).toEqual({ ...chain, url: '/echo/a%2Fb/' });
+      expect(template).toEqual({ url: '/echo/a%2Fb', body: '', contentType: '' });
+      expect(trailing).toEqual({ ...template, url: '/echo/a%2Fb/' });
     }
+    const coreChain = await core.echo('a/b').get();
+    expect(coreChain).toEqual(await core.$path('/echo/{id}', { id: 'a/b' }).get());
+
+    // Both declared echo templates have the same fluent shape, so full strict metadata rejects it.
+    // @ts-expect-error ambiguous same-method chains require an exact template
+    await expect(strict.echo('a/b').get()).rejects.toThrow(/Ambiguous OpenAPI runtime metadata/);
+    const scopedStrict = createStrictClient<Pick<paths, '/echo/{id}'>>({
+      baseUrl,
+      metadata: compileOpenAPIMetadata(source, { paths: ['/echo/{id}'] }),
+    });
+    expect(await scopedStrict.echo('a/b').get()).toEqual(
+      await scopedStrict.$path('/echo/{id}', { id: 'a/b' }).get(),
+    );
   },
 );
 
