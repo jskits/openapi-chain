@@ -74,10 +74,14 @@ try {
       '--strict-peer-dependencies',
     ]);
   else run('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund']);
-  const runCli = (...args) =>
+  const cliInvocation = (...args) =>
     compiler.major === 7
-      ? run('pnpm', ['exec', 'openapi-chain', ...args])
-      : run('npm', ['exec', '--offline', '--', 'openapi-chain', ...args]);
+      ? ['pnpm', ['exec', 'openapi-chain', ...args]]
+      : ['npm', ['exec', '--offline', '--', 'openapi-chain', ...args]];
+  const runCli = (...args) => {
+    const [command, parameters] = cliInvocation(...args);
+    return run(command, parameters);
+  };
   const cliRequire = createRequire(join(consumer, 'node_modules/@openapi-chain/cli/src/cli.mjs'));
   assert.equal(
     readFileSync(cliRequire.resolve('openapi-chain/metadata'), 'utf8'),
@@ -215,8 +219,51 @@ void api.items.get({query:{unknown:'x'}});
   assert.equal((await api.items('42').get()).name, 'book');
   await assert.rejects(api.$path('/admin').get(), /does not contain/);
   assert.deepEqual(received, ['/items?filter%5Bname%5D=book&__proto__=value', '/items/42']);
+
+  // A source contract change must invalidate artifacts and then invalidate old consumer calls.
+  sourceDocument.paths['/items/{id}'].get.parameters.push({
+    name: 'revision',
+    in: 'query',
+    required: true,
+    schema: { type: 'string' },
+  });
+  writeFileSync(join(consumer, 'openapi.json'), JSON.stringify(sourceDocument));
+  const [checkCommand, checkArgs] = cliInvocation('generate', '--check');
+  const stale = spawn.sync(checkCommand, checkArgs, { cwd: consumer, env, encoding: 'utf8' });
+  assert.notEqual(stale.status, 0);
+  assert.match(`${stale.stdout}\n${stale.stderr}`, /stale or missing/);
+  runCli('generate');
+  const oldConsumer = spawn.sync(process.execPath, ['node_modules/typescript/bin/tsc', ...tsArgs], {
+    cwd: consumer,
+    env,
+    encoding: 'utf8',
+  });
+  assert.notEqual(oldConsumer.status, 0);
+  assert.match(
+    `${oldConsumer.stdout}\n${oldConsumer.stderr}`,
+    /contract\.ts\(\d+,\d+\): error TS2554: Expected 1 arguments, but got 0/,
+  );
+  if (compiler.major === 7) {
+    const oldNative = spawn.sync(compiler.command, [...compiler.args, ...tsArgs], {
+      cwd: consumer,
+      env,
+      encoding: 'utf8',
+    });
+    assert.notEqual(oldNative.status, 0);
+    assert.match(`${oldNative.stdout}\n${oldNative.stderr}`, /contract\.ts/);
+  }
+  assert.match(readFileSync(join(consumer, 'generated/metadata.ts'), 'utf8'), /revision/);
+  writeFileSync(
+    join(consumer, 'contract.ts'),
+    readFileSync(join(consumer, 'contract.ts'), 'utf8').replace(
+      "void api.items('42').get();",
+      "void api.items('42').get({query:{revision:'next'}});",
+    ),
+  );
+  run(process.execPath, ['node_modules/typescript/bin/tsc', ...tsArgs]);
+  if (compiler.major === 7) run(compiler.command, [...compiler.args, ...tsArgs]);
   console.log(
-    `Installed CLI verified: npm bin, full generation/check, private TS 5.9 generator, TS 6${compiler.major === 7 ? '/7' : ''} scoped consumer, browser module isolation and real HTTP.`,
+    `Installed CLI verified: npm bin, full generation/check, contract-change drift, private TS 5.9 generator, TS 6${compiler.major === 7 ? '/7' : ''} scoped consumer, browser module isolation and real HTTP.`,
   );
 } finally {
   if (server) {

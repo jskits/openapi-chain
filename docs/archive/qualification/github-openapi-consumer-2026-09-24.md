@@ -1,6 +1,6 @@
 # GitHub REST OpenAPI consumer probe (2026-09-24)
 
-Baseline: [`9c0aded`](https://github.com/jskits/openapi-chain/commit/9c0aded) after the onboarding and conformance-test fixes. This is a dated consumer observation, not a continuing compatibility promise for GitHub's API.
+Baseline: [`3542d64`](https://github.com/jskits/openapi-chain/commit/3542d64) after the onboarding, conformance-test and Query type fixes. This is a dated consumer observation, not a continuing compatibility promise for GitHub's API.
 
 The source was GitHub's [REST API OpenAPI description](https://docs.github.com/en/rest/about-the-rest-api/about-the-openapi-description-for-the-rest-api), pinned to [`github/rest-api-description@4377b4f`](https://github.com/github/rest-api-description/blob/4377b4f4845badf28d13464dfb3042c6cf0e3a1f/descriptions/api.github.com/api.github.com.json). The downloaded file's SHA-256 was `b8ca03764f54058ec40e2b61e048a4518ee88e943ac04d393b1757094c895aad`; its Git blob ID matched the pinned commit. It is an OpenAPI 3.0.3 document with 808 path keys and 12,964,430 bytes. The document is not copied into this repository.
 
@@ -37,7 +37,7 @@ Install both tarballs and TypeScript in a separate application directory. Type-c
 ## Observed results and friction
 
 - Generation and `--check` succeeded. The full `schema.d.ts` was 6,528,252 bytes, while selected `metadata.ts` was 1,890 bytes. Scope reduces the exposed client tree and metadata, but the CLI still generates declarations for the complete source document.
-- Changing only `info.version` in the source caused `--check` to report stale `manifest.json`; restoring the original file made it pass again. This verifies source drift detection even when the selected operations are unchanged.
+- Changing only `info.version` in the source caused `--check` to report stale `manifest.json`; restoring the original file made it pass again. Adding a required `revision` query parameter to the selected repository GET caused `--check` to report stale declarations, metadata and manifest. After regeneration, the old consumer failed TypeScript checking because its GET omitted the new required input. This verifies both source drift detection and a meaningful contract-upgrade failure.
 - An isolated tarball consumer passed TypeScript 6.0.3 checking with positive path calls and negative unselected-path and issue-number assertions. The installed Strict client sent the expected request to a local HTTP server. Its Query adapter reused the cached result for the same key and preserved the original input snapshot.
 - A read-only GET through the installed Strict client returned `full_name: jskits/openapi-chain` from the live GitHub API. Node's direct Fetch connection timed out in this environment; enabling Node's environment proxy support with `NODE_USE_ENV_PROXY=1` allowed that live request. This is an environment setup issue, not a client serialization failure.
 
