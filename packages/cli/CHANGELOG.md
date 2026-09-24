@@ -1,5 +1,18 @@
 # @openapi-chain/cli
 
+## 0.5.0
+
+### Package migration
+
+- Rename the CLI package from `openapi-chain-cli` to `@openapi-chain/cli` and align its version with the 0.5.0 release. Install it with `pnpm add -D @openapi-chain/cli`; the `openapi-chain generate` command and configuration filename remain unchanged.
+- Generate metadata modules with type-only imports from `openapi-chain/metadata`, using the runtime's existing public package name. Regenerate managed output after upgrading so its imports and tool-version manifest match the installed packages.
+- Preserve the existing generated-directory ownership marker so previously managed output can be regenerated without deleting the directory. Generation dependencies, including the pinned TypeScript 5.9.3 compiler, remain confined to the Node-only CLI package.
+- Move the package into `packages/cli` and verify its installed command, generated declarations and browser bundle isolation against packed runtime artifacts with TypeScript 6 and 7.
+
+### Dependencies
+
+- Depend on `openapi-chain@^0.5.0` directly.
+
 ## 0.2.0
 
 ### Minor Changes

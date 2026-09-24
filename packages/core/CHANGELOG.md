@@ -2,6 +2,12 @@
 
 ## 0.5.0
 
+### Packaging and compatibility
+
+- Move the runtime into `packages/core` in the pnpm monorepo and build its ESM, CommonJS, declarations and source maps through Turbo. The published runtime remains dependency-free.
+- Keep the public package name `openapi-chain` and the `openapi-chain/strict` and `openapi-chain/metadata` entry points. The core package ships the implementation directly; no legacy compatibility package or `@openapi-chain/core` dependency is required.
+- Keep NodeNext consumers covered with TypeScript 6 and 7 and retain the current 3072-byte transitive core gzip budget. Earlier entries below record the budget before the additional runtime safeguards.
+
 ### Minor Changes
 
 - ad814a3: Add an explicit onAmbiguousTemplate: 'allow' metadata compiler option for nonconforming third-party documents. Keep default rejection, exact template serialization, and fail-closed ambiguous chain routing.
@@ -84,6 +90,6 @@
   
   Increase the core transitive gzip budget from 2048 to 3072 bytes to retain these runtime safeguards; the measurement and dependency-free boundary remain unchanged.
 
-The first `openapi-chain` release is tracked by the pending initial API changeset. The migrated implementation previously used the name `openapi-client-codegen`; its version numbers are not releases of this package.
+The predecessor implementation used the name `openapi-client-codegen`; its version numbers are not releases of `openapi-chain`.
 
-See [the legacy implementation changelog](docs/legacy-changelog.md) for the preserved migration history.
+See [the legacy implementation changelog](https://github.com/jskits/openapi-chain/blob/main/docs/legacy-changelog.md) for the preserved migration history.
