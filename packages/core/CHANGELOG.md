@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.5.1
+
+### Upgrade notes
+
+- Metadata compiled by 0.5.0 keeps its old property media and serializer requirements. Recompile metadata, or regenerate `@openapi-chain/cli` output, to apply the metadata fixes below.
+- Typed calls that pass the body of a broader media declaration with a more specific declared `contentType` now fail type checking. Use the body type of the declaration that matches the `contentType`.
+- Schemas whose explicit `type` values disagree between a node and its `allOf` branches (object, array or scalar) are now rejected during metadata compilation. Before this release, such conflicts were only rejected when every type appeared inside `allOf`.
+
+### Patch Changes
+
+#### Request body types
+
+- ff5fc98: Type request bodies from the most specific matching media declaration, matching runtime selection, so a wildcard declaration can no longer supply the body type for a more specific declared media type.
+
+#### Strict metadata and serialization
+
+- f779671: Keep the strict multipart `contentEncoding` check on array `items` when a sibling `allOf` does not declare an encoding, so such requests fail before transport instead of being sent without per-part encoding.
+- 5110894: Infer multipart and form part media from array `items` declared in `allOf` branches instead of falling back to `application/octet-stream`.
+- 4d16621: Default OpenAPI 3.2 array values nested inside an array property to `application/json`, following Encoding By Name, instead of the innermost scalar media type.
+- b6d47a6: Ignore `Content-Type` in multipart Encoding Object `headers`, as OpenAPI requires, instead of demanding a whole-body extension. Other part headers still require one.
+- d5aace6: Accept OpenAPI 3.2 cookie parameters with `explode: false`. Primitive values serialize normally; compound values remain rejected before transport.
+- fc881fc: Derive multipart and form metadata from one conjunctive schema analysis, so property kinds, default part media and `contentEncoding` restrictions agree for every equivalent schema spelling. Binary markers split across `allOf` now compile like their inline form, explicit `type` values take precedence over `items`/`properties` hints, and explicit types that disagree across `allOf` are rejected consistently.
+
 ## 0.5.0
 
 ### Packaging and compatibility

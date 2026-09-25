@@ -1,5 +1,16 @@
 # @openapi-chain/cli
 
+## 0.5.1
+
+### Patch Changes
+
+- Generate runtime metadata with the `openapi-chain` 0.5.1 metadata compiler. Its fixes cover multipart `contentEncoding` detection under `allOf`, part media inferred from `allOf` array `items`, ignored `Content-Type` part headers, and consistent property kinds and media across equivalent schema spellings. The CLI's own generation behavior is unchanged.
+- Regenerate managed output after upgrading. The manifest records the CLI and runtime versions, so `openapi-chain generate --check` reports 0.5.0 output as stale.
+
+### Dependencies
+
+- Depend on `openapi-chain@^0.5.1`.
+
 ## 0.5.0
 
 ### Package migration
