@@ -16,7 +16,7 @@ import type {
 } from './type.js';
 
 type AnyRecord = Record<string, unknown>;
-type Analysis = 'kind' | 'content' | 'properties' | 'encoding' | 'ambiguous';
+type Analysis = 'kind' | 'content' | 'items' | 'properties' | 'encoding' | 'ambiguous';
 type CachedAnalysis = { value: unknown; height: number };
 type CompilationContext = {
   document: AnyRecord;
@@ -293,7 +293,12 @@ function inferContentType(
     const type = schemaType(schema);
     // An explicit type determines the default; applicators do not imply object.
     if (type === 'array' || 'items' in schema) {
-      return inferContentType(schema.items, root, version, active);
+      return inferContentType(
+        conjoin(arrayItemSchemas(schema, root, active)),
+        root,
+        version,
+        active,
+      );
     }
     if (type === 'object' || isRecord(schema.properties)) return 'application/json';
     if (type === 'string') {
@@ -319,6 +324,34 @@ function inferContentType(
     }
     return undefined;
   });
+}
+
+// allOf is conjunction, so items declared in any branch apply to the same array.
+function arrayItemSchemas(
+  schema: AnyRecord,
+  root: CompilationContext,
+  active: Set<unknown>,
+): unknown[] {
+  const items: unknown[] = schema.items === undefined ? [] : [schema.items];
+  if (Array.isArray(schema.allOf)) {
+    for (const branch of schema.allOf) items.push(...collectArrayItems(branch, root, active));
+  }
+  return items;
+}
+
+function collectArrayItems(
+  schemaValue: unknown,
+  root: CompilationContext,
+  active = new Set<unknown>(),
+): unknown[] {
+  return visitSchema(schemaValue, active, root, 'items', () => {
+    const schema = dereference(schemaValue, root, 'schema');
+    return isRecord(schema) ? arrayItemSchemas(schema, root, active) : [];
+  });
+}
+
+function conjoin(schemas: unknown[]): unknown {
+  return schemas.length > 1 ? { allOf: schemas } : schemas[0];
 }
 
 function collectPropertySchemas(
@@ -960,6 +993,7 @@ export function compileOpenAPIMetadata(
     caches: {
       kind: new Map(),
       content: new Map(),
+      items: new Map(),
       properties: new Map(),
       encoding: new Map(),
       ambiguous: new Map(),

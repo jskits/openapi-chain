@@ -148,3 +148,54 @@ test.each([
   expect(error?.includes('encoding.headers') ?? false).toBe(custom);
   expect(sent).toBe(!custom);
 });
+
+test.each(['3.0.4', '3.1.1', '3.2.1'])(
+  'array items split into allOf keep their inferred media in %s',
+  async (version) => {
+    const Row = { type: 'object' };
+    for (const schema of [
+      { type: 'array', items: Row },
+      { type: 'array', allOf: [{ items: Row }] },
+      { type: 'array', allOf: [{ minItems: 1 }, { items: { $ref: '#/components/schemas/Row' } }] },
+      { allOf: [{ type: 'array' }, { items: Row }] },
+      { allOf: [{ items: Row }, { type: 'array' }] },
+      { type: 'array', items: { minProperties: 1 }, allOf: [{ items: Row }] },
+    ]) {
+      const metadata = compileOpenAPIMetadata({
+        openapi: version,
+        components: { schemas: { Row } },
+        paths: {
+          '/upload': {
+            post: {
+              requestBody: {
+                content: {
+                  'multipart/form-data': {
+                    schema: { type: 'object', properties: { value: schema } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+      expect(
+        metadata.operations['/upload']?.post?.requestBody?.media?.['multipart/form-data']
+          ?.propertyContentTypes?.value,
+      ).toBe('application/json');
+      const parts: string[] = [];
+      const api = createStrictClient<Paths>({
+        baseUrl: 'https://example.test',
+        metadata,
+        transport: async ({ url, init }) => {
+          const form = await new Request(url, init).formData();
+          for (const part of form.getAll('value')) {
+            parts.push(typeof part === 'string' ? part : `${part.type}:${await part.text()}`);
+          }
+          return new Response(null, { status: 204 });
+        },
+      });
+      await api.upload.post({ body: { value: [{ a: 1 }, { a: 2 }] as unknown as string } });
+      expect(parts).toEqual(['application/json:{"a":1}', 'application/json:{"a":2}']);
+    }
+  },
+);
