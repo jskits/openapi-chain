@@ -36,6 +36,8 @@ Pass a parsed OpenAPI object, not a JSON/YAML string. Bundle or dereference exte
 
 Duplicate template hierarchies fail by default; see the [explicit compatibility option](#a-third-party-document-repeats-a-template-hierarchy). Conflicting inferred part media, non-inferable schema cycles, depth over 128 and excessive traversal work fail explicitly. Simplify the serialization schema or preprocess unsupported constructs. `defineOpenAPIMetadata` and a TypeScript cast do not replace compilation or validation.
 
+Errors raised while compiling an operation name it, for example `POST /upload: multipart/form-data request body: Invalid media declaration: form-data`, and carry `method` and `pathTemplate`. When the rest of a third-party document is usable, correct that operation or compile only the paths you call with the compiler's or CLI's `paths` selection; unselected operations are not compiled.
+
 ## throwOnError: false still throws
 
 That option changes HTTP status handling only. Transport/network errors, cancellation, serialization, parsing and extension failures still reject. Wrap the call in `try`/`catch` as well as inspecting `result.ok`. A malformed JSON error response fails during parsing before it can become an HTTP result.
@@ -52,7 +54,9 @@ Fetch follows browser policy. For browser session cookies, pass `init: { credent
 
 ## A path or charset is rejected
 
-Whole `.`/`..` path segments, including encoded variants, would be normalized by Fetch and are rejected even with a path extension. Use another server route or identifier representation.
+Whole `.`/`..` path segments, including encoded variants, would be normalized by Fetch and are rejected even with a path extension. Use another server route or identifier representation. Empty path values are rejected the same way, because `/items/{id}` with `''` would request `/items/`.
+
+Path keys containing `#` or `?`, such as `/objects/{id}#uploads` in some converted AWS descriptions, cannot be requested as written: Fetch drops a fragment, and a literal `?` starts the query. Their requests fail before transport. Rewrite such keys in the source document, for example by moving the marker into a declared query parameter, before generating types and metadata.
 
 Automatically serialized strings use UTF-8. For another charset, provide correctly pre-encoded bytes where supported or own the encoding in an extension. Changing a Content-Type label never transcodes bytes. See [media and encoding behavior](support.md#media-recognition-and-text-encodings).
 
