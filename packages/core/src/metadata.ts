@@ -404,6 +404,30 @@ function planProperty(name: string, facts: SchemaFacts, version: OasMinor): Prop
   };
 }
 
+/**
+ * Names a body may carry, including oneOf/anyOf alternatives: an Encoding key only has to
+ * name a schema property. Serialization plans stay conjunctive (allOf) as documented.
+ */
+function declaredPropertyNames(
+  schemaValue: unknown,
+  root: CompilationContext,
+  names = new Set<string>(),
+  seen = new Set<unknown>(),
+): Set<string> {
+  spendWork(root);
+  const schema = dereference(schemaValue, root, 'schema');
+  if (!isRecord(schema) || seen.has(schema)) return names;
+  seen.add(schema);
+  if (isRecord(schema.properties))
+    for (const name of Object.keys(schema.properties)) names.add(name);
+  for (const key of ['allOf', 'oneOf', 'anyOf'] as const) {
+    const branches = schema[key];
+    if (Array.isArray(branches))
+      for (const branch of branches) declaredPropertyNames(branch, root, names, seen);
+  }
+  return names;
+}
+
 type BodyPlan = {
   schemas: Record<string, unknown>;
   /** Absent when a type ambiguity prevents choosing a form representation. */
@@ -647,9 +671,12 @@ function compileMediaType(
     }
   }
 
-  if (compiledEncoding.encoding && Object.keys(plan.schemas).length) {
+  const declaredNames = compiledEncoding.encoding
+    ? declaredPropertyNames(mediaObject.schema, root)
+    : new Set<string>();
+  if (compiledEncoding.encoding && declaredNames.size) {
     for (const name of Object.keys(compiledEncoding.encoding)) {
-      if (!Object.hasOwn(plan.schemas, name)) {
+      if (!declaredNames.has(name)) {
         throw new OpenAPIChainError(
           'METADATA_COMPILE',
           `Encoding key ${name} is not a request-body schema property.`,
