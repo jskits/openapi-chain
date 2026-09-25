@@ -763,40 +763,43 @@ type SelectedOperationInput<
   ParamsInput<Item, Operation, InferSingleMedia> &
     InitInput & {
       body: RequestBodyContent<Operation>[Selected & keyof RequestBodyContent<Operation>];
-      contentType: Media;
+      // Optional so forwarded strict inputs that rely on single-media inference still fit.
+      contentType?: Media;
       extensions?: OperationExtensions<Item, Operation, InferSingleMedia>;
     }
 >;
 
 // Runtime applies only the most specific matching declaration, so the body must follow it
 // even when a broader range (for example application/*) also admits the concrete media.
-type MediaCheckedInput<
-  Item,
-  Operation,
-  InferSingleMedia extends boolean,
-  Media extends string,
-> = Media extends unknown
-  ? IsLiteralMedia<Media> extends true
-    ? StringKeyOf<RequestBodyContent<Operation>> extends infer Declared extends string
-      ? [Declared] extends [never]
-        ? OperationInput<Item, Operation, InferSingleMedia>
-        : // Index-signature or pattern keys name no single declaration to select.
-          true extends (Declared extends unknown ? Not<IsLiteralMedia<Declared>> : never)
+type MediaCheckedInput<Item, Operation, InferSingleMedia extends boolean, Media extends string> = [
+  Media,
+] extends [never]
+  ? // A forwarded input whose contentType is absent infers no media at all.
+    OperationInput<Item, Operation, InferSingleMedia>
+  : Media extends unknown
+    ? IsLiteralMedia<Media> extends true
+      ? StringKeyOf<RequestBodyContent<Operation>> extends infer Declared extends string
+        ? [Declared] extends [never]
           ? OperationInput<Item, Operation, InferSingleMedia>
-          : SelectedMedia<Declared, Media> extends infer Selected extends string
-            ? [Selected] extends [never]
-              ? OperationInput<Item, Operation, InferSingleMedia> & { contentType: never }
-              : IsUnion<Selected> extends true
+          : // Index-signature or pattern keys name no single declaration to select.
+            true extends (Declared extends unknown ? Not<IsLiteralMedia<Declared>> : never)
+            ? OperationInput<Item, Operation, InferSingleMedia>
+            : SelectedMedia<Declared, Media> extends infer Selected extends string
+              ? [Selected] extends [never]
                 ? OperationInput<Item, Operation, InferSingleMedia> & { contentType: never }
-                : // Typed inputs keep the selected declaration's spelling, so extension
-                  // callbacks receive the contentType their operation types describe.
-                  Media extends ConcreteContentTypeForMedia<Selected>
-                  ? SelectedOperationInput<Item, Operation, InferSingleMedia, Media, Selected>
-                  : OperationInput<Item, Operation, InferSingleMedia> & { contentType: never }
-            : never
-      : never
-    : OperationInput<Item, Operation, InferSingleMedia>
-  : never;
+                : IsUnion<Selected> extends true
+                  ? OperationInput<Item, Operation, InferSingleMedia> & { contentType: never }
+                  : // Typed inputs keep the selected declaration's spelling, so extension
+                    // callbacks receive the contentType their operation types describe.
+                    Media extends ConcreteContentTypeForMedia<Selected>
+                    ? // An optional request body may still be omitted by a forwarded input.
+                      | SelectedOperationInput<Item, Operation, InferSingleMedia, Media, Selected>
+                      | Extract<OperationInput<Item, Operation, InferSingleMedia>, { body?: never }>
+                    : OperationInput<Item, Operation, InferSingleMedia> & { contentType: never }
+              : never
+        : never
+      : OperationInput<Item, Operation, InferSingleMedia>
+    : never;
 
 type CheckedOperationInput<
   Item,
