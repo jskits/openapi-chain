@@ -647,6 +647,54 @@ type ConcreteMediaInput<Value extends string> =
     ? unknown
     : { contentType: never };
 
+type MediaSpecificity<Media extends string> =
+  MediaEssence<Media> extends '*/*' ? 0 : MediaEssence<Media> extends `${string}/*` ? 1 : 2;
+
+type MatchingMedia<Declared extends string, Media extends string> = Declared extends unknown
+  ? Media extends ConcreteContentTypeForMedia<Declared>
+    ? Declared
+    : never
+  : never;
+
+type WithSpecificity<Candidates extends string, Rank> = Candidates extends unknown
+  ? MediaSpecificity<Candidates> extends Rank
+    ? Candidates
+    : never
+  : never;
+
+type MostSpecificEssence<Candidates extends string> = [WithSpecificity<Candidates, 2>] extends [
+  never,
+]
+  ? [WithSpecificity<Candidates, 1>] extends [never]
+    ? Candidates
+    : WithSpecificity<Candidates, 1>
+  : WithSpecificity<Candidates, 2>;
+
+type MostSpecificMedia<Candidates extends string> =
+  MostSpecificEssence<Candidates> extends infer Best extends string
+    ? [Extract<Best, `${string};${string}`>] extends [never]
+      ? Best
+      : Extract<Best, `${string};${string}`>
+    : never;
+
+// Only a literal media type identifies one runtime selection; patterns such as
+// `application/${string}` come from already-typed inputs and keep their variant checks.
+type IsLiteralMedia<Media extends string> = {} extends Record<Media, true> ? false : true;
+
+// Runtime applies only the most specific matching declaration, so the body must follow it
+// even when a broader range (for example application/*) also admits the concrete media.
+type SelectedBodyInput<Operation, Media extends string> = Media extends unknown
+  ? IsLiteralMedia<Media> extends false
+    ? unknown
+    : RequestBodyContent<Operation> extends infer Content
+      ? MostSpecificMedia<MatchingMedia<StringKeyOf<Content>, Media>> extends infer Selected
+        ? [Selected] extends [never]
+          ? unknown
+          : { body: Content[Selected & keyof Content] }
+        : never
+      : never
+  : never;
+
 type CheckedOperationInput<
   Item,
   Operation,
@@ -654,7 +702,8 @@ type CheckedOperationInput<
   Media extends string,
 > = OperationInput<Item, Operation, InferSingleMedia> & {
   contentType?: Media;
-} & ConcreteMediaInput<NoInfer<Media>>;
+} & ConcreteMediaInput<NoInfer<Media>> &
+  SelectedBodyInput<Operation, NoInfer<Media>>;
 
 type OperationCall<
   Item,
