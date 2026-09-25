@@ -62,7 +62,7 @@ The compiler extracts serialization hints; it does not evaluate every JSON Schem
 | Explicit object / properties | Object kind and JSON part default; named properties supply field metadata | Keep field serialization hints on named properties |
 | Array with items | Array kind; default part media is inferred from items | Check the supported style and element representation |
 | Compatible allOf branches | Combines named properties conjunctively and derives available kind/media hints | Prefer explicit wire-relevant types; this is not general constraint solving |
-| Conflicting inferred allOf media without an explicit determining type | Compilation throws | Give a coherent serialization schema or preprocess the document; a runtime extension cannot recover a failed compilation |
+| Explicit `type` values that disagree on object, array or scalar shape, whether declared on the schema itself or in its `allOf` branches | Compilation throws; compatible scalar types such as `number` with `integer` do not conflict | Give a coherent serialization schema or preprocess the document; a runtime extension cannot recover a failed compilation |
 | Local JSON Pointer references | Resolves against the OpenAPI document, including percent-encoded fragments | Bundle documents into this supported pointer form |
 | OAS 3.0 schema reference siblings | Ignored | Put applicable schema constraints in an allOf branch |
 | OAS 3.1/3.2 schema reference siblings | Conjunctive analysis, including repeated acyclic references | Repeated references are allowed; actual inference cycles still fail |

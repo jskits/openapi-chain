@@ -55,16 +55,16 @@ Whole `.` and `..` segments, including encoded spellings, fail before transport 
 
 Method inputs are derived from the exact operation. Required parameter locations and request bodies make the input argument required.
 
-| Field         | Meaning                                                                       |
-| ------------- | ----------------------------------------------------------------------------- |
-| `query`       | Declared query parameters                                                     |
-| `header`      | Declared header parameters; singular field name                               |
-| `cookie`      | Declared cookie parameters, subject to platform restrictions                  |
-| `querystring` | Strict-only OpenAPI 3.2 whole-query input; cannot coexist with `query`        |
-| `body`        | Body value correlated with the selected media type                            |
-| `contentType` | Concrete media type; required by core for a supplied body                     |
-| `init`        | Fetch options such as `signal`, `credentials`, `cache` and additional headers |
-| `extensions`  | Operation-specific serialization, response or request callbacks               |
+| Field | Meaning |
+| --- | --- |
+| `query` | Declared query parameters |
+| `header` | Declared header parameters; singular field name |
+| `cookie` | Declared cookie parameters, subject to platform restrictions |
+| `querystring` | Strict-only OpenAPI 3.2 whole-query input keyed by parameter name; cannot coexist with `query` |
+| `body` | Body value correlated with the selected media type |
+| `contentType` | Concrete media type; required by core for a supplied body |
+| `init` | Fetch options such as `signal`, `credentials`, `cache` and additional headers |
+| `extensions` | Operation-specific serialization, response or request callbacks |
 
 Path parameters belong in the chain or `$path()` argument, not the method input. `init.method` and `init.body` are excluded from the public input; use the operation and `body` fields. `init.headers` is useful for authentication headers absent from the schema. Header precedence is client defaults → declared `header` values → `init.headers`, followed by cookie/body serialization. Body serialization can set Content-Type; native FormData removes it so Fetch can generate the boundary.
 
@@ -87,6 +87,14 @@ await api.pet.post({
 Core serializes JSON, scalar text and supported native bodies. For structured URL-encoded or multipart objects, supply a whole-body extension or use strict. Core query defaults skip nullish values, repeat array keys and expand object keys into query entries; nested schema-specific encoding needs an extension or strict. It cannot infer OpenAPI `style`, `explode` or `allowReserved` from erased types.
 
 Strict can omit `contentType` when compiled metadata and the operation type both establish one concrete media type. Multiple media types or media ranges require an explicit concrete selection. A body extension does not remove this requirement. See [binary and multipart support](support.md#binary-bodies-and-multipart-parts) for byte slices, filenames and encoding limits.
+
+OpenAPI 3.2 `in: querystring` describes the whole query string with one parameter. Like other locations, its input is keyed by that parameter's name, and the value is serialized with the parameter's `content` media type:
+
+```ts
+// parameters: [{ in: 'querystring', name: 'filter', content: { 'application/x-www-form-urlencoded': { schema: { type: 'object' } } } }]
+await api.search.get({ querystring: { filter: { tag: 'books', page: 2 } } });
+// GET /search?tag=books&page=2
+```
 
 Parameterized media ranges follow the same rule: a declaration such as `application/*; profile=v1` requires a concrete selection such as `application/json; profile=v1`. Typed inputs retain the declared parameter suffix when replacing the wildcard. A wildcard inside a parameter value does not make an otherwise concrete media type a range.
 
@@ -148,7 +156,7 @@ Every method accepts local callbacks derived from that operation. Serialization 
 | --- | --- | --- |
 | `path` | Path parameter value and `{ index }` (zero-based dynamic segment) | Encoded path fragment |
 | `query` | Exact query record | Encoded query string or `URLSearchParams` |
-| `querystring` | Whole-query record (strict) | Encoded query string or `URLSearchParams` |
+| `querystring` | Querystring record keyed by parameter name (strict) | Encoded query string or `URLSearchParams` |
 | `header` | Exact header record | `HeadersInit` |
 | `cookie` | Exact cookie record | Cookie header string |
 | `body` | Correlated `{ body, contentType }` | Whole `BodyInit` or `undefined` |
