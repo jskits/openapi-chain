@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.2
+
+### Patch Changes
+
+- ca12304: Accept `style: deepObject` parameters and Encoding Objects without an explicit `explode: true`. OpenAPI 3.2 states that `explode` has no effect on `deepObject` and defaults to `false`, so the default spelling previously failed compilation, and explicit `explode: false` failed form and multipart serialization. All spellings now compile to the same metadata and send the same `name[key]=value` pairs.
+- ad06b6f: Reject empty path parameter values before transport in core and strict clients, including values from path extensions and strict styles that render nothing (such as an empty array). A value like `''` for `/items/{id}` previously requested `/items/`, which servers commonly route to the collection endpoint. Literal empty segments written in a `$path()` template are unaffected. Path safety errors now read "Unsafe path delimiter or empty path segment."
+- 8893601: Accept Encoding Object keys that name properties declared in `oneOf` or `anyOf` alternatives of a request-body schema. Such documents previously failed compilation with "Encoding key … is not a request-body schema property", even though the property exists; keys that no alternative declares are still rejected.
+- 8ec4c1b: Accept forwarded `OperationInputFor` values for every request-body shape again. Since 0.5.1, passing such a value to its operation failed to type-check when the operation had an optional request body, and forwarded inputs without a body or relying on strict single-media inference were also affected. Literal calls still take exactly the selected media declaration's body.
+- ec50684: Ignore `allowReserved` on parameters where OpenAPI says it does not apply, such as path and header parameters in OpenAPI 3.0/3.1, instead of failing compilation of the whole document. Query parameters, and OpenAPI 3.2 path parameters and `form` cookies, still use reserved expansion.
+- f30d212: Report conflicting property types in request-body schemas with the operation, media type, property and conflicting types, and keep other operation compile errors located the same way through `method`, `pathTemplate` and a message prefix. Under `*/*` and `application/*`, such conflicts no longer fail the whole document: JSON and other non-form selections still compile, and form serialization requires a whole-body extension, as with other inference failures.
+- 05217be: Select the typed request body with the same rules the runtime uses to pick a media declaration: case-insensitive media types, parameters compared as a set, the most specific range first and then the most matching parameters. A `contentType` such as `application/json; charset=utf-8` can no longer take the body type of a broader `application/*` declaration when the runtime applies `application/json`. Such spellings are now rejected unless they match the selected declaration's typed spelling.
+
 ## 0.5.1
 
 ### Upgrade notes
