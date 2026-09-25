@@ -56,7 +56,7 @@ function serializeQuery(input: Record<string, unknown>) {
 function renderPath(state: State, serialize?: RuntimeExtensions['path']) {
   let dynamicIndex = 0;
   const encode = (value: unknown) =>
-    serialize ? safePath(serialize(value, { index: dynamicIndex++ }), true) : encodeScalar(value);
+    safePath(serialize ? serialize(value, { index: dynamicIndex++ }) : encodeScalar(value), true);
   if (!Array.isArray(state))
     return state.template.replace(/\{([^{}]+)\}/g, (_m, name: string) => {
       if (!state.params || !Object.hasOwn(state.params, name))

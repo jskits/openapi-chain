@@ -7,12 +7,11 @@ export function safePath(path: string, segment = false): string {
     throw new OpenAPIChainError('UNSAFE_PATH', 'Dot path segments are not supported.');
   }
   // URL parsers remove controls before resolving paths; matching them is intentional.
+  // A path value must be one non-empty segment: `/items/{id}` with '' would request
+  // `/items/`, which servers commonly route to the collection.
   // oxlint-disable-next-line no-control-regex
-  if (/[\\?#\x00-\x1f\x7f]/.test(path) || (segment && path.includes('/')))
-    throw new OpenAPIChainError(
-      'UNSAFE_PATH',
-      'Unsafe path delimiters; path extensions must return one encoded segment.',
-    );
+  if (/[\\?#\x00-\x1f\x7f]/.test(path) || (segment && !/^[^/]+$/.test(path)))
+    throw new OpenAPIChainError('UNSAFE_PATH', 'Unsafe path delimiter or empty path segment.');
   return path;
 }
 

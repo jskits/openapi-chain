@@ -618,6 +618,13 @@ export function appendCookieHeader(
   if (parts.length) headers.set('cookie', parts.join('; '));
 }
 
+/** Serialized path values follow the same non-empty segment rule as path extensions. */
+function pathValue(value: string): string {
+  if (!value)
+    throw new OpenAPIChainError('UNSAFE_PATH', 'Unsafe path delimiter or empty path segment.');
+  return value;
+}
+
 export function buildTemplatePath(
   template: string,
   params: Record<string, unknown> | undefined,
@@ -651,11 +658,13 @@ export function buildTemplatePath(
     }
     return customPath
       ? safePath(customPath(params[name], { index: index++ }), true)
-      : serializePathParameter(
-          name,
-          params[name],
-          operation?.parameters?.path?.[name],
-          customContent,
+      : pathValue(
+          serializePathParameter(
+            name,
+            params[name],
+            operation?.parameters?.path?.[name],
+            customContent,
+          ),
         );
   });
 }
@@ -680,11 +689,13 @@ export function buildChainPath(
       }
       return customPath
         ? safePath(customPath(actual.value, { index: dynamicIndex++ }), true)
-        : serializePathParameter(
-            name,
-            actual.value,
-            operation?.parameters?.path?.[name],
-            customContent,
+        : pathValue(
+            serializePathParameter(
+              name,
+              actual.value,
+              operation?.parameters?.path?.[name],
+              customContent,
+            ),
           );
     });
     return rendered.length ? `/${rendered.join('/')}${template.endsWith('/') ? '/' : ''}` : '/';
@@ -698,7 +709,7 @@ export function buildChainPath(
         ? segment.value
         : customPath
           ? safePath(customPath(segment.value, { index: index++ }), true)
-          : serializePathStyle('value', segment.value, 'simple', false),
+          : pathValue(serializePathStyle('value', segment.value, 'simple', false)),
     )
     .join('/')}`;
 }
