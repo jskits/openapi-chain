@@ -27,6 +27,7 @@
     "generate:example": "openapi-typescript examples/example.yaml -o examples/schema.d.ts && openapi-typescript examples/service.openapi.json -o examples/service-schema.d.ts && openapi-typescript test/fixtures/conformance.openapi.json -o test/fixtures/conformance-schema.d.ts",
     "test:generated": "node scripts/check-generated.mjs",
     "test:browser": "node scripts/check-browser.mjs",
+    "test:corpus": "node scripts/check-corpus.mjs",
     "benchmark:types": "node scripts/benchmark-types.mjs --compiler=ts6 && node scripts/benchmark-types-project.mjs --compiler=ts6",
     "benchmark:runtime": "node scripts/benchmark-runtime.mjs",
     "benchmark:size": "node scripts/benchmark-size.mjs",

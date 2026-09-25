@@ -55,6 +55,14 @@ pnpm test:browser
 
 On Linux CI, the workflow uses `pnpm exec playwright install --with-deps chromium`. The suite starts local loopback servers and checks real Chromium Fetch behavior, including multipart, CORS/cookies, cancellation, binary and streaming responses. It does not qualify Firefox or WebKit.
 
+For compiler, serialization or type changes that real documents could expose, run the opt-in corpus check after `pnpm build`:
+
+```sh
+pnpm test:corpus --types=120
+```
+
+It runs the preferred OpenAPI 3.x document of every API listed by APIs.guru through metadata compilation and every operation through core and strict clients with a capturing transport; `--types=N` also generates N documents with the CLI and type-checks typed calls. The first run downloads about 600 MB into `.cache/corpus`; later runs reuse it, and `--offline` skips downloads (set `NODE_USE_ENV_PROXY=1` if direct Fetch cannot reach the network). It fails only on crashes, hangs and type errors in generated consumers; contract rejections and invalid documents are reported in groups, with full results in `.cache/corpus/results.json`. Compare against a baseline by rerunning with `--dist` pointing at another build's `dist` directory.
+
 For schema changes, run `pnpm generate:example`, format the generated declarations, then `pnpm test:generated` and `pnpm typecheck`. The Petstore, Items and conformance fixtures use that workflow. The scoped catalog uses `pnpm generate:scoped` and `pnpm test:scoped` through the official CLI; its generated directory must not be reformatted. For performance changes, use `pnpm benchmark`; see [measurement methods](performance.md). Runtime/metadata timings are observations, not CI timing gates.
 
 ## Project conventions
