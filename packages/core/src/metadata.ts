@@ -810,18 +810,13 @@ function compileParameter(
     );
   }
 
-  if (value.allowReserved === true) {
-    const allowed =
-      typedLocation === 'query' ||
-      (version === '3.2' && typedLocation === 'path') ||
-      (version === '3.2' && typedLocation === 'cookie' && style === 'form');
-    if (!allowed) {
-      throw new OpenAPIChainError(
-        'METADATA_COMPILE',
-        `allowReserved is not valid for ${typedLocation} parameter ${name}.`,
-      );
-    }
-  }
+  // allowReserved "only applies" where serialization percent-encodes: query, plus path and
+  // form cookies in OAS 3.2. Elsewhere it has no effect rather than invalidating the document.
+  const allowReserved =
+    value.allowReserved === true &&
+    (typedLocation === 'query' ||
+      (version === '3.2' &&
+        (typedLocation === 'path' || (typedLocation === 'cookie' && style === 'form'))));
 
   // explode has no effect on deepObject (explicit in OAS 3.2; its default is false), so the
   // only defined representation is recorded instead of rejecting the default spelling.
@@ -841,7 +836,7 @@ function compileParameter(
     style,
     explode,
     ...(value.required === true ? { required: true } : {}),
-    ...(value.allowReserved === true ? { allowReserved: true } : {}),
+    ...(allowReserved ? { allowReserved: true } : {}),
     ...(contentType ? { contentType } : {}),
     ...(media ? { media } : {}),
   };

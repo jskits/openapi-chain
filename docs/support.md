@@ -116,7 +116,7 @@ Core assumes the standard Fetch body classes supplied by supported Node versions
 | Body | JSON, text, supported binary/native values, structured URL-encoded and multipart bodies |
 | Encoding Object | Supported content defaults and `style` / `explode` / `allowReserved` overrides |
 
-Styles still impose value-shape constraints; this table does not promise arbitrary nested object encoding. Compound legacy cookie `form` values fail because the style's delimiter cannot faithfully represent a Cookie header. Invalid style/location combinations and unsupported representations fail explicitly. Use an operation-local extension where the application owns the exact wire format.
+Styles still impose value-shape constraints; this table does not promise arbitrary nested object encoding. `allowReserved` takes effect only where OpenAPI applies it (query parameters, plus path parameters and `form` cookies in OpenAPI 3.2); elsewhere it has no effect, and `explode` has no effect on `deepObject`. Compound legacy cookie `form` values fail because the style's delimiter cannot faithfully represent a Cookie header. Invalid style/location combinations and unsupported representations fail explicitly. Use an operation-local extension where the application owns the exact wire format.
 
 Strict validates required parameter locations, body presence, declared inputs and supported media. It does not validate enum/range constraints, required properties inside body objects, response data or undocumented response statuses. A response extension can add application validation; see the [response contract](api.md#responses-and-errors).
 
