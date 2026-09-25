@@ -16,7 +16,7 @@ import type {
 } from './type.js';
 
 type AnyRecord = Record<string, unknown>;
-type Analysis = 'kind' | 'content' | 'items' | 'properties' | 'encoding' | 'ambiguous';
+type Analysis = 'facts';
 type CachedAnalysis = { value: unknown; height: number };
 type CompilationContext = {
   document: AnyRecord;
@@ -212,6 +212,109 @@ function visitSchema<T>(
   }
 }
 
+type SchemaKind = 'primitive' | 'object' | 'array' | 'binary' | 'unknown';
+
+/**
+ * Serialization-relevant facts of one schema, with `$ref` and `allOf` already applied as
+ * conjunction. This is the only place that walks schema applicators; every serialization
+ * decision below is derived from these facts, so equivalent spellings cannot diverge.
+ */
+type SchemaFacts = {
+  /** Single non-null `type` values declared by any conjunct. */
+  types: ReadonlySet<unknown>;
+  /** A conjunct (or an item schema) declares several non-null types. */
+  ambiguous: boolean;
+  hasProperties: boolean;
+  hasItems: boolean;
+  /** Conjunction of every property declaration, in declaration order. */
+  properties: Record<string, unknown>;
+  /** Conjunction of every `items` schema. */
+  items?: SchemaFacts;
+  contentEncoding: boolean;
+  formatBinary: boolean;
+};
+
+const EMPTY_FACTS: SchemaFacts = Object.freeze({
+  types: new Set(),
+  ambiguous: false,
+  hasProperties: false,
+  hasItems: false,
+  properties: Object.freeze(dictionary()),
+  contentEncoding: false,
+  formatBinary: false,
+});
+
+function mergeFacts(
+  target: SchemaFacts,
+  source: SchemaFacts,
+  root: CompilationContext,
+): SchemaFacts {
+  const properties = Object.assign(dictionary<unknown>(), target.properties);
+  for (const [name, property] of Object.entries(source.properties)) {
+    spendWork(root);
+    properties[name] =
+      Object.hasOwn(properties, name) && properties[name] !== property
+        ? { allOf: [properties[name], property] }
+        : property;
+  }
+  const items =
+    target.items && source.items
+      ? mergeFacts(target.items, source.items, root)
+      : (target.items ?? source.items);
+  return {
+    types: new Set([...target.types, ...source.types]),
+    ambiguous: target.ambiguous || source.ambiguous,
+    hasProperties: target.hasProperties || source.hasProperties,
+    hasItems: target.hasItems || source.hasItems,
+    properties,
+    ...(items ? { items } : {}),
+    contentEncoding: target.contentEncoding || source.contentEncoding,
+    formatBinary: target.formatBinary || source.formatBinary,
+  };
+}
+
+function schemaFacts(
+  schemaValue: unknown,
+  root: CompilationContext,
+  active = new Set<unknown>(),
+): SchemaFacts {
+  return visitSchema(schemaValue, active, root, 'facts', () => {
+    const schema = dereference(schemaValue, root, 'schema');
+    if (!isRecord(schema)) return EMPTY_FACTS;
+    const type = schemaType(schema);
+    let facts: SchemaFacts = {
+      types: new Set(type === undefined ? [] : [type]),
+      ambiguous:
+        Array.isArray(schema.type) &&
+        new Set(schema.type.filter((item) => item !== 'null')).size > 1,
+      hasProperties: isRecord(schema.properties),
+      hasItems: 'items' in schema,
+      properties: dictionary(),
+      contentEncoding: typeof schema.contentEncoding === 'string',
+      formatBinary: schema.format === 'binary',
+    };
+    if (isRecord(schema.properties)) {
+      for (const [name, property] of Object.entries(schema.properties)) {
+        facts.properties[name] = property;
+      }
+    }
+    if (schema.items !== undefined) {
+      facts = mergeFacts(
+        facts,
+        { ...EMPTY_FACTS, items: schemaFacts(schema.items, root, active) },
+        root,
+      );
+    }
+    if (Array.isArray(schema.allOf)) {
+      for (const branch of schema.allOf) {
+        facts = mergeFacts(facts, schemaFacts(branch, root, active), root);
+      }
+    }
+    if (facts.items?.ambiguous) facts.ambiguous = true;
+    return facts;
+  });
+}
+
 // JSON Schema type arrays describe alternatives, never a preferred first type.
 function schemaType(schema: AnyRecord): unknown {
   if (!Array.isArray(schema.type)) return schema.type;
@@ -219,217 +322,105 @@ function schemaType(schema: AnyRecord): unknown {
   return types.size === 1 ? types.values().next().value : undefined;
 }
 
-function hasAmbiguousType(
-  schemaValue: unknown,
-  root: CompilationContext,
-  active = new Set<unknown>(),
-): boolean {
-  return visitSchema(schemaValue, active, root, 'ambiguous', () => {
-    const schema = dereference(schemaValue, root, 'schema');
-    if (!isRecord(schema)) return false;
-    if (
-      Array.isArray(schema.type) &&
-      new Set(schema.type.filter((item) => item !== 'null')).size > 1
-    )
-      return true;
-    const children = [
-      ...(Array.isArray(schema.allOf) ? schema.allOf : []),
-      ...('items' in schema ? [schema.items] : []),
-    ];
-    return children.some((child) => hasAmbiguousType(child, root, active));
-  });
+// Explicit types determine the shape; items/properties only hint when no type is declared,
+// and applicators alone never imply an object.
+function schemaShape(facts: SchemaFacts): Exclude<SchemaKind, 'binary'> {
+  const shapes = new Set<Exclude<SchemaKind, 'binary' | 'unknown'>>();
+  for (const type of facts.types) {
+    if (type === 'object' || type === 'array') shapes.add(type);
+    else if (type === 'string' || type === 'number' || type === 'integer' || type === 'boolean')
+      shapes.add('primitive');
+  }
+  if (shapes.size > 1) {
+    throw new OpenAPIChainError(
+      'METADATA_COMPILE',
+      'Conflicting allOf serialization content types; provide an explicit schema type.',
+    );
+  }
+  const [shape] = shapes;
+  if (shape) return shape;
+  if (facts.hasItems) return 'array';
+  if (facts.hasProperties) return 'object';
+  return 'unknown';
 }
 
-function schemaKind(
-  schemaValue: unknown,
-  root: CompilationContext,
-  version: OasMinor,
-  active = new Set<unknown>(),
-): 'primitive' | 'object' | 'array' | 'binary' | 'unknown' {
-  return visitSchema(schemaValue, active, root, 'kind', () => {
-    const schema = dereference(schemaValue, root, 'schema');
-    if (!isRecord(schema)) return 'unknown';
-    if (Array.isArray(schema.allOf)) {
-      const kinds = schema.allOf.map((item) => schemaKind(item, root, version, active));
-      if (kinds.includes('object')) return 'object';
-      if (kinds.includes('array')) return 'array';
-      if (kinds.includes('binary')) return 'binary';
-      if (kinds.includes('primitive')) return 'primitive';
-    }
-    const type = schemaType(schema);
-    if (type === 'object' || isRecord(schema.properties)) return 'object';
-    if (type === 'array' || 'items' in schema) return 'array';
-    if (
-      type === 'string' &&
-      ((version === '3.0' && schema.format === 'binary') ||
-        (version !== '3.0' && typeof schema.contentEncoding === 'string'))
-    ) {
-      return 'binary';
-    }
-    if (type === 'string' || type === 'number' || type === 'integer' || type === 'boolean') {
-      return 'primitive';
-    }
-    return 'unknown';
-  });
+function isBinary(facts: SchemaFacts, version: OasMinor): boolean {
+  return (
+    facts.types.has('string') && (version === '3.0' ? facts.formatBinary : facts.contentEncoding)
+  );
 }
 
-function defaultContentTypeForSchema(
-  schemaValue: unknown,
-  root: CompilationContext,
-  version: OasMinor,
-): string {
-  // OAS 3.2 Encoding By Name applies the default to each item of an array property.
-  const value =
-    version === '3.2' && schemaKind(schemaValue, root, version) === 'array'
-      ? conjoin(collectArrayItems(schemaValue, root))
-      : schemaValue;
-  return inferContentType(value, root, version) ?? 'application/octet-stream';
+function schemaKind(facts: SchemaFacts, version: OasMinor): SchemaKind {
+  const shape = schemaShape(facts);
+  return shape === 'primitive' && isBinary(facts, version) ? 'binary' : shape;
 }
 
-function inferContentType(
-  schemaValue: unknown,
-  root: CompilationContext,
-  version: OasMinor,
-  active = new Set<unknown>(),
-): string | undefined {
-  return visitSchema(schemaValue, active, root, 'content', () => {
-    const schema = dereference(schemaValue, root, 'schema');
-    if (!isRecord(schema)) return undefined;
-    const type = schemaType(schema);
-    // An explicit type determines the default; applicators do not imply object.
-    if (type === 'array' || 'items' in schema) {
-      // OAS 3.2 defaults array values nested in an array property to JSON.
+/** Default media for one encoded value (Encoding Object default table). */
+function valueContentType(facts: SchemaFacts, version: OasMinor): string | undefined {
+  switch (schemaKind(facts, version)) {
+    case 'array':
+      // OAS 3.2 lists arrays as JSON; earlier versions default from the inner type.
       if (version === '3.2') return 'application/json';
-      return inferContentType(
-        conjoin(arrayItemSchemas(schema, root, active)),
-        root,
-        version,
-        active,
-      );
-    }
-    if (type === 'object' || isRecord(schema.properties)) return 'application/json';
-    if (type === 'string') {
-      const binary =
-        (version === '3.0' && schema.format === 'binary') ||
-        (version !== '3.0' && typeof schema.contentEncoding === 'string');
-      return binary ? 'application/octet-stream' : 'text/plain';
-    }
-    if (type === 'number' || type === 'integer' || type === 'boolean') return 'text/plain';
-    if (Array.isArray(schema.allOf)) {
-      const types = new Set(
-        schema.allOf
-          .map((item) => inferContentType(item, root, version, active))
-          .filter((value) => value !== undefined),
-      );
-      if (types.size > 1) {
-        throw new OpenAPIChainError(
-          'METADATA_COMPILE',
-          'Conflicting allOf serialization content types; provide an explicit schema type.',
-        );
-      }
-      return types.values().next().value;
-    }
-    return undefined;
-  });
-}
-
-// allOf is conjunction, so items declared in any branch apply to the same array.
-function arrayItemSchemas(
-  schema: AnyRecord,
-  root: CompilationContext,
-  active: Set<unknown>,
-): unknown[] {
-  const items: unknown[] = schema.items === undefined ? [] : [schema.items];
-  if (Array.isArray(schema.allOf)) {
-    for (const branch of schema.allOf) items.push(...collectArrayItems(branch, root, active));
+      return facts.items && valueContentType(facts.items, version);
+    case 'object':
+      return 'application/json';
+    case 'binary':
+      return 'application/octet-stream';
+    case 'primitive':
+      return 'text/plain';
+    default:
+      return undefined;
   }
-  return items;
 }
 
-function collectArrayItems(
-  schemaValue: unknown,
-  root: CompilationContext,
-  active = new Set<unknown>(),
-): unknown[] {
-  return visitSchema(schemaValue, active, root, 'items', () => {
-    const schema = dereference(schemaValue, root, 'schema');
-    return isRecord(schema) ? arrayItemSchemas(schema, root, active) : [];
-  });
+function usesContentEncoding(facts: SchemaFacts): boolean {
+  return facts.contentEncoding || (facts.items !== undefined && usesContentEncoding(facts.items));
 }
 
-function conjoin(schemas: unknown[]): unknown {
-  return schemas.length > 1 ? { allOf: schemas } : schemas[0];
+type PropertyPlan = {
+  kind: SchemaKind;
+  /** Default media applied to each encoded value of the property. */
+  contentType: string;
+  /** Multipart would need per-part Content-Transfer-Encoding for this property. */
+  contentEncoding: boolean;
+};
+
+function planProperty(facts: SchemaFacts, version: OasMinor): PropertyPlan {
+  const kind = schemaKind(facts, version);
+  // OAS 3.2 Encoding By Name applies the default to each item of an array property.
+  const encoded = version === '3.2' && kind === 'array' ? facts.items : facts;
+  return {
+    kind,
+    contentType: (encoded && valueContentType(encoded, version)) ?? 'application/octet-stream',
+    contentEncoding: usesContentEncoding(facts),
+  };
 }
 
-function collectPropertySchemas(
-  schemaValue: unknown,
-  root: CompilationContext,
-  active = new Set<unknown>(),
-): Record<string, unknown> {
-  return visitSchema(schemaValue, active, root, 'properties', () => {
-    const target: Record<string, unknown> = dictionary();
-    const schema = dereference(schemaValue, root, 'schema');
-    if (!isRecord(schema)) return target;
-    if (isRecord(schema.properties)) {
-      for (const [name, property] of Object.entries(schema.properties)) target[name] = property;
-    }
-    if (Array.isArray(schema.allOf)) {
-      for (const item of schema.allOf) {
-        for (const [name, property] of Object.entries(collectPropertySchemas(item, root, active))) {
-          spendWork(root);
-          // allOf is conjunction, not a last-write-wins object merge.
-          target[name] =
-            Object.hasOwn(target, name) && target[name] !== property
-              ? { allOf: [target[name], property] }
-              : property;
-        }
-      }
-    }
-    return target;
-  });
-}
-
-function schemaUsesContentEncoding(
-  schemaValue: unknown,
-  root: CompilationContext,
-  active = new Set<unknown>(),
-): boolean {
-  return visitSchema(schemaValue, active, root, 'encoding', () => {
-    const schema = dereference(schemaValue, root, 'schema');
-    if (!isRecord(schema)) return false;
-    if (typeof schema.contentEncoding === 'string') return true;
-    // allOf is conjunction: a branch without contentEncoding must not hide sibling items.
-    if (
-      Array.isArray(schema.allOf) &&
-      schema.allOf.some((item) => schemaUsesContentEncoding(item, root, active))
-    ) {
-      return true;
-    }
-    if ((schema.type === 'array' || 'items' in schema) && schema.items !== undefined) {
-      return schemaUsesContentEncoding(schema.items, root, active);
-    }
-    return false;
-  });
-}
-
-function propertyMetadataForSchema(
-  schemaValue: unknown,
-  root: CompilationContext,
-  version: OasMinor,
-): {
-  kinds?: Record<string, ReturnType<typeof schemaKind>>;
-  contentTypes?: Record<string, string>;
+type BodyPlan = {
   schemas: Record<string, unknown>;
-} {
-  const schemas = collectPropertySchemas(schemaValue, root);
-  if (!Object.keys(schemas).length) return { schemas };
-  const kinds: Record<string, ReturnType<typeof schemaKind>> = dictionary();
-  const contentTypes: Record<string, string> = dictionary();
-  for (const [name, propertySchema] of Object.entries(schemas)) {
-    kinds[name] = schemaKind(propertySchema, root, version);
-    contentTypes[name] = defaultContentTypeForSchema(propertySchema, root, version);
-  }
-  return { kinds, contentTypes, schemas };
+  /** Absent when a type ambiguity prevents choosing a form representation. */
+  properties?: Record<string, PropertyPlan>;
+};
+
+function planBody(schemaValue: unknown, root: CompilationContext, version: OasMinor): BodyPlan {
+  const body = schemaFacts(schemaValue, root);
+  const schemas = body.properties;
+  const facts = Object.entries(schemas).map(
+    ([name, schema]) => [name, schemaFacts(schema, root)] as const,
+  );
+  if (body.ambiguous || facts.some(([, item]) => item.ambiguous)) return { schemas };
+  const properties: Record<string, PropertyPlan> = dictionary();
+  for (const [name, item] of facts) properties[name] = planProperty(item, version);
+  return { schemas, properties };
+}
+
+function pluckPlan<K extends keyof PropertyPlan>(
+  planned: [string, PropertyPlan][],
+  key: K,
+): Record<string, PropertyPlan[K]> {
+  const result: Record<string, PropertyPlan[K]> = dictionary();
+  for (const [name, plan] of planned) result[name] = plan[key];
+  return result;
 }
 
 function compileEncoding(
@@ -599,17 +590,11 @@ function compileMediaType(
     normalizedContentType === 'application/*';
   // JSON and other opaque bodies never need field-level form inference.
   if (!maySerializeForm) return undefined;
-  let properties: ReturnType<typeof propertyMetadataForSchema>;
+  let plan: BodyPlan;
   let formReason: string | undefined;
   try {
-    const schemas = collectPropertySchemas(mediaObject.schema, root);
-    const ambiguous =
-      hasAmbiguousType(mediaObject.schema, root) ||
-      Object.values(schemas).some((schema) => hasAmbiguousType(schema, root));
-    properties = ambiguous
-      ? { schemas }
-      : propertyMetadataForSchema(mediaObject.schema, root, version);
-    if (ambiguous)
+    plan = planBody(mediaObject.schema, root, version);
+    if (!plan.properties)
       formReason =
         'Multiple non-null schema types cannot determine form serialization; provide an operation body extension.';
   } catch (error) {
@@ -617,10 +602,13 @@ function compileMediaType(
     // keeping unsupported form inference fail-closed. Invalid refs still fail.
     if (!(error instanceof SchemaInferenceError) || !normalizedContentType.includes('*'))
       throw error;
-    properties = { schemas: {} };
+    plan = { schemas: {} };
     formReason = `${error.message} Provide an operation body extension for form serialization.`;
   }
-  const compiledEncoding = compileEncoding(mediaObject.encoding, version, properties.contentTypes);
+  const planned = Object.entries(plan.properties ?? {});
+  const kinds = planned.length ? pluckPlan(planned, 'kind') : undefined;
+  const contentTypes = planned.length ? pluckPlan(planned, 'contentType') : undefined;
+  const compiledEncoding = compileEncoding(mediaObject.encoding, version, contentTypes);
   formReason ??= compiledEncoding.requiresCustomFormSerializer;
   const maySerializeMultipart = multipart || normalizedContentType === '*/*';
   let customReason = maySerializeMultipart ? compiledEncoding.requiresCustomSerializer : undefined;
@@ -646,9 +634,7 @@ function compileMediaType(
   }
 
   if (maySerializeMultipart) {
-    const encodedProperty = Object.entries(properties.schemas).find(([, schema]) =>
-      schemaUsesContentEncoding(schema, root),
-    );
+    const encodedProperty = planned.find(([, property]) => property.contentEncoding);
     if (encodedProperty) {
       customReason =
         `Multipart property ${encodedProperty[0]} uses schema contentEncoding. OpenAPI maps this ` +
@@ -657,9 +643,9 @@ function compileMediaType(
     }
   }
 
-  if (compiledEncoding.encoding && Object.keys(properties.schemas).length) {
+  if (compiledEncoding.encoding && Object.keys(plan.schemas).length) {
     for (const name of Object.keys(compiledEncoding.encoding)) {
-      if (!Object.hasOwn(properties.schemas, name)) {
+      if (!Object.hasOwn(plan.schemas, name)) {
         throw new OpenAPIChainError(
           'METADATA_COMPILE',
           `Encoding key ${name} is not a request-body schema property.`,
@@ -668,20 +654,14 @@ function compileMediaType(
     }
   }
 
-  if (
-    !compiledEncoding.encoding &&
-    !properties.kinds &&
-    !properties.contentTypes &&
-    !customReason &&
-    !formReason
-  ) {
+  if (!compiledEncoding.encoding && !kinds && !contentTypes && !customReason && !formReason) {
     return undefined;
   }
 
   return {
     ...(compiledEncoding.encoding ? { encoding: compiledEncoding.encoding } : {}),
-    ...(properties.kinds ? { propertyKinds: properties.kinds } : {}),
-    ...(properties.contentTypes ? { propertyContentTypes: properties.contentTypes } : {}),
+    ...(kinds ? { propertyKinds: kinds } : {}),
+    ...(contentTypes ? { propertyContentTypes: contentTypes } : {}),
     ...(formReason
       ? { requiresCustomSerializer: formReason, customSerializerScope: 'form' as const }
       : customReason
@@ -998,12 +978,7 @@ export function compileOpenAPIMetadata(
     work: 0,
     stack: [],
     caches: {
-      kind: new Map(),
-      content: new Map(),
-      items: new Map(),
-      properties: new Map(),
-      encoding: new Map(),
-      ambiguous: new Map(),
+      facts: new Map(),
     },
   };
   const paths = asRecord(source.paths ?? {}, 'OpenAPI paths');

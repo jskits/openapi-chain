@@ -10,6 +10,8 @@ type Client = {
 const bases: [name: string, schema: Schema, value: unknown, versions?: string[]][] = [
   ['string', { type: 'string' }, 'hello'],
   ['integer', { type: 'integer' }, 5],
+  ['encoded string', { type: 'string', contentEncoding: 'base64' }, 'aGVsbG8=', ['3.1.1', '3.2.0']],
+  ['binary string', { type: 'string', format: 'binary' }, 'hello', ['3.0.4']],
   ['object', { type: 'object', properties: { a: { type: 'integer' } } }, { a: 1 }],
   ['string array', { type: 'array', items: { type: 'string' } }, ['a', 'b']],
   ['object array', { type: 'array', items: { type: 'object' } }, [{ a: 1 }, { a: 2 }]],
@@ -41,6 +43,13 @@ function variants(schema: Schema): [string, Schema, Schema?][] {
     ['sibling neutral allOf', { ...schema, allOf: [{ description: 'neutral' }] }],
     ['nested allOf $ref', { allOf: [{ allOf: [{ $ref: '#/components/schemas/Base' }] }] }, schema],
   ];
+  const keywords = Object.entries(schema).map(([key, value]) => ({ [key]: value }));
+  if (keywords.length > 1) {
+    result.push(
+      ['every keyword in allOf', { allOf: keywords }],
+      ['every keyword in reversed allOf', { allOf: [...keywords].reverse() }],
+    );
+  }
   if ('items' in schema) {
     const { items, ...rest } = schema;
     result.push(
@@ -59,7 +68,7 @@ function variants(schema: Schema): [string, Schema, Schema?][] {
 
 async function outcome(
   version: string,
-  media: string,
+  type: string,
   property: Schema,
   component: Schema | undefined,
   value: unknown,
@@ -74,7 +83,7 @@ async function outcome(
           post: {
             requestBody: {
               content: {
-                [media]: { schema: { type: 'object', properties: { value: property } } },
+                [type]: { schema: { type: 'object', properties: { value: property } } },
               },
             },
           },
@@ -84,13 +93,18 @@ async function outcome(
   } catch (error) {
     return { compile: String(error) };
   }
+  const media = metadata.operations['/upload']?.post?.requestBody?.media?.[type];
+  const plan = {
+    kind: media?.propertyKinds?.value,
+    contentType: media?.propertyContentTypes?.value,
+  };
   const api = createStrictClient({
     baseUrl: 'https://example.test',
     metadata,
     transport: async ({ url, init }) => {
       const request = new Request(url, init);
       const wire: unknown[] = [];
-      if (media === 'multipart/form-data') {
+      if (type === 'multipart/form-data') {
         for (const part of (await request.formData()).getAll('value')) {
           wire.push(typeof part === 'string' ? part : [part.type, part.name, await part.text()]);
         }
@@ -101,9 +115,9 @@ async function outcome(
     },
   }) as unknown as Client;
   try {
-    return { wire: await api.upload.post({ contentType: media, body: { value } }) };
+    return { plan, wire: await api.upload.post({ contentType: type, body: { value } }) };
   } catch (error) {
-    return { request: String(error) };
+    return { plan, request: String(error) };
   }
 }
 

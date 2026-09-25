@@ -287,3 +287,44 @@ test.each(['3.0.4', '3.1.1', '3.2.0'])(
     ).toBe('text/plain');
   },
 );
+
+test.each([
+  [{ type: 'object', items: { type: 'string' } }, 'object', 'application/json'],
+  [{ type: 'array', properties: {}, items: { type: 'string' } }, 'array', 'text/plain'],
+  [
+    { type: 'array', allOf: [{ properties: {} }], items: { type: 'string' } },
+    'array',
+    'text/plain',
+  ],
+  [{ items: { type: 'string' }, properties: {} }, 'array', 'text/plain'],
+  [{ properties: {} }, 'object', 'application/json'],
+  [{ allOf: [{}] }, 'unknown', 'application/octet-stream'],
+])('explicit types decide shape before keyword hints: %j', (schema, kind, contentType) => {
+  const media =
+    compile(schema).operations['/upload']?.post?.requestBody?.media?.['multipart/form-data'];
+  expect({
+    kind: media?.propertyKinds?.value,
+    contentType: media?.propertyContentTypes?.value,
+  }).toEqual({ kind, contentType });
+});
+
+test.each([
+  { type: 'string', allOf: [{ type: 'object' }] },
+  { type: 'array', allOf: [{ type: 'object' }] },
+  { type: 'array', items: { type: 'string' }, allOf: [{ type: 'string' }] },
+  { allOf: [{ type: 'object' }, { allOf: [{ type: 'integer' }] }] },
+])('conflicting explicit types are rejected wherever they are declared: %j', (schema) => {
+  expect(() => compile(schema)).toThrow(/Conflicting allOf/);
+});
+
+test('compatible scalar types and null alternatives do not conflict', () => {
+  for (const schema of [
+    { type: 'number', allOf: [{ type: 'integer' }] },
+    { type: ['string', 'null'], allOf: [{ type: 'string' }] },
+  ]) {
+    expect(
+      compile(schema).operations['/upload']?.post?.requestBody?.media?.['multipart/form-data']
+        ?.propertyContentTypes?.value,
+    ).toBe('text/plain');
+  }
+});
