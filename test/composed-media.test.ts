@@ -199,3 +199,91 @@ test.each(['3.0.4', '3.1.1', '3.2.1'])(
     }
   },
 );
+
+test.each([
+  ['multipart/form-data', ['application/json:[1,2]', 'application/json:[3,4]']],
+  ['application/x-www-form-urlencoded', ['value=%5B1%2C2%5D&value=%5B3%2C4%5D']],
+])('OAS 3.2 nested array items in %s default to JSON', async (media, expected) => {
+  const Pair = { type: 'array', items: { type: 'integer' } };
+  for (const schema of [
+    { type: 'array', items: Pair },
+    { type: 'array', items: { $ref: '#/components/schemas/Pair' } },
+    { type: 'array', allOf: [{ items: Pair }] },
+    { allOf: [{ type: 'array', items: Pair }] },
+  ]) {
+    const metadata = compileOpenAPIMetadata({
+      openapi: '3.2.0',
+      components: { schemas: { Pair } },
+      paths: {
+        '/upload': {
+          post: {
+            requestBody: {
+              content: { [media]: { schema: { type: 'object', properties: { value: schema } } } },
+            },
+          },
+        },
+      },
+    });
+    expect(
+      metadata.operations['/upload']?.post?.requestBody?.media?.[media]?.propertyContentTypes
+        ?.value,
+    ).toBe('application/json');
+    const wire: string[] = [];
+    const api = createStrictClient({
+      baseUrl: 'https://example.test',
+      metadata,
+      transport: async ({ url, init }) => {
+        const request = new Request(url, init);
+        if (media === 'multipart/form-data') {
+          for (const part of (await request.formData()).getAll('value')) {
+            wire.push(typeof part === 'string' ? part : `${part.type}:${await part.text()}`);
+          }
+        } else {
+          wire.push(await request.text());
+        }
+        return new Response(null, { status: 204 });
+      },
+    }) as unknown as {
+      upload: { post(input: { body: unknown; contentType: string }): Promise<unknown> };
+    };
+    await api.upload.post({
+      contentType: media,
+      body: {
+        value: [
+          [1, 2],
+          [3, 4],
+        ],
+      },
+    });
+    expect(wire).toEqual(expected);
+  }
+});
+
+test.each(['3.0.4', '3.1.1', '3.2.0'])(
+  'array property items keep their scalar default in %s',
+  (version) => {
+    const metadata = compileOpenAPIMetadata({
+      openapi: version,
+      paths: {
+        '/upload': {
+          post: {
+            requestBody: {
+              content: {
+                'multipart/form-data': {
+                  schema: {
+                    type: 'object',
+                    properties: { value: { type: 'array', items: { type: 'integer' } } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(
+      metadata.operations['/upload']?.post?.requestBody?.media?.['multipart/form-data']
+        ?.propertyContentTypes?.value,
+    ).toBe('text/plain');
+  },
+);

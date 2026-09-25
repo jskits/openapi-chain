@@ -278,7 +278,12 @@ function defaultContentTypeForSchema(
   root: CompilationContext,
   version: OasMinor,
 ): string {
-  return inferContentType(schemaValue, root, version) ?? 'application/octet-stream';
+  // OAS 3.2 Encoding By Name applies the default to each item of an array property.
+  const value =
+    version === '3.2' && schemaKind(schemaValue, root, version) === 'array'
+      ? conjoin(collectArrayItems(schemaValue, root))
+      : schemaValue;
+  return inferContentType(value, root, version) ?? 'application/octet-stream';
 }
 
 function inferContentType(
@@ -293,6 +298,8 @@ function inferContentType(
     const type = schemaType(schema);
     // An explicit type determines the default; applicators do not imply object.
     if (type === 'array' || 'items' in schema) {
+      // OAS 3.2 defaults array values nested in an array property to JSON.
+      if (version === '3.2') return 'application/json';
       return inferContentType(
         conjoin(arrayItemSchemas(schema, root, active)),
         root,
