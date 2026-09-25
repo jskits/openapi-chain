@@ -75,3 +75,31 @@ test('rejects incompatible inferred composition instead of selecting a wire form
     /Conflicting allOf/,
   );
 });
+
+test('a neutral allOf does not hide contentEncoding on sibling items', async () => {
+  const items = { type: 'string', contentEncoding: 'base64' };
+  for (const schema of [
+    { type: 'array', items },
+    { type: 'array', items, allOf: [{ minItems: 1 }] },
+    { type: 'array', allOf: [{ minItems: 1 }, { items }] },
+  ]) {
+    const metadata = compile(schema);
+    expect(
+      metadata.operations['/upload']?.post?.requestBody?.media?.['multipart/form-data']
+        ?.requiresCustomSerializer,
+    ).toMatch(/contentEncoding/);
+    let sent = false;
+    const api = createStrictClient<Paths>({
+      baseUrl: 'https://example.test',
+      metadata,
+      transport: async () => {
+        sent = true;
+        return new Response(null, { status: 204 });
+      },
+    });
+    await expect(
+      api.upload.post({ body: { value: ['aGVsbG8='] as unknown as string } }),
+    ).rejects.toThrow(/contentEncoding/);
+    expect(sent).toBe(false);
+  }
+});

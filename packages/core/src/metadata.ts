@@ -358,8 +358,12 @@ function schemaUsesContentEncoding(
     const schema = dereference(schemaValue, root, 'schema');
     if (!isRecord(schema)) return false;
     if (typeof schema.contentEncoding === 'string') return true;
-    if (Array.isArray(schema.allOf)) {
-      return schema.allOf.some((item) => schemaUsesContentEncoding(item, root, active));
+    // allOf is conjunction: a branch without contentEncoding must not hide sibling items.
+    if (
+      Array.isArray(schema.allOf) &&
+      schema.allOf.some((item) => schemaUsesContentEncoding(item, root, active))
+    ) {
+      return true;
     }
     if ((schema.type === 'array' || 'items' in schema) && schema.items !== undefined) {
       return schemaUsesContentEncoding(schema.items, root, active);
