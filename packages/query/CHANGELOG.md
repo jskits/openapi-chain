@@ -1,5 +1,12 @@
 # @openapi-chain/query
 
+## 0.5.2
+
+### Patch Changes
+
+- Align the version with `openapi-chain` 0.5.2. The adapter itself is unchanged.
+- Since `openapi-chain` 0.5.1, a fetcher that passes an `OperationInputFor` value straight to an operation with an optional request body failed type checking. Upgrade `openapi-chain` to 0.5.2 for the fix; this package does not depend on it.
+
 ## 0.5.1
 
 ### Patch Changes

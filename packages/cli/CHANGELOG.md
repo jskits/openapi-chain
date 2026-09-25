@@ -1,5 +1,21 @@
 # @openapi-chain/cli
 
+## 0.5.2
+
+### Patch Changes
+
+- Generate runtime metadata with the `openapi-chain` 0.5.2 metadata compiler. For the OpenAPI 3.0 and 3.1 documents the CLI accepts, generation now:
+  - accepts `style: deepObject` without an explicit `explode: true`;
+  - accepts Encoding keys that name properties declared in `oneOf` or `anyOf` alternatives;
+  - ignores `allowReserved` on path, header and cookie parameters, where it does not apply, instead of rejecting the document;
+  - keeps JSON available under `*/*` and `application/*` when a property's explicit types conflict, and requires a body extension only for form serialization.
+- Generation errors raised inside an operation name the operation and request-body media type, for example `POST /upload: form-data request body: Invalid media declaration: form-data`. The CLI's own generation behavior is otherwise unchanged.
+- Regenerate managed output after upgrading. The manifest records the CLI and runtime versions, so `openapi-chain generate --check` reports 0.5.1 output as stale.
+
+### Dependencies
+
+- Depend on `openapi-chain@^0.5.2`.
+
 ## 0.5.1
 
 ### Patch Changes

@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.5.2
+
+### Upgrade notes
+
+- Empty path parameter values now fail with `UNSAFE_PATH` before transport. Previously `''` for `/items/{id}` requested `/items/`, which servers commonly route to the collection. Path safety errors now read "Unsafe path delimiter or empty path segment."
+- Metadata compilation errors raised inside an operation are prefixed with the operation and request-body media type, for example `POST /upload: multipart/form-data request body: …`, and carry `method`, `pathTemplate` and the original error as `cause`. Error codes are unchanged; update code that matches exact messages.
+- A typed `contentType` that the runtime assigns to a more specific declaration than its own is now rejected, for example `application/json; charset=utf-8` or `APPLICATION/JSON` when `application/*` and `application/json` are declared. Use the selected declaration's spelling.
+- Metadata compiled by 0.5.1 keeps its old results. Recompile metadata, or regenerate `@openapi-chain/cli` output, to apply the compiler fixes below.
+
+### Patch Changes
+
+#### Request body types
+
+- 05217be: Select the typed request body with the same rules the runtime uses to pick a media declaration: case-insensitive media types, parameters compared as a set, the most specific range first and then the most matching parameters. A `contentType` such as `application/json; charset=utf-8` can no longer take the body type of a broader `application/*` declaration when the runtime applies `application/json`.
+- 8ec4c1b: Accept forwarded `OperationInputFor` values for every request-body shape again. Since 0.5.1, passing such a value to its operation failed to type-check when the operation had an optional request body. Literal calls still take exactly the selected media declaration's body.
+
+#### Metadata compilation
+
+- f30d212: Report conflicting property types in request-body schemas with the operation, media type, property and conflicting types. Under `*/*` and `application/*`, such conflicts no longer fail the whole document: JSON and other non-form selections still compile, and form serialization requires a whole-body extension, as with other inference failures.
+- ca12304: Accept `style: deepObject` parameters and Encoding Objects without an explicit `explode: true`. OpenAPI 3.2 states that `explode` has no effect on `deepObject` and defaults to `false`, so the default spelling previously failed compilation, and explicit `explode: false` failed form and multipart serialization. All spellings now compile to the same metadata and send the same `name[key]=value` pairs.
+- 8893601: Accept Encoding Object keys that name properties declared in `oneOf` or `anyOf` alternatives of a request-body schema. Such documents previously failed compilation even though the property exists; keys that no alternative declares are still rejected.
+- ec50684: Ignore `allowReserved` on parameters where OpenAPI says it does not apply, such as path and header parameters in OpenAPI 3.0/3.1, instead of failing compilation of the whole document. Query parameters, and OpenAPI 3.2 path parameters and `form` cookies, still use reserved expansion.
+
+#### Path safety
+
+- ad06b6f: Reject empty path parameter values before transport in core and strict clients, including values from path extensions and strict styles that render nothing, such as an empty array. Literal empty segments written in a `$path()` template are unaffected.
+
 ## 0.5.1
 
 ### Upgrade notes

@@ -2,8 +2,8 @@
   "formatVersion": 1,
   "generator": "openapi-chain-cli",
   "versions": {
-    "cli": "0.5.1",
-    "runtime": "0.5.1",
+    "cli": "0.5.2",
+    "runtime": "0.5.2",
     "generator": "7.13.0",
     "typescript": "5.9.3",
     "yaml": "2.9.1"
