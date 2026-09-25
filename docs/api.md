@@ -98,6 +98,8 @@ await api.search.get({ querystring: { filter: { tag: 'books', page: 2 } } });
 
 Parameterized media ranges follow the same rule: a declaration such as `application/*; profile=v1` requires a concrete selection such as `application/json; profile=v1`. Typed inputs retain the declared parameter suffix when replacing the wildcard. A wildcard inside a parameter value does not make an otherwise concrete media type a range.
 
+When declarations overlap, the body type follows the declaration the runtime selects: the most specific media range, then the one with more matching parameters. Selection compares media types case-insensitively and parameters as a set. For example, with `application/*` and `application/json` declared, `contentType: 'application/json'` takes the `application/json` body. A spelling that the runtime assigns to a more specific declaration, such as `application/json; charset=utf-8` or `APPLICATION/JSON`, is rejected unless it matches that declaration's own typed spelling. It is never typed with the broader declaration's body.
+
 ## Responses and errors
 
 With the default `throwOnError: true`, a parsed 2xx response returns its data. Other parsed HTTP responses throw `HttpError`, with `status`, `data` and `response`:

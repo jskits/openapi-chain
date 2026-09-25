@@ -32,6 +32,22 @@ type Paths = {
     };
   };
 };
+type Normalized = {
+  '/any': {
+    post: {
+      requestBody: { content: { '*/*': string; 'application/json': { exact: number } } };
+      responses: NoContent;
+    };
+  };
+  '/charset': {
+    post: {
+      requestBody: {
+        content: { 'text/*': { generic: true }; 'text/*; charset=utf-8': { utf8: true } };
+      };
+      responses: NoContent;
+    };
+  };
+};
 declare const metadata: CompiledOpenAPIMetadata;
 const core = createClient<Paths>({ baseUrl: 'https://api.test' });
 const strict = createStrictClient<Paths>({ baseUrl: 'https://api.test', metadata });
@@ -75,3 +91,25 @@ void core.typed.post(forwarded);
 void strict.typed.post(forwarded);
 declare const layered: OperationInputFor<Paths, '/layered', 'post'>;
 void core.layered.post(layered);
+
+// Runtime matching ignores representation parameters on exact declarations and normalizes
+// case, whitespace and quoting. A spelling the runtime assigns to a more specific
+// declaration must never be typed with a broader declaration's body.
+const normalized = createClient<Normalized>({ baseUrl: 'https://api.test' });
+// @ts-expect-error runtime selects application/json for a parameterized spelling
+void core.typed.post({ contentType: 'application/json; charset=utf-8', body: { fallback: 'x' } });
+// @ts-expect-error strict applies the same selection
+void strict.typed.post({ contentType: 'application/json; charset=utf-8', body: { fallback: 'x' } });
+// @ts-expect-error parameter whitespace does not change the selected declaration
+void core.profiled.post({ contentType: 'application/json;profile=v1', body: { fallback: 'x' } });
+// @ts-expect-error parameter names are case-insensitive and values may be quoted
+void core.profiled.post({ contentType: 'application/json; PROFILE="v1"', body: { fallback: 'x' } });
+// @ts-expect-error media essences are case-insensitive
+void normalized.any.post({ contentType: 'APPLICATION/JSON', body: 'x' });
+// A different parameter value does not match the parameterized declaration.
+void core.profiled.post({ contentType: 'application/json; profile=v2', body: { fallback: 'x' } });
+// The declaration with more matching parameters wins within the same range.
+void normalized.charset.post({ contentType: 'text/plain; charset=utf-8', body: { utf8: true } });
+void normalized.charset.post({ contentType: 'text/plain', body: { generic: true } });
+// @ts-expect-error text/*; charset=utf-8 applies to a UTF-8 text body
+void normalized.charset.post({ contentType: 'text/plain; charset=utf-8', body: { generic: true } });

@@ -431,17 +431,16 @@ type BodyInput<Operation, InferSingleMedia extends boolean> = [RequestBodyOf<Ope
         | BodyVariants<RequestBodyContent<Operation>, InferSingleMedia>
         | { body?: never; contentType?: never };
 
+type InitInput = {
+  init?: Omit<RequestInit, 'method' | 'body' | 'headers'> & {
+    headers?: HeadersInit;
+  };
+};
+
 type OperationBaseInput<Item, Operation, InferSingleMedia extends boolean> =
   BodyInput<Operation, InferSingleMedia> extends infer Body
     ? Body extends unknown
-      ? Simplify<
-          ParamsInput<Item, Operation, InferSingleMedia> &
-            Body & {
-              init?: Omit<RequestInit, 'method' | 'body' | 'headers'> & {
-                headers?: HeadersInit;
-              };
-            }
-        >
+      ? Simplify<ParamsInput<Item, Operation, InferSingleMedia> & Body & InitInput>
       : never
     : never;
 
@@ -647,52 +646,156 @@ type ConcreteMediaInput<Value extends string> =
     ? unknown
     : { contentType: never };
 
-type MediaSpecificity<Media extends string> =
-  MediaEssence<Media> extends '*/*' ? 0 : MediaEssence<Media> extends `${string}/*` ? 1 : 2;
+// Mirrors media-range.ts: essences compare trimmed and case-insensitively, parameters as a
+// set with lowercased names, unquoted values and a case-insensitive charset.
+type TrimStart<Value extends string> = Value extends ` ${infer Rest}` | `\t${infer Rest}`
+  ? TrimStart<Rest>
+  : Value;
+type TrimEnd<Value extends string> = Value extends `${infer Rest} ` | `${infer Rest}\t`
+  ? TrimEnd<Rest>
+  : Value;
+type Trim<Value extends string> = TrimEnd<TrimStart<Value>>;
 
-type MatchingMedia<Declared extends string, Media extends string> = Declared extends unknown
-  ? Media extends ConcreteContentTypeForMedia<Declared>
-    ? Declared
-    : never
-  : never;
+type Unescape<Value extends string> = Value extends `${infer Head}\\${infer Char}${infer Tail}`
+  ? `${Head}${Char}${Unescape<Tail>}`
+  : Value;
 
-type WithSpecificity<Candidates extends string, Rank> = Candidates extends unknown
-  ? MediaSpecificity<Candidates> extends Rank
-    ? Candidates
-    : never
-  : never;
-
-type MostSpecificEssence<Candidates extends string> = [WithSpecificity<Candidates, 2>] extends [
-  never,
-]
-  ? [WithSpecificity<Candidates, 1>] extends [never]
-    ? Candidates
-    : WithSpecificity<Candidates, 1>
-  : WithSpecificity<Candidates, 2>;
-
-type MostSpecificMedia<Candidates extends string> =
-  MostSpecificEssence<Candidates> extends infer Best extends string
-    ? [Extract<Best, `${string};${string}`>] extends [never]
-      ? Best
-      : Extract<Best, `${string};${string}`>
+type MediaParameter<Raw extends string> =
+  Trim<Raw> extends `${infer Name}=${infer Value}`
+    ? Lowercase<Trim<Name>> extends infer Key extends string
+      ? Trim<Value> extends `"${infer Quoted}"`
+        ? `${Key}=${Key extends 'charset' ? Lowercase<Unescape<Quoted>> : Unescape<Quoted>}`
+        : `${Key}=${Key extends 'charset' ? Lowercase<Trim<Value>> : Trim<Value>}`
+      : never
     : never;
+
+type MediaParameters<Raw extends string> = Raw extends `${infer Head};${infer Tail}`
+  ? [MediaParameter<Head>, ...MediaParameters<Tail>]
+  : [MediaParameter<Raw>];
+
+type ParsedMedia<Value extends string> = Value extends `${infer Essence};${infer Raw}`
+  ? { essence: Lowercase<Trim<Essence>>; parameters: MediaParameters<Raw> }
+  : { essence: Lowercase<Trim<Value>>; parameters: [] };
+
+type EssenceMatches<Declared extends string, Actual extends string> = Declared extends '*/*'
+  ? true
+  : Declared extends `${infer Type}/*`
+    ? Actual extends `${Type}/${string}`
+      ? true
+      : false
+    : [Declared] extends [Actual]
+      ? true
+      : false;
+
+type MatchingDeclarations<Declared extends string, Actual extends string> =
+  ParsedMedia<Actual> extends { essence: infer Essence extends string; parameters: infer Given }
+    ? Declared extends unknown
+      ? ParsedMedia<Declared> extends {
+          essence: infer Range extends string;
+          parameters: infer Required;
+        }
+        ? EssenceMatches<Range, Essence> extends true
+          ? [Exclude<Required[number & keyof Required], Given[number & keyof Given]>] extends [
+              never,
+            ]
+            ? Declared
+            : never
+          : never
+        : never
+      : never
+    : never;
+
+type MediaRank<Declared extends string> = ParsedMedia<Declared>['essence'] extends '*/*'
+  ? 0
+  : ParsedMedia<Declared>['essence'] extends `${string}/*`
+    ? 1
+    : 2;
+
+type AtRank<Candidates extends string, Rank> = Candidates extends unknown
+  ? MediaRank<Candidates> extends Rank
+    ? Candidates
+    : never
+  : never;
+
+type MostSpecificRank<Candidates extends string> = [AtRank<Candidates, 2>] extends [never]
+  ? [AtRank<Candidates, 1>] extends [never]
+    ? Candidates
+    : AtRank<Candidates, 1>
+  : AtRank<Candidates, 2>;
+
+type LongerList<List, Other> = List extends [unknown, ...infer Rest]
+  ? Other extends [unknown, ...infer OtherRest]
+    ? LongerList<Rest, OtherRest>
+    : true
+  : false;
+
+type HasMoreParameters<Declared extends string, Other extends string> = LongerList<
+  ParsedMedia<Declared>['parameters'],
+  ParsedMedia<Other>['parameters']
+>;
+
+type MostParameters<
+  Candidates extends string,
+  All extends string = Candidates,
+> = Candidates extends unknown
+  ? true extends (All extends unknown ? HasMoreParameters<All, Candidates> : never)
+    ? never
+    : Candidates
+  : never;
+
+/** The declaration runtime selection applies; a union means runtime reports ambiguity. */
+type SelectedMedia<Declared extends string, Actual extends string> = MostParameters<
+  MostSpecificRank<MatchingDeclarations<Declared, Actual>>
+>;
 
 // Only a literal media type identifies one runtime selection; patterns such as
 // `application/${string}` come from already-typed inputs and keep their variant checks.
 type IsLiteralMedia<Media extends string> = {} extends Record<Media, true> ? false : true;
+type Not<Value extends boolean> = Value extends true ? false : true;
+
+type SelectedOperationInput<
+  Item,
+  Operation,
+  InferSingleMedia extends boolean,
+  Media extends string,
+  Selected extends string,
+> = Simplify<
+  ParamsInput<Item, Operation, InferSingleMedia> &
+    InitInput & {
+      body: RequestBodyContent<Operation>[Selected & keyof RequestBodyContent<Operation>];
+      contentType: Media;
+      extensions?: OperationExtensions<Item, Operation, InferSingleMedia>;
+    }
+>;
 
 // Runtime applies only the most specific matching declaration, so the body must follow it
 // even when a broader range (for example application/*) also admits the concrete media.
-type SelectedBodyInput<Operation, Media extends string> = Media extends unknown
-  ? IsLiteralMedia<Media> extends false
-    ? unknown
-    : RequestBodyContent<Operation> extends infer Content
-      ? MostSpecificMedia<MatchingMedia<StringKeyOf<Content>, Media>> extends infer Selected
-        ? [Selected] extends [never]
-          ? unknown
-          : { body: Content[Selected & keyof Content] }
-        : never
+type MediaCheckedInput<
+  Item,
+  Operation,
+  InferSingleMedia extends boolean,
+  Media extends string,
+> = Media extends unknown
+  ? IsLiteralMedia<Media> extends true
+    ? StringKeyOf<RequestBodyContent<Operation>> extends infer Declared extends string
+      ? [Declared] extends [never]
+        ? OperationInput<Item, Operation, InferSingleMedia>
+        : // Index-signature or pattern keys name no single declaration to select.
+          true extends (Declared extends unknown ? Not<IsLiteralMedia<Declared>> : never)
+          ? OperationInput<Item, Operation, InferSingleMedia>
+          : SelectedMedia<Declared, Media> extends infer Selected extends string
+            ? [Selected] extends [never]
+              ? OperationInput<Item, Operation, InferSingleMedia> & { contentType: never }
+              : IsUnion<Selected> extends true
+                ? OperationInput<Item, Operation, InferSingleMedia> & { contentType: never }
+                : // Typed inputs keep the selected declaration's spelling, so extension
+                  // callbacks receive the contentType their operation types describe.
+                  Media extends ConcreteContentTypeForMedia<Selected>
+                  ? SelectedOperationInput<Item, Operation, InferSingleMedia, Media, Selected>
+                  : OperationInput<Item, Operation, InferSingleMedia> & { contentType: never }
+            : never
       : never
+    : OperationInput<Item, Operation, InferSingleMedia>
   : never;
 
 type CheckedOperationInput<
@@ -700,10 +803,8 @@ type CheckedOperationInput<
   Operation,
   InferSingleMedia extends boolean,
   Media extends string,
-> = OperationInput<Item, Operation, InferSingleMedia> & {
-  contentType?: Media;
-} & ConcreteMediaInput<NoInfer<Media>> &
-  SelectedBodyInput<Operation, NoInfer<Media>>;
+> = { contentType?: Media } & ConcreteMediaInput<NoInfer<Media>> &
+  MediaCheckedInput<Item, Operation, InferSingleMedia, NoInfer<Media>>;
 
 type OperationCall<
   Item,
