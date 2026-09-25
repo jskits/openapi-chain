@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { compileOpenAPIMetadata } from '../packages/core/src/metadata.js';
+import { compileOpenAPIMetadata, OpenAPIChainError } from '../packages/core/src/metadata.js';
 import { createStrictClient } from '../packages/core/src/strict.js';
 
 type Paths = {
@@ -72,7 +72,7 @@ test.each([
 
 test('rejects incompatible inferred composition instead of selecting a wire format', () => {
   expect(() => compile({ allOf: [{ type: 'object' }, { type: 'string' }] })).toThrow(
-    /Conflicting allOf/,
+    /Property value declares conflicting schema types \(object, string\)/,
   );
 });
 
@@ -314,7 +314,7 @@ test.each([
   { type: 'array', items: { type: 'string' }, allOf: [{ type: 'string' }] },
   { allOf: [{ type: 'object' }, { allOf: [{ type: 'integer' }] }] },
 ])('conflicting explicit types are rejected wherever they are declared: %j', (schema) => {
-  expect(() => compile(schema)).toThrow(/Conflicting allOf/);
+  expect(() => compile(schema)).toThrow(/Property value declares conflicting schema types/);
 });
 
 test('compatible scalar types and null alternatives do not conflict', () => {
@@ -328,3 +328,68 @@ test('compatible scalar types and null alternatives do not conflict', () => {
     ).toBe('text/plain');
   }
 });
+
+test('conflict errors name the operation, media type and property', () => {
+  let error: unknown;
+  try {
+    compile({ type: 'string', allOf: [{ type: 'object' }] });
+  } catch (caught) {
+    error = caught;
+  }
+  expect(error).toBeInstanceOf(OpenAPIChainError);
+  const compileError = error as OpenAPIChainError;
+  expect(compileError.code).toBe('METADATA_COMPILE');
+  expect(compileError.message).toBe(
+    'POST /upload: multipart/form-data request body: Property value declares conflicting ' +
+      'schema types (string, object) across its schema and allOf branches; make them agree ' +
+      'or preprocess the document.',
+  );
+  expect(compileError.method).toBe('POST');
+  expect(compileError.pathTemplate).toBe('/upload');
+  expect(compileError.cause).toBeInstanceOf(OpenAPIChainError);
+});
+
+test.each(['*/*', 'application/*'])(
+  'conflicting property types under %s keep JSON available and require a form extension',
+  async (range) => {
+    const metadata = compileOpenAPIMetadata({
+      openapi: '3.1.1',
+      paths: {
+        '/upload': {
+          post: {
+            requestBody: {
+              content: {
+                [range]: {
+                  schema: {
+                    type: 'object',
+                    properties: { value: { type: 'string', allOf: [{ type: 'object' }] } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    const media = metadata.operations['/upload']?.post?.requestBody?.media?.[range];
+    expect(media?.customSerializerScope).toBe('form');
+    expect(media?.requiresCustomSerializer).toMatch(/Property value declares conflicting/);
+    const sent: string[] = [];
+    const api = createStrictClient({
+      baseUrl: 'https://example.test',
+      metadata,
+      transport: async ({ url, init }) => {
+        sent.push(await new Request(url, init).text());
+        return new Response(null, { status: 204 });
+      },
+    }) as unknown as {
+      upload: { post(input: { body: unknown; contentType: string }): Promise<unknown> };
+    };
+    await api.upload.post({ contentType: 'application/json', body: { value: 'x' } });
+    expect(sent).toEqual(['{"value":"x"}']);
+    await expect(
+      api.upload.post({ contentType: 'application/x-www-form-urlencoded', body: { value: 'x' } }),
+    ).rejects.toThrow(/Property value declares conflicting/);
+    expect(sent).toHaveLength(1);
+  },
+);

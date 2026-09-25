@@ -1,5 +1,5 @@
 export { OpenAPIChainError, type OpenAPIChainErrorCode } from './errors.js';
-import { OpenAPIChainError } from './errors.js';
+import { OpenAPIChainError, operationError } from './errors.js';
 import { parseMediaRange, splitMediaRanges } from './media-range.js';
 import { httpMethods } from './constant.js';
 import type {
@@ -324,7 +324,7 @@ function schemaType(schema: AnyRecord): unknown {
 
 // Explicit types determine the shape; items/properties only hint when no type is declared,
 // and applicators alone never imply an object.
-function schemaShape(facts: SchemaFacts): Exclude<SchemaKind, 'binary'> {
+function schemaShape(facts: SchemaFacts, label: string): Exclude<SchemaKind, 'binary'> {
   const shapes = new Set<Exclude<SchemaKind, 'binary' | 'unknown'>>();
   for (const type of facts.types) {
     if (type === 'object' || type === 'array') shapes.add(type);
@@ -332,9 +332,9 @@ function schemaShape(facts: SchemaFacts): Exclude<SchemaKind, 'binary'> {
       shapes.add('primitive');
   }
   if (shapes.size > 1) {
-    throw new OpenAPIChainError(
-      'METADATA_COMPILE',
-      'Conflicting allOf serialization content types; provide an explicit schema type.',
+    throw new SchemaInferenceError(
+      `${label} declares conflicting schema types (${[...facts.types].join(', ')}) across its ` +
+        'schema and allOf branches; make them agree or preprocess the document.',
     );
   }
   const [shape] = shapes;
@@ -350,18 +350,22 @@ function isBinary(facts: SchemaFacts, version: OasMinor): boolean {
   );
 }
 
-function schemaKind(facts: SchemaFacts, version: OasMinor): SchemaKind {
-  const shape = schemaShape(facts);
+function schemaKind(facts: SchemaFacts, version: OasMinor, label: string): SchemaKind {
+  const shape = schemaShape(facts, label);
   return shape === 'primitive' && isBinary(facts, version) ? 'binary' : shape;
 }
 
 /** Default media for one encoded value (Encoding Object default table). */
-function valueContentType(facts: SchemaFacts, version: OasMinor): string | undefined {
-  switch (schemaKind(facts, version)) {
+function valueContentType(
+  facts: SchemaFacts,
+  version: OasMinor,
+  label: string,
+): string | undefined {
+  switch (schemaKind(facts, version, label)) {
     case 'array':
       // OAS 3.2 lists arrays as JSON; earlier versions default from the inner type.
       if (version === '3.2') return 'application/json';
-      return facts.items && valueContentType(facts.items, version);
+      return facts.items && valueContentType(facts.items, version, `${label} items`);
     case 'object':
       return 'application/json';
     case 'binary':
@@ -385,13 +389,17 @@ type PropertyPlan = {
   contentEncoding: boolean;
 };
 
-function planProperty(facts: SchemaFacts, version: OasMinor): PropertyPlan {
-  const kind = schemaKind(facts, version);
+function planProperty(name: string, facts: SchemaFacts, version: OasMinor): PropertyPlan {
+  const label = `Property ${name}`;
+  const kind = schemaKind(facts, version, label);
   // OAS 3.2 Encoding By Name applies the default to each item of an array property.
-  const encoded = version === '3.2' && kind === 'array' ? facts.items : facts;
+  const split = version === '3.2' && kind === 'array';
+  const encoded = split ? facts.items : facts;
   return {
     kind,
-    contentType: (encoded && valueContentType(encoded, version)) ?? 'application/octet-stream',
+    contentType:
+      (encoded && valueContentType(encoded, version, split ? `${label} items` : label)) ??
+      'application/octet-stream',
     contentEncoding: usesContentEncoding(facts),
   };
 }
@@ -410,7 +418,7 @@ function planBody(schemaValue: unknown, root: CompilationContext, version: OasMi
   );
   if (body.ambiguous || facts.some(([, item]) => item.ambiguous)) return { schemas };
   const properties: Record<string, PropertyPlan> = dictionary();
-  for (const [name, item] of facts) properties[name] = planProperty(item, version);
+  for (const [name, item] of facts) properties[name] = planProperty(name, item, version);
   return { schemas, properties };
 }
 
@@ -853,6 +861,18 @@ function compileParameterList(
   return result;
 }
 
+/** Prefix compile errors with where they occurred; the original stays the cause. */
+function locate<T>(location: string, compile: () => T): T {
+  try {
+    return compile();
+  } catch (error) {
+    if (!(error instanceof OpenAPIChainError) || error.code !== 'METADATA_COMPILE') throw error;
+    throw new OpenAPIChainError('METADATA_COMPILE', `${location}: ${error.message}`, {
+      cause: error,
+    });
+  }
+}
+
 function compileRequestBody(
   rawValue: unknown,
   root: CompilationContext,
@@ -869,7 +889,9 @@ function compileRequestBody(
   const mediaTypes = Object.keys(content);
   const media: Record<string, MediaTypeMetadata> = dictionary();
   for (const [contentType, rawMedia] of Object.entries(content)) {
-    const compiled = compileMediaType(rawMedia, root, version, contentType);
+    const compiled = locate(`${contentType} request body`, () =>
+      compileMediaType(rawMedia, root, version, contentType),
+    );
     if (compiled) media[contentType] = compiled;
   }
   return {
@@ -1036,7 +1058,13 @@ export function compileOpenAPIMetadata(
     for (const method of httpMethods) {
       const rawOperation = pathItem[method];
       if (rawOperation === undefined || rawOperation === null) continue;
-      methods[method] = compileOperation(path, pathItem, rawOperation, root, version);
+      try {
+        methods[method] = locate(`${method.toUpperCase()} ${path}`, () =>
+          compileOperation(path, pathItem, rawOperation, root, version),
+        );
+      } catch (error) {
+        throw operationError(error, method, path);
+      }
     }
     if (Object.keys(methods).length) operations[path] = methods;
   }

@@ -56,7 +56,7 @@ test('incompatible property wire representations fail in both orders', () => {
     [typed, object],
     [object, typed],
   ])
-    expect(() => compile({ allOf })).toThrow(/Conflicting allOf/);
+    expect(() => compile({ allOf })).toThrow(/Property value declares conflicting schema types/);
 });
 
 test('contentEncoding cannot be erased by a later property constraint', () => {
