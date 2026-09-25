@@ -482,10 +482,12 @@ function cookieParts(
 
   const context = `cookie parameter ${name}`;
   if (metadata.style === 'cookie') {
-    if (!metadata.explode) {
+    // explode does not change primitive values; only compound values need it.
+    if (!metadata.explode && (Array.isArray(value) || isPlainRecord(value))) {
       throw new OpenAPIChainError(
         'SERIALIZATION',
-        `OAS 3.2 cookie style parameter ${name} requires explode=true.`,
+        `Non-exploded OAS 3.2 cookie style for compound parameter ${name} is not supported; ` +
+          'use explode=true, Parameter content, or an operation cookie extension.',
       );
     }
     if (Array.isArray(value)) {

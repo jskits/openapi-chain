@@ -782,12 +782,6 @@ function compileParameter(
       `${style} parameter ${name} requires explode=false.`,
     );
   }
-  if (version === '3.2' && typedLocation === 'cookie' && explode === false) {
-    throw new OpenAPIChainError(
-      'METADATA_COMPILE',
-      `OAS 3.2 cookie parameter ${name} requires explode=true.`,
-    );
-  }
 
   return {
     name,

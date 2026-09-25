@@ -259,28 +259,6 @@ describe('compileOpenAPIMetadata', () => {
     const headers = metadata.operations['/x']?.get?.parameters?.header;
     expect(Object.keys(headers ?? {})).toEqual(['x-mode']);
     expect(headers?.['x-mode']?.required).toBe(true);
-
-    expect(() =>
-      compileOpenAPIMetadata({
-        openapi: '3.2.1',
-        paths: {
-          '/cookie': {
-            get: {
-              parameters: [
-                {
-                  name: 'prefs',
-                  in: 'cookie',
-                  style: 'form',
-                  explode: false,
-                  schema: { type: 'array', items: { type: 'string' } },
-                },
-              ],
-              responses: { 204: { description: 'ok' } },
-            },
-          },
-        },
-      }),
-    ).toThrow('requires explode=true');
   });
 
   test('rejects ambiguous templated paths and unsupported OpenAPI versions', () => {

@@ -459,7 +459,7 @@ test('forged nested metadata is rejected at the wire boundary', async () => {
   const api = client(true, async () => response(), {
     parameters: { cookie: { id: { name: 'id', in: 'cookie', style: 'cookie', explode: false } } },
   });
-  await expect(api.$path('/{id}', { id: 'x' }).get({ cookie: { id: 'bad' } })).rejects.toThrow(
+  await expect(api.$path('/{id}', { id: 'x' }).get({ cookie: { id: ['a', 'b'] } })).rejects.toThrow(
     /explode/,
   );
   await expect(api.$path('/plain', { extra: 1 }).get()).rejects.toThrow(/does not accept/);
