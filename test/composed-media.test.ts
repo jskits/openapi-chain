@@ -103,3 +103,48 @@ test('a neutral allOf does not hide contentEncoding on sibling items', async () 
     expect(sent).toBe(false);
   }
 });
+
+test.each([
+  [{}, false],
+  [{ 'Content-Type': { schema: { type: 'string' } } }, false],
+  [{ 'content-type': { schema: { type: 'string' } } }, false],
+  [{ 'X-Trace': { schema: { type: 'string' } } }, true],
+  [{ 'Content-Type': { schema: { type: 'string' } }, 'X-Trace': { schema: {} } }, true],
+])('encoding headers %j require per-part control: %s', async (headers, custom) => {
+  const metadata = compileOpenAPIMetadata({
+    openapi: '3.1.1',
+    paths: {
+      '/upload': {
+        post: {
+          requestBody: {
+            content: {
+              'multipart/form-data': {
+                schema: { type: 'object', properties: { value: { type: 'string' } } },
+                encoding: { value: { headers } },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+  const media = metadata.operations['/upload']?.post?.requestBody?.media?.['multipart/form-data'];
+  expect(media?.encoding?.value?.hasHeaders ?? false).toBe(custom);
+  expect(media?.requiresCustomSerializer !== undefined).toBe(custom);
+  let sent = false;
+  const api = createStrictClient<Paths>({
+    baseUrl: 'https://example.test',
+    metadata,
+    transport: async ({ url, init }) => {
+      sent = true;
+      expect((await new Request(url, init).formData()).get('value')).toBe('hello');
+      return new Response(null, { status: 204 });
+    },
+  });
+  const error = await api.upload.post({ body: { value: 'hello' } }).then(
+    () => undefined,
+    (reason: unknown) => String(reason),
+  );
+  expect(error?.includes('encoding.headers') ?? false).toBe(custom);
+  expect(sent).toBe(!custom);
+});

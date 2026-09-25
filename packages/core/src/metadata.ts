@@ -496,7 +496,11 @@ function compileEncoding(
     }
 
     if ('headers' in encoding) asRecord(encoding.headers, `encoding.headers for ${name}`);
-    if (isRecord(encoding.headers) && Object.keys(encoding.headers).length)
+    // Encoding Object headers ignore Content-Type; contentType describes it instead.
+    if (
+      isRecord(encoding.headers) &&
+      Object.keys(encoding.headers).some((header) => header.toLowerCase() !== 'content-type')
+    )
       metadata.hasHeaders = true;
 
     if (version === '3.2' && !metadata.styleBased) {
