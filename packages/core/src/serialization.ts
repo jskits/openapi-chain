@@ -786,11 +786,6 @@ function serializeFormStyleFragments(
   const encode = (item: unknown) => encodeQueryComponent(item, allowReserved);
 
   if (style === 'deepObject') {
-    if (!explode)
-      throw new OpenAPIChainError(
-        'SERIALIZATION',
-        `deepObject form field ${name} requires explode=true.`,
-      );
     return serializeStyledPairs(name, value, style, explode, context).map(
       ([partName, partValue]) => `${encodeQueryComponent(partName)}=${encode(partValue)}`,
     );
@@ -975,12 +970,6 @@ function appendMultipartStyleParts(
 ): void {
   const style = encoding.style ?? 'form';
   const explode = encoding.explode ?? style === 'form';
-  if (style === 'deepObject' && !explode) {
-    throw new OpenAPIChainError(
-      'SERIALIZATION',
-      `deepObject multipart field ${name} requires explode=true.`,
-    );
-  }
   if ((style === 'spaceDelimited' || style === 'pipeDelimited') && explode) {
     throw new OpenAPIChainError(
       'SERIALIZATION',

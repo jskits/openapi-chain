@@ -331,7 +331,6 @@ describe.each(['application/x-www-form-urlencoded', 'multipart/form-data'])(
       expect(pairs).toEqual(expected);
     });
     test.each([
-      ['deepObject', false, {}],
       ['deepObject', true, 'bad'],
       ['spaceDelimited', true, []],
       ['spaceDelimited', false, 'bad'],

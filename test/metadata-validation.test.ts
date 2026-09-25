@@ -24,7 +24,6 @@ describe('metadata rejects malformed documents before transport', () => {
     { name: 'q', in: 'query', schema: {}, explode: 'yes' },
     { name: 'q', in: 'query', schema: {}, allowReserved: 'yes' },
     { name: 'q', in: 'header', schema: {}, allowReserved: true },
-    { name: 'q', in: 'query', schema: {}, style: 'deepObject', explode: false },
     { name: 'q', in: 'query', schema: {}, style: 'spaceDelimited', explode: true },
     { name: 'q', in: 'path', schema: {} },
     { name: 'q', in: 'path', schema: {}, required: true },
@@ -44,7 +43,6 @@ describe('metadata rejects malformed documents before transport', () => {
     { style: 'matrix' },
     { explode: 1 },
     { allowReserved: 1 },
-    { style: 'deepObject', explode: false },
     { style: 'pipeDelimited', explode: true },
   ])('encoding %j', (encoding) => {
     expect(() =>

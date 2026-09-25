@@ -505,7 +505,9 @@ function compileEncoding(
         `encoding.explode for ${name} must be boolean.`,
       );
     }
-    if (typeof encoding.explode === 'boolean') metadata.explode = encoding.explode;
+    // explode has no effect on deepObject (explicit in OAS 3.2), so equivalent spellings match.
+    if (typeof encoding.explode === 'boolean' && metadata.style !== 'deepObject')
+      metadata.explode = encoding.explode;
 
     if ('allowReserved' in encoding && typeof encoding.allowReserved !== 'boolean') {
       throw new OpenAPIChainError(
@@ -518,12 +520,6 @@ function compileEncoding(
 
     const effectiveStyle = metadata.style ?? 'form';
     const effectiveExplode = metadata.explode ?? effectiveStyle === 'form';
-    if (effectiveStyle === 'deepObject' && effectiveExplode === false) {
-      throw new OpenAPIChainError(
-        'METADATA_COMPILE',
-        `deepObject encoding ${name} requires explode=true.`,
-      );
-    }
     if (
       (effectiveStyle === 'spaceDelimited' || effectiveStyle === 'pipeDelimited') &&
       effectiveExplode
@@ -800,14 +796,11 @@ function compileParameter(
     }
   }
 
+  // explode has no effect on deepObject (explicit in OAS 3.2; its default is false), so the
+  // only defined representation is recorded instead of rejecting the default spelling.
   const explode =
-    typeof value.explode === 'boolean' ? value.explode : style === 'form' || style === 'cookie';
-  if (style === 'deepObject' && explode === false) {
-    throw new OpenAPIChainError(
-      'METADATA_COMPILE',
-      `deepObject parameter ${name} requires explode=true.`,
-    );
-  }
+    style === 'deepObject' ||
+    (typeof value.explode === 'boolean' ? value.explode : style === 'form' || style === 'cookie');
   if ((style === 'spaceDelimited' || style === 'pipeDelimited') && explode) {
     throw new OpenAPIChainError(
       'METADATA_COMPILE',
