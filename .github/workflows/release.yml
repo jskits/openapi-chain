@@ -188,7 +188,7 @@ jobs:
   publish:
     needs: [select, pack]
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 45
     permissions:
       contents: write
       id-token: write
@@ -233,6 +233,13 @@ jobs:
           pack-dir-artifact-id: ${{ needs.pack.outputs.packed }}
           create-github-releases: ${{ needs.select.outputs.tag == '' }}
           push-git-tags: ${{ needs.select.outputs.tag == '' }}
+      - name: Verify registry delivery and installed consumers
+        id: verify_registry
+        # Historical recovery tags predate this verifier and the three-package workspace.
+        # Normal releases must contain the verifier; a missing script fails the step.
+        if: needs.select.outputs.tag == '' || hashFiles('scripts/check-published.mjs') != ''
+        timeout-minutes: 40
+        run: node scripts/check-published.mjs
       - name: Create release for the existing tag
         if: needs.select.outputs.tag != ''
         env:
@@ -248,9 +255,11 @@ jobs:
         env:
           PUBLISH_OUTCOME: ${{ steps.publish.outcome }}
           PUBLISHED_PACKAGES: ${{ steps.publish.outputs.published-packages }}
+          REGISTRY_OUTCOME: ${{ steps.verify_registry.outcome || 'not-run' }}
         run: |
           {
             printf '### npm publication\n\n'
             printf 'Result: %s\n\n' "$PUBLISH_OUTCOME"
             printf 'Packages reported by Changesets: `%s`\n' "$PUBLISHED_PACKAGES"
+            printf 'Exact registry versions and installed consumers: %s\n' "$REGISTRY_OUTCOME"
           } >> "$GITHUB_STEP_SUMMARY"

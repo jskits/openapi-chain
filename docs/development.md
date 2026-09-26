@@ -26,6 +26,8 @@ If your Node.js installation does not include Corepack, install pnpm 10.34.5 usi
 | `pnpm test:coverage` | Run tests with V8 coverage and 90% thresholds |
 | `pnpm test:corpus:fixed` | Compare the fixed corpus with its approved baseline; TS6 and TS7 run in `pnpm check` |
 | `pnpm test:cli` | Run CLI filesystem, generation and command-contract regressions after building |
+| `pnpm test:release` | Run offline registry visibility, provenance and timeout regressions |
+| `pnpm verify:published` | Check exact registry versions and provenance metadata, then install and exercise all three public packages |
 | `pnpm test:cli:package` | Install runtime/CLI tarballs and verify the installed command, generated types and browser bundle |
 | `pnpm test:package` / `pnpm verify:package` | Verify all three entries in an isolated tarball consumer |
 | `pnpm size:check` | Enforce the 3584-byte transitive core gzip limit after building |
@@ -42,7 +44,7 @@ If your Node.js installation does not include Corepack, install pnpm 10.34.5 usi
 
 ## Choose the right check
 
-`pnpm check` runs a fresh build/package lint first, followed by formatting, typed lint, generated-fixture freshness, TypeScript, runtime coverage, CLI regressions, migration/scoped checks, installed runtime/CLI tarball consumers, core gzip size, and TS 6/TS 7 type-scale/scoping gates. TS 7 also checks an isolated generator installation and installed declarations. It excludes the separate Chromium suite and runtime/size/metadata microbenchmarks.
+`pnpm check` runs a fresh build/package lint first, followed by formatting, typed lint, generated-fixture freshness, TypeScript, runtime coverage, CLI and release-verifier regressions, fixed corpus baselines, migration/scoped checks, installed runtime/CLI/Query tarball consumers, core gzip size, and TS 6/TS 7 type-scale/scoping gates. TS 7 also checks an isolated generator installation and installed declarations. It excludes the separate Chromium suite, public-registry consumer check and runtime/size/metadata microbenchmarks.
 
 For a focused behavior change, run its Vitest file during iteration, then the full gate before submitting. For documentation, check links/anchors and typecheck examples against their actual generated schema; keep measured claims tied to a dated verification report. `pnpm format` formats the whole repository, so inspect the diff and avoid including unrelated formatting changes.
 
@@ -101,7 +103,11 @@ Merging the version PR runs the publish verification again before packaging and 
 
 The pinned Node.js version provides npm; the publish job checks npm is at least `11.5.1`, as required for Trusted Publishing. pnpm 10 delegates tarball publication to that npm CLI. Authentication uses OIDC, with no `NPM_TOKEN`, `NODE_AUTH_TOKEN`, or `setup-node` `registry-url` configuration. Provenance is enabled explicitly. If the npm Trusted Publisher uses an environment name, add the exact same `environment` to the publish job before running it.
 
-After a release, check the Actions publication summary, npm version/provenance, Git tag and GitHub release. If publication succeeds but tag or GitHub release creation fails, inspect those remote states before retrying; do not bump the version or replace an existing tag merely to retry a failed run.
+After publication, the workflow runs `pnpm verify:published`'s script against the versions in each package manifest. It waits up to 30 minutes for all exact versions, integrity and provenance metadata to be visible at `registry.npmjs.org`, then installs the three packages with empty npm configuration and cache. The installed consumer checks CLI generation and drift, ESM/CommonJS entry points, core/strict HTTP requests and Query snapshots/fetchers. It uses a local HTTP server and requires no API credentials. The publish job has a 45-minute limit, including registry propagation and installation. `pnpm test:release` exercises pending metadata and timeout behavior offline inside the normal quality gate.
+
+Run `pnpm verify:published` from the released commit to reproduce this check; a checkout with unpublished versions should time out. It verifies metadata presence and actual npm installation, not an independent cryptographic audit of the provenance attestation. Historical recovery tags that predate this script skip the new consumer step and report it as skipped in the summary; current releases require it.
+
+After a release, check the Actions publication and consumer-verification summary, Git tag and GitHub release. If publication succeeds but verification, tag or GitHub release creation fails, inspect those remote states before retrying; do not bump the version, republish merely during propagation, or replace an existing tag to retry a failed run.
 
 The explicit `workflow_dispatch` provides a separate validation result while default-token PR events wait for a maintainer's approval. GitHub documents both behaviors in its [workflow-trigger rules](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow#triggering-a-workflow-from-a-workflow). If dispatch fails, rerun the version job or manually run `release-pr-ci.yml` on `changeset-release/main` with the current PR head as `expected_sha` and its number as `pr_number`; do not merge based only on successful version generation or the dispatch request itself.
 

@@ -15,7 +15,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:package": "node scripts/check-package.mjs --compiler=ts6",
-    "check": "pnpm build && pnpm format:check && pnpm lint && pnpm test:generated && pnpm typecheck && pnpm test:coverage && pnpm test:corpus:fixed --compiler=ts6 && pnpm test:cli && pnpm test:migration && pnpm test:scoped && pnpm test:package && pnpm test:cli:package && pnpm test:query:package && pnpm size:check && pnpm benchmark:types && node scripts/benchmark-scoping.mjs --compiler=ts6 && pnpm check:ts7",
+    "check": "pnpm build && pnpm format:check && pnpm lint && pnpm test:generated && pnpm typecheck && pnpm test:coverage && pnpm test:corpus:fixed --compiler=ts6 && pnpm test:cli && pnpm test:release && pnpm test:migration && pnpm test:scoped && pnpm test:package && pnpm test:cli:package && pnpm test:query:package && pnpm size:check && pnpm benchmark:types && node scripts/benchmark-scoping.mjs --compiler=ts6 && pnpm check:ts7",
     "commit": "cz",
     "commitlint": "commitlint",
     "changeset": "changeset",
@@ -49,7 +49,9 @@
     "test:cli": "turbo run test --filter=@openapi-chain/cli",
     "test:cli:package": "node scripts/check-cli-package.mjs --compiler=ts6",
     "test:query:package": "node scripts/check-query-package.mjs --compiler=ts6",
-    "test:corpus:fixed": "node scripts/check-corpus.mjs --fixtures=test/fixtures/corpus-regressions --types=5 --baseline=test/fixtures/corpus-regressions/baseline.json"
+    "test:corpus:fixed": "node scripts/check-corpus.mjs --fixtures=test/fixtures/corpus-regressions --types=5 --baseline=test/fixtures/corpus-regressions/baseline.json",
+    "test:release": "node --test scripts/lib/published.test.mjs",
+    "verify:published": "node scripts/check-published.mjs"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",
