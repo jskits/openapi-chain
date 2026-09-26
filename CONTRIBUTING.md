@@ -13,6 +13,8 @@ See [development](docs/development.md) for setup and command details, and [archi
 
 Use Conventional Commits, for example `feat(client): support query parameters` or `fix(client): preserve request headers`. PR titles follow the same convention for squash merges. Commitizen describes the Git commit; Changesets independently describes the user-facing release. One does not replace the other.
 
+Apply the [compatibility policy](docs/compatibility.md) when selecting a changeset. TypeScript assignment changes, serialization defaults and compiled metadata formats are public contracts; a correctness fix can still require a breaking release. Keep historical compiled-artifact fixtures unchanged and add compatibility evidence when altering the compiler/runtime boundary.
+
 ## Tests and packaging
 
 Vitest uses explicit imports instead of globals. Put tests under `test/` and keep test code out of the published package. Use Vitest's `expectTypeOf` or TypeScript `@ts-expect-error` assertions for type regressions; `pnpm typecheck` checks the tests. Coverage includes `packages/core/src/**/*.ts` and `packages/query/src/**/*.ts`, including unimported modules.

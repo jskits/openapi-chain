@@ -11,6 +11,7 @@
 | [Query libraries and mocks](integrations.md) | Integrate TanStack Query, SWR and MSW with executable recipes |
 | [Official CLI](cli.md) | Generate synchronized types, scopes and metadata; check drift in CI |
 | [API reference](api.md) | Options, path calls, request bodies, errors, extensions and transport |
+| [Compatibility and versioning](compatibility.md) | Public API, metadata formats, supported toolchains and breaking changes |
 | [Support and boundaries](support.md) | Decide whether a wire format, schema feature or platform is supported |
 | [Core to strict migration](migration.md) | Stage a migration, preserve intentional response contracts and review wire changes |
 | [Offline migration checks](migration-check.md) | Compare core and strict requests and parsed values before switching |

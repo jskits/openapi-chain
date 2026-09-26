@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "complete": true,
+  "operations": {
+    "/records/{id}": {
+      "get": {
+        "parameters": {
+          "path": {
+            "id": {
+              "name": "id",
+              "in": "path",
+              "style": "simple",
+              "explode": false,
+              "required": true
+            }
+          },
+          "query": {
+            "tags": {
+              "name": "tags",
+              "in": "query",
+              "style": "form",
+              "explode": false
+            }
+          },
+          "header": {
+            "x-flags": {
+              "name": "x-flags",
+              "in": "header",
+              "style": "simple",
+              "explode": false
+            }
+          }
+        }
+      }
+    },
+    "/filters": {
+      "post": {
+        "requestBody": {
+          "mediaTypes": ["application/x-www-form-urlencoded"],
+          "required": true,
+          "media": {
+            "application/x-www-form-urlencoded": {
+              "encoding": {
+                "labels": {
+                  "styleBased": true,
+                  "style": "form",
+                  "explode": false
+                }
+              },
+              "propertyKinds": {
+                "term": "primitive",
+                "labels": "array"
+              },
+              "propertyContentTypes": {
+                "term": "text/plain",
+                "labels": "text/plain"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/uploads": {
+      "post": {
+        "requestBody": {
+          "mediaTypes": ["multipart/form-data"],
+          "required": true,
+          "media": {
+            "multipart/form-data": {
+              "encoding": {
+                "attachment": {
+                  "styleBased": false,
+                  "contentType": "image/png"
+                }
+              },
+              "propertyKinds": {
+                "note": "primitive",
+                "attachment": "binary"
+              },
+              "propertyContentTypes": {
+                "note": "text/plain",
+                "attachment": "application/octet-stream"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

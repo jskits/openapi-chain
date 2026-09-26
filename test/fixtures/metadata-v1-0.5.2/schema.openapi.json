@@ -1,0 +1,89 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Original metadata v1 compatibility fixture",
+    "version": "1.0.0",
+    "license": { "name": "MIT" }
+  },
+  "paths": {
+    "/records/{id}": {
+      "get": {
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          {
+            "name": "tags",
+            "in": "query",
+            "style": "form",
+            "explode": false,
+            "schema": { "type": "array", "items": { "type": "string" } }
+          },
+          {
+            "name": "x-flags",
+            "in": "header",
+            "style": "simple",
+            "explode": false,
+            "schema": { "type": "array", "items": { "type": "string" } }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Observed wire",
+            "content": { "application/json": { "schema": { "type": "object" } } }
+          }
+        }
+      }
+    },
+    "/filters": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": ["term"],
+                "properties": {
+                  "term": { "type": "string" },
+                  "labels": { "type": "array", "items": { "type": "string" } }
+                }
+              },
+              "encoding": { "labels": { "style": "form", "explode": false } }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Observed wire",
+            "content": { "application/json": { "schema": { "type": "object" } } }
+          }
+        }
+      }
+    },
+    "/uploads": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["note", "attachment"],
+                "properties": {
+                  "note": { "type": "string" },
+                  "attachment": { "type": "string", "format": "binary" }
+                }
+              },
+              "encoding": { "attachment": { "contentType": "image/png" } }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Observed wire",
+            "content": { "application/json": { "schema": { "type": "object" } } }
+          }
+        }
+      }
+    }
+  }
+}

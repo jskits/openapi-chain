@@ -14,6 +14,8 @@ Examples using `./schema.js` and `./openapi.json` refer to the [Items schema](..
 
 Import `HttpError`, `Transport` and `Middleware` from the root entry, including when using a strict client. All three entries have ESM and CommonJS exports. Use `import type` for declarations.
 
+See [compatibility and versioning](compatibility.md) for the stable API boundary, compiler support, error compatibility and metadata artifact policy.
+
 ## Client options
 
 `createClient<paths>(options)` and `createStrictClient<paths>(options)` return a fluent API derived from the `paths` type.
