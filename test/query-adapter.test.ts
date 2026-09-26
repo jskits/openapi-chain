@@ -1,6 +1,6 @@
 import { expect, test, vi } from 'vitest';
 import { QueryClient } from '@tanstack/react-query';
-import { createQuery } from '../packages/query/src/index.js';
+import { createQuery, type ReadonlyQueryInput } from '../packages/query/src/index.js';
 
 test('immutable snapshots bind the cached identity to the actual fetch input', async () => {
   const prefix = ['account-a', 'GET', '/items/{id}'];
@@ -11,7 +11,9 @@ test('immutable snapshots bind the cached identity to the actual fetch input', a
     page: number;
     extra: null;
   };
-  const fetcher = vi.fn<(input: Input) => Promise<Input>>(async (input) => input);
+  const fetcher = vi.fn<(input: ReadonlyQueryInput<Input>) => Promise<ReadonlyQueryInput<Input>>>(
+    async (input) => input,
+  );
   const query = createQuery({ key: prefix, fetcher });
   const input = { id: 'book', filter: { tags: ['a'] }, enabled: true, page: 1, extra: null };
   const options = query.queryOptions(input);
@@ -31,6 +33,8 @@ test('immutable snapshots bind the cached identity to the actual fetch input', a
     });
     expect(query.prefix[0]).toBe('account-a');
     expect(Object.isFrozen(options.queryKey)).toBe(true);
+    expect(fetcher.mock.calls[0]![0]).toBe(options.queryKey.at(-1));
+    expect(Object.isFrozen(fetcher.mock.calls[0]![0])).toBe(true);
     expect(Object.isFrozen(fetcher.mock.calls[0]![0].filter.tags)).toBe(true);
   } finally {
     client.clear();
@@ -48,6 +52,8 @@ test('snapshot preserves ordinary keys and permits shared noncyclic JSON referen
   input.right = child;
   const options = query.swr(input);
   const result = await options.fetcher(options.key!);
+  expect(result).toBe(options.key!.at(-1));
+  expect(Object.isFrozen(result)).toBe(true);
   expect(Object.hasOwn(result, 'constructor')).toBe(true);
   expect(Object.getOwnPropertyDescriptor(result, 'toString')?.value).toBe('y');
   expect(result.left).toEqual(result.right);

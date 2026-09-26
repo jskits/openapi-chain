@@ -5,7 +5,11 @@ export type QueryValue =
   | boolean
   | readonly QueryValue[]
   | { readonly [key: string]: QueryValue };
-export type OperationQueryKey<Input> = readonly [...QueryValue[], Input];
+/** The immutable JSON snapshot passed to fetchers and stored in operation keys. */
+export type ReadonlyQueryInput<Input> = Input extends object
+  ? { readonly [Key in keyof Input]: ReadonlyQueryInput<Input[Key]> }
+  : Input;
+export type OperationQueryKey<Input> = readonly [...QueryValue[], ReadonlyQueryInput<Input>];
 export type QueryContext = { signal: AbortSignal | null };
 
 type JsonMember<T, Depth extends readonly unknown[]> = T extends string | number | boolean | null
@@ -88,7 +92,7 @@ function snapshot(value: unknown, ancestors = new Set<object>()): QueryValue {
 export function createQuery<Input, Data>(
   options: {
     key: readonly QueryValue[];
-    fetcher: (input: Input, context: QueryContext) => Promise<Data>;
+    fetcher: (input: ReadonlyQueryInput<Input>, context: QueryContext) => Promise<Data>;
   } & (JsonInput<Input> extends true ? unknown : { readonly invalidInputMustBeJson: never }),
 ) {
   if (!Array.isArray(options.key) || options.key.length === 0)
@@ -97,7 +101,8 @@ export function createQuery<Input, Data>(
   const fetcher = options.fetcher;
   const key = (input: Input): OperationQueryKey<Input> =>
     Object.freeze([...prefix, snapshot(input)]) as OperationQueryKey<Input>;
-  const inputOf = (queryKey: OperationQueryKey<Input>) => queryKey[queryKey.length - 1] as Input;
+  const inputOf = (queryKey: OperationQueryKey<Input>) =>
+    queryKey[queryKey.length - 1] as ReadonlyQueryInput<Input>;
   return {
     prefix,
     key,
