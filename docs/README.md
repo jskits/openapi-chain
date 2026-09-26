@@ -24,6 +24,7 @@
 | [Contributing](../CONTRIBUTING.md) | Prepare a change, tests, changeset and commit |
 | [Development](development.md) | Set up tools, run checks or configure releases |
 | [Architecture](architecture.md) | Understand type inference and runtime package boundaries |
+| [Corpus regression checks](corpus.md) | Run fixed external failure shapes and review full corpus baselines |
 | [Conformance fixtures](../test/fixtures/README.md) | Understand independent wire/type expectations |
 | [Security](../SECURITY.md) | Report a vulnerability privately |
 | [Core changelog](../packages/core/CHANGELOG.md) | Read runtime release history |

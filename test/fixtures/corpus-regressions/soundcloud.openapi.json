@@ -1,0 +1,28 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Synthetic deepObject regression",
+    "version": "1.0.0",
+    "license": { "name": "MIT" }
+  },
+  "paths": {
+    "/search": {
+      "get": {
+        "parameters": [
+          {
+            "name": "filter",
+            "in": "query",
+            "style": "deepObject",
+            "schema": { "type": "object", "properties": { "term": { "type": "string" } } }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Observed request",
+            "content": { "application/json": { "schema": { "type": "object" } } }
+          }
+        }
+      }
+    }
+  }
+}

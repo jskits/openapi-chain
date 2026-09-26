@@ -1,0 +1,42 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Synthetic encoding alternative regression",
+    "version": "1.0.0",
+    "license": { "name": "MIT" }
+  },
+  "paths": {
+    "/imports": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "allOf": [
+                  { "type": "object", "properties": { "name": { "type": "string" } } },
+                  {
+                    "oneOf": [
+                      { "type": "object", "properties": { "targetUrl": { "type": "string" } } },
+                      {
+                        "type": "object",
+                        "properties": { "torrentfile": { "type": "string", "format": "binary" } }
+                      }
+                    ]
+                  }
+                ]
+              },
+              "encoding": { "torrentfile": { "contentType": "application/x-bittorrent" } }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Observed request",
+            "content": { "application/json": { "schema": { "type": "object" } } }
+          }
+        }
+      }
+    }
+  }
+}

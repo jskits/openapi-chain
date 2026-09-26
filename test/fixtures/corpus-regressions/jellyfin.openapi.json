@@ -1,0 +1,19 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Synthetic empty path rendering regression",
+    "version": "1.0.0",
+    "license": { "name": "MIT" }
+  },
+  "paths": {
+    "/Plugins/{pluginId}/{version}": {
+      "delete": {
+        "parameters": [
+          { "name": "pluginId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "version", "in": "path", "required": true, "schema": { "type": "object" } }
+        ],
+        "responses": { "204": { "description": "Deleted" } }
+      }
+    }
+  }
+}

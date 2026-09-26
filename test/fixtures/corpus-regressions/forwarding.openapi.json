@@ -1,0 +1,31 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Synthetic forwarded-input regression",
+    "version": "1.0.0",
+    "license": { "name": "MIT" }
+  },
+  "paths": {
+    "/none": {
+      "get": { "responses": { "204": { "description": "No content" } } }
+    },
+    "/optional": {
+      "post": {
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": { "type": "object", "properties": { "q": { "type": "string" } } }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Observed request",
+            "content": { "application/json": { "schema": { "type": "object" } } }
+          }
+        }
+      }
+    }
+  }
+}

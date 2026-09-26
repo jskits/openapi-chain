@@ -1,11 +1,12 @@
 // Opt-in real-world qualification: runs the APIs.guru OpenAPI 3.x corpus through the metadata
 // compiler and both clients, and with --types=N through CLI generation and typed consumers.
-// Not part of `pnpm check`: the first run downloads about 600 MB into the cache directory.
+// The fixed fixture set runs in `pnpm check`; the full opt-in corpus downloads about 600 MB.
 import { execFile, fork } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   rmSync,
   statSync,
@@ -16,23 +17,40 @@ import { availableParallelism } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs, promisify } from 'node:util';
+import { compiler } from './lib/compiler.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const { values: options } = parseArgs({
   options: {
     cache: { type: 'string', default: join(root, '.cache/corpus') },
     dist: { type: 'string', default: join(root, 'packages/core/dist') },
+    fixtures: { type: 'string' },
+    baseline: { type: 'string' },
+    'record-baseline': { type: 'string' },
     only: { type: 'string' },
     offline: { type: 'boolean', default: false },
     types: { type: 'string', default: '0' },
+    compiler: { type: 'string' },
     workers: {
       type: 'string',
       default: String(Math.min(6, Math.max(1, availableParallelism() - 1))),
     },
   },
 });
+for (const [name, minimum] of [
+  ['workers', 1],
+  ['types', 0],
+]) {
+  const value = Number(options[name]);
+  if (!Number.isSafeInteger(value) || value < minimum)
+    throw new Error(`--${name} must be an integer >= ${minimum}.`);
+}
 const cache = resolve(options.cache);
 const dist = resolve(options.dist);
+if (options.baseline && options['record-baseline'])
+  throw new Error('Choose --baseline or --record-baseline, not both.');
+if (options.fixtures && !options.baseline && !options['record-baseline'])
+  throw new Error('A local fixture run requires --baseline or --record-baseline.');
 if (!existsSync(join(dist, 'metadata.js')))
   throw new Error(`Missing ${dist}; run pnpm build first.`);
 mkdirSync(join(cache, 'specs'), { recursive: true });
@@ -62,27 +80,43 @@ async function pool(items, size, task) {
   );
 }
 
-// 1. Corpus: the preferred version of every APIs.guru API described with OpenAPI 3.x.
-const listFile = join(cache, 'list.json');
-if (!existsSync(listFile)) {
-  if (options.offline) throw new Error(`Missing ${listFile} in offline mode.`);
-  await download('https://api.apis.guru/v2/list.json', listFile);
-}
-const listSha256 = sha256(readFileSync(listFile));
+// 1. Corpus: the preferred APIs.guru versions, or a committed small fixture set.
 const only = options.only ? new Set(options.only.split(',')) : undefined;
-const corpus = Object.entries(JSON.parse(readFileSync(listFile, 'utf8'))).flatMap(([name, api]) => {
-  const entry = api.versions?.[api.preferred];
-  if (!entry?.openapiVer?.startsWith('3') || (only && !only.has(name))) return [];
-  return [
-    {
-      name,
-      url: entry.swaggerUrl,
-      file: join(cache, 'specs', `${name.replace(/[^\w.-]+/g, '_')}.json`),
-    },
-  ];
-});
+let listSha256;
+let corpus;
+if (options.fixtures) {
+  const directory = resolve(options.fixtures);
+  corpus = readdirSync(directory)
+    .filter((file) => file.endsWith('.openapi.json'))
+    .sort()
+    .map((file) => ({
+      name: file.slice(0, -'.openapi.json'.length),
+      file: join(directory, file),
+    }))
+    .filter((document) => !only || only.has(document.name));
+  if (!corpus.length) throw new Error(`No .openapi.json fixtures selected in ${directory}.`);
+  listSha256 = sha256(JSON.stringify(corpus.map(({ name }) => name)));
+} else {
+  const listFile = join(cache, 'list.json');
+  if (!existsSync(listFile)) {
+    if (options.offline) throw new Error(`Missing ${listFile} in offline mode.`);
+    await download('https://api.apis.guru/v2/list.json', listFile);
+  }
+  listSha256 = sha256(readFileSync(listFile));
+  corpus = Object.entries(JSON.parse(readFileSync(listFile, 'utf8'))).flatMap(([name, api]) => {
+    const entry = api.versions?.[api.preferred];
+    if (!entry?.openapiVer?.startsWith('3') || (only && !only.has(name))) return [];
+    return [
+      {
+        name,
+        url: entry.swaggerUrl,
+        file: join(cache, 'specs', `${name.replace(/[^\w.-]+/g, '_')}.json`),
+      },
+    ];
+  });
+}
 const unavailable = [];
-if (!options.offline) {
+if (!options.offline && !options.fixtures) {
   const missing = corpus.filter((document) => !existsSync(document.file));
   if (missing.length) console.log(`downloading ${missing.length} documents into ${cache}`);
   await pool(missing, 4, async (document) => {
@@ -103,7 +137,8 @@ for (const document of documents) {
 }
 console.log(
   `corpus: ${documents.length}/${corpus.length} documents, ` +
-    `${(documents.reduce((sum, d) => sum + d.bytes, 0) / 1e6).toFixed(0)} MB, list.json sha256 ${listSha256}`,
+    `${(documents.reduce((sum, d) => sum + d.bytes, 0) / 1e6).toFixed(0)} MB, ` +
+    `${options.fixtures ? 'fixture list' : 'list.json'} sha256 ${listSha256}`,
 );
 for (const line of unavailable) console.log(`  unavailable ${line}`);
 
@@ -181,7 +216,6 @@ async function typesPass(count) {
       },
     }),
   );
-  const tsc = join(root, 'node_modules/typescript/bin/tsc');
   const cli = join(root, 'packages/cli/src/cli.mjs');
   const results = [];
   await pool(sample, Math.min(4, Number(options.workers)), async (document) => {
@@ -242,8 +276,15 @@ async function typesPass(count) {
     let output = '';
     try {
       ({ stdout: output } = await run(
-        process.execPath,
-        ['--max-old-space-size=8192', tsc, '-p', '.', '--extendedDiagnostics'],
+        compiler.command,
+        [
+          ...(compiler.command === process.execPath ? ['--max-old-space-size=8192'] : []),
+          ...compiler.args,
+          ...compiler.benchmarkArgs,
+          '-p',
+          '.',
+          '--extendedDiagnostics',
+        ],
         { cwd: work, timeout: 900_000, maxBuffer: 1 << 26 },
       ));
     } catch (error) {
@@ -262,7 +303,9 @@ async function typesPass(count) {
   return results;
 }
 
-// 4. Report: grouped outcomes; only crashes, hangs and typed-consumer errors fail the run.
+// 4. Report: grouped outcomes. A reviewed baseline can additionally gate every
+// document's compilation and request outcome without treating known third-party
+// schema defects as new regressions.
 const location = /^(?:[A-Z]+ \S+: )?(?:.*? request body: )?/;
 const normalize = (message = '') =>
   message
@@ -306,7 +349,11 @@ const records = runtime.flatMap((r) =>
 );
 const crashes = [
   ...runtime.filter(
-    (r) => r.fatal || r.smokeError || [r.compile?.kind, r.compileAllow?.kind].includes('crash'),
+    (r) =>
+      r.fatal ||
+      r.parse ||
+      r.smokeError ||
+      [r.compile?.kind, r.compileAllow?.kind].includes('crash'),
   ),
   ...records.filter((record) => record.kind === 'crash'),
 ];
@@ -410,4 +457,129 @@ if (types.length) {
 
 writeFileSync(join(cache, 'results.json'), JSON.stringify({ listSha256, dist, runtime, types }));
 console.log(`\nresults: ${join(cache, 'results.json')}`);
-if (crashes.length || typeFailures) process.exitCode = 1;
+
+const outcome = (value) =>
+  value &&
+  Object.fromEntries(
+    ['kind', 'code', 'message']
+      .filter((key) => value[key] !== undefined)
+      .map((key) => [key, value[key]]),
+  );
+const sorted = (value) =>
+  [...value].sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+const baselineSnapshot = {
+  formatVersion: 1,
+  listSha256,
+  documents: runtime.map((result) => ({
+    name: result.name,
+    sha256: result.sha256,
+    ...(result.fatal ? { fatal: result.fatal } : {}),
+    ...(result.parse ? { parse: result.parse } : {}),
+    compile: outcome(result.compile),
+    ...(result.compileAllow ? { compileAllow: outcome(result.compileAllow) } : {}),
+    ...(result.smokeError ? { smokeError: outcome(result.smokeError) } : {}),
+    counts: Object.fromEntries(
+      Object.entries(result.smoke?.counts ?? {}).sort(([a], [b]) => a.localeCompare(b)),
+    ),
+    failures: sorted(
+      (result.smoke?.records ?? []).map((record) => ({
+        client: record.client,
+        variant: record.variant,
+        method: record.method,
+        template: record.template,
+        ...outcome(record),
+      })),
+    ),
+  })),
+  types: types
+    .map((result) => ({
+      name: result.name,
+      generate: result.generate?.ok === true ? 'ok' : result.generate?.error,
+      ...(result.tsc ? { tsc: result.tsc.ok === true ? 'ok' : result.tsc.errors } : {}),
+      ...(result.operations !== undefined ? { operations: result.operations } : {}),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name)),
+};
+if (options['record-baseline']) {
+  if (
+    crashes.length ||
+    typeFailures ||
+    unavailable.length ||
+    documents.length !== corpus.length ||
+    runtime.length !== documents.length
+  )
+    throw new Error('Cannot record a baseline while crashes, type errors or downloads remain.');
+  writeFileSync(
+    resolve(options['record-baseline']),
+    `${JSON.stringify(baselineSnapshot, null, 2)}\n`,
+  );
+  console.log(`baseline recorded: ${resolve(options['record-baseline'])}`);
+}
+if (options.baseline) {
+  const expected = JSON.parse(readFileSync(resolve(options.baseline), 'utf8'));
+  if (
+    expected.formatVersion !== 1 ||
+    !Array.isArray(expected.documents) ||
+    expected.documents.some((entry) => !Array.isArray(entry.failures)) ||
+    !Array.isArray(expected.types)
+  )
+    throw new Error(`Unsupported corpus baseline: ${resolve(options.baseline)}`);
+  const differences = [];
+  if (expected.listSha256 !== baselineSnapshot.listSha256)
+    differences.push('corpus document list changed');
+  const beforeDocuments = new Map(expected.documents.map((entry) => [entry.name, entry]));
+  const afterDocuments = new Map(baselineSnapshot.documents.map((entry) => [entry.name, entry]));
+  for (const name of new Set([...beforeDocuments.keys(), ...afterDocuments.keys()])) {
+    const before = beforeDocuments.get(name);
+    const after = afterDocuments.get(name);
+    if (!before || !after) {
+      differences.push(`document ${name}: ${before ? 'missing' : 'new'}`);
+      continue;
+    }
+    for (const field of [
+      'sha256',
+      'fatal',
+      'parse',
+      'compile',
+      'compileAllow',
+      'smokeError',
+      'counts',
+    ])
+      if (JSON.stringify(before[field]) !== JSON.stringify(after[field]))
+        differences.push(`document ${name}: ${field} changed`);
+    const previousFailures = new Set(before.failures.map((entry) => JSON.stringify(entry)));
+    const currentFailures = new Set(after.failures.map((entry) => JSON.stringify(entry)));
+    for (const failure of after.failures)
+      if (!previousFailures.has(JSON.stringify(failure)))
+        differences.push(
+          `document ${name}: new ${failure.kind} ${failure.code ?? ''} ` +
+            `${failure.client}:${failure.variant} ${failure.method.toUpperCase()} ${failure.template}`,
+        );
+    for (const failure of before.failures)
+      if (!currentFailures.has(JSON.stringify(failure)))
+        differences.push(
+          `document ${name}: resolved/changed ${failure.kind} ${failure.code ?? ''} ` +
+            `${failure.client}:${failure.variant} ${failure.method.toUpperCase()} ${failure.template}`,
+        );
+  }
+  const beforeTypes = new Map(expected.types.map((entry) => [entry.name, entry]));
+  const afterTypes = new Map(baselineSnapshot.types.map((entry) => [entry.name, entry]));
+  for (const name of new Set([...beforeTypes.keys(), ...afterTypes.keys()])) {
+    if (JSON.stringify(beforeTypes.get(name)) !== JSON.stringify(afterTypes.get(name)))
+      differences.push(`types ${name}: generation or typecheck outcome changed`);
+  }
+  for (const difference of differences.slice(0, 20)) console.error(`BASELINE ${difference}`);
+  if (differences.length > 20)
+    console.error(`BASELINE ... and ${differences.length - 20} more changes`);
+  if (differences.length) process.exitCode = 1;
+  else console.log(`baseline matches: ${resolve(options.baseline)}`);
+}
+if (
+  crashes.length ||
+  typeFailures ||
+  unavailable.length ||
+  !documents.length ||
+  documents.length !== corpus.length ||
+  runtime.length !== documents.length
+)
+  process.exitCode = 1;

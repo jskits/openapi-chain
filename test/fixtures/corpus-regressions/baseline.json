@@ -1,0 +1,164 @@
+{
+  "formatVersion": 1,
+  "listSha256": "cbe1f8fd265ce6eab7400f3b6e7d175761f90c0c90281850d768a6bfe027038b",
+  "documents": [
+    {
+      "name": "forwarding",
+      "sha256": "734c8a40fe717eb84eb93aedc80e53572a1257b76a96861dfc5187f71eec4c4c",
+      "compile": {
+        "kind": "ok"
+      },
+      "counts": {
+        "core:full:sent": 2,
+        "core:minimal:sent": 2,
+        "strict:full:sent": 2,
+        "strict:minimal:sent": 2
+      },
+      "failures": []
+    },
+    {
+      "name": "jellyfin",
+      "sha256": "ffef6c7cb0a2d1584b14cd63252ec12affcddc27d45371de4dc59d62e6b2c963",
+      "compile": {
+        "kind": "ok"
+      },
+      "counts": {
+        "core:full:contract": 1,
+        "core:minimal:contract": 1,
+        "strict:full:contract": 1,
+        "strict:minimal:contract": 1
+      },
+      "failures": [
+        {
+          "client": "core",
+          "variant": "full",
+          "method": "delete",
+          "template": "/Plugins/{pluginId}/{version}",
+          "kind": "contract",
+          "code": "SERIALIZATION",
+          "message": "Structured path value needs an operation-local extension or strict client."
+        },
+        {
+          "client": "core",
+          "variant": "minimal",
+          "method": "delete",
+          "template": "/Plugins/{pluginId}/{version}",
+          "kind": "contract",
+          "code": "SERIALIZATION",
+          "message": "Structured path value needs an operation-local extension or strict client."
+        },
+        {
+          "client": "strict",
+          "variant": "full",
+          "method": "delete",
+          "template": "/Plugins/{pluginId}/{version}",
+          "kind": "contract",
+          "code": "UNSAFE_PATH",
+          "message": "Unsafe path delimiter or empty path segment."
+        },
+        {
+          "client": "strict",
+          "variant": "minimal",
+          "method": "delete",
+          "template": "/Plugins/{pluginId}/{version}",
+          "kind": "contract",
+          "code": "UNSAFE_PATH",
+          "message": "Unsafe path delimiter or empty path segment."
+        }
+      ]
+    },
+    {
+      "name": "opa",
+      "sha256": "ad53e47c439a292ce8ef933696304f8573eaafdfd52101113f90eb828888fd99",
+      "compile": {
+        "kind": "ok"
+      },
+      "counts": {
+        "core:full:sent": 1,
+        "core:minimal:sent": 1,
+        "strict:full:sent": 1,
+        "strict:minimal:sent": 1
+      },
+      "failures": []
+    },
+    {
+      "name": "peertube",
+      "sha256": "187d7a1ed465c64f08a1c8e50518b78da86efb0f6482b09728c7651a7aee3e76",
+      "compile": {
+        "kind": "ok"
+      },
+      "counts": {
+        "core:full:contract": 1,
+        "core:minimal:contract": 1,
+        "strict:full:sent": 1,
+        "strict:minimal:sent": 1
+      },
+      "failures": [
+        {
+          "client": "core",
+          "variant": "full",
+          "method": "post",
+          "template": "/imports",
+          "kind": "contract",
+          "code": "SERIALIZATION",
+          "message": "Need body extension: multipart/form-data"
+        },
+        {
+          "client": "core",
+          "variant": "minimal",
+          "method": "post",
+          "template": "/imports",
+          "kind": "contract",
+          "code": "SERIALIZATION",
+          "message": "Need body extension: multipart/form-data"
+        }
+      ]
+    },
+    {
+      "name": "soundcloud",
+      "sha256": "7d6d3cc38ddc0e61bc92a613abcef6f623f1790df75e7d82518889af0b62e66f",
+      "compile": {
+        "kind": "ok"
+      },
+      "counts": {
+        "core:full:sent": 1,
+        "core:minimal:sent": 1,
+        "strict:full:sent": 1,
+        "strict:minimal:sent": 1
+      },
+      "failures": []
+    }
+  ],
+  "types": [
+    {
+      "name": "forwarding",
+      "generate": "ok",
+      "tsc": "ok",
+      "operations": 2
+    },
+    {
+      "name": "jellyfin",
+      "generate": "ok",
+      "tsc": "ok",
+      "operations": 1
+    },
+    {
+      "name": "opa",
+      "generate": "ok",
+      "tsc": "ok",
+      "operations": 1
+    },
+    {
+      "name": "peertube",
+      "generate": "ok",
+      "tsc": "ok",
+      "operations": 1
+    },
+    {
+      "name": "soundcloud",
+      "generate": "ok",
+      "tsc": "ok",
+      "operations": 1
+    }
+  ]
+}

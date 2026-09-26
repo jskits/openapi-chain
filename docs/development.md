@@ -24,6 +24,7 @@ If your Node.js installation does not include Corepack, install pnpm 10.34.5 usi
 | `pnpm benchmark:types:ts7` / `pnpm benchmark:editor:ts7` | Native compiler complexity scenarios / actual native LSP completion samples |
 | `pnpm test` / `pnpm test:watch` | Run Vitest once or in watch mode |
 | `pnpm test:coverage` | Run tests with V8 coverage and 90% thresholds |
+| `pnpm test:corpus:fixed` | Compare the fixed corpus with its approved baseline; TS6 and TS7 run in `pnpm check` |
 | `pnpm test:cli` | Run CLI filesystem, generation and command-contract regressions after building |
 | `pnpm test:cli:package` | Install runtime/CLI tarballs and verify the installed command, generated types and browser bundle |
 | `pnpm test:package` / `pnpm verify:package` | Verify all three entries in an isolated tarball consumer |
@@ -61,7 +62,7 @@ For compiler, serialization or type changes that real documents could expose, ru
 pnpm test:corpus --types=120
 ```
 
-It runs the preferred OpenAPI 3.x document of every API listed by APIs.guru through metadata compilation and every operation through core and strict clients with a capturing transport; `--types=N` also generates N documents with the CLI and type-checks typed calls. The first run downloads about 600 MB into `.cache/corpus`; later runs reuse it, and `--offline` skips downloads (set `NODE_USE_ENV_PROXY=1` if direct Fetch cannot reach the network). It fails only on crashes, hangs and type errors in generated consumers; contract rejections and invalid documents are reported in groups, with full results in `.cache/corpus/results.json`. Compare against a baseline by rerunning with `--dist` pointing at another build's `dist` directory. See the [corpus report](archive/qualification/apis-guru-corpus-2026-09-25.md) for the method and a dated result.
+It runs the preferred OpenAPI 3.x document of every API listed by APIs.guru through metadata compilation and every operation through core and strict clients with a capturing transport; `--types=N` also generates N documents with the CLI and type-checks typed calls. The first run downloads about 600 MB into `.cache/corpus`; later runs reuse it, and `--offline` skips downloads (set `NODE_USE_ENV_PROXY=1` if direct Fetch cannot reach the network). It fails on crashes, hangs, missing or invalid JSON documents and type errors in generated consumers. Contract rejections are reported in groups, with full results in `.cache/corpus/results.json`. Add `--baseline=<reviewed-file>` to reject new compilation failures, request rejections and suspicious output. The small fixed regression corpus runs offline under TS6 and TS7 in `pnpm check`; see [corpus regression checks](corpus.md) for baseline review and reproduction. See the [corpus report](archive/qualification/apis-guru-corpus-2026-09-25.md) for the method and a dated result.
 
 For schema changes, run `pnpm generate:example`, format the generated declarations, then `pnpm test:generated` and `pnpm typecheck`. The Petstore, Items and conformance fixtures use that workflow. The scoped catalog uses `pnpm generate:scoped` and `pnpm test:scoped` through the official CLI; its generated directory must not be reformatted. For performance changes, use `pnpm benchmark`; see [measurement methods](performance.md). Runtime/metadata timings are observations, not CI timing gates.
 

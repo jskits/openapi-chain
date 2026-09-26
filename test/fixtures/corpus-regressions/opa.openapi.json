@@ -1,0 +1,30 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Synthetic allowReserved applicability regression",
+    "version": "1.0.0",
+    "license": { "name": "MIT" }
+  },
+  "paths": {
+    "/rules/{ruleId}": {
+      "get": {
+        "parameters": [
+          {
+            "name": "ruleId",
+            "in": "path",
+            "required": true,
+            "allowReserved": true,
+            "schema": { "type": "string" }
+          },
+          { "name": "q", "in": "query", "allowReserved": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Observed request",
+            "content": { "application/json": { "schema": { "type": "object" } } }
+          }
+        }
+      }
+    }
+  }
+}
