@@ -6,11 +6,11 @@ This is the maintained serialization contract. For usage, start with the [gettin
 
 | Surface | Core | Strict |
 | --- | --- | --- |
-| Fluent path tree | Operation-derived types, scalar path encoding | Same type model with metadata-driven path encoding |
+| Fluent path tree | Operation-derived types, scalar and flat-array path encoding | Same type model with metadata-driven path encoding |
 | Mixed templates and reserved segment names | Typed `$path()` | Method names can be segments at nonconflicting nodes; `$path()` for remaining conflicts |
-| Query objects/arrays | Schema-free defaults or local extension | OpenAPI form, delimited and deepObject styles |
+| Query objects/arrays | Schema-free flat values and plain object expansion, or local extension; nested values rejected | OpenAPI form, delimited and deepObject styles |
 | Whole-query `querystring` | Not supported by the core typed input | OpenAPI 3.2 metadata and extension support |
-| Headers/cookies | Basic serialization or extension | Metadata-driven styles/content; browser restrictions still apply |
+| Headers/cookies | Scalar and flat-array defaults or extension; structured values rejected | Metadata-driven styles/content; browser restrictions still apply |
 | JSON/text/native request bodies | Explicit contentType | Single-concrete-media inference when metadata proves it |
 | Structured URL-encoded/multipart body | Whole-body extension | Encoding Objects and supported native Fetch representations |
 | Vendor wire behavior | Location/body extensions, then final request/transport | Same order; metadata validation precedes serialization |
@@ -126,6 +126,6 @@ Follow the [staged migration guide](migration.md) and [offline comparison workfl
 
 Core rejects `middleware`, `metadata` and function-valued `headers` at construction, including JavaScript callers. Use `openapi-chain/strict` for these options; core applications can implement authentication and middleware in their transport. Explicit `undefined` is equivalent to omitting an option.
 
-Absence of non-default `style` or `explode` is not proof of core compatibility. Check parameter location and value shape as well: a default simple object header requires `a,b` for `{ a: 'b' }`, whereas core's schema-free coercion produces `[object Object]`. Scalar path encoding, compound cookies, body encoding and response parsing also need review. A keyword search is only an initial screen.
+Absence of non-default `style` or `explode` is not proof of core compatibility. Check parameter location and value shape as well: a default simple object header requires `a,b` for `{ a: 'b' }`, whereas core rejects the object without a header extension. Core also rejects object path and cookie values, and arrays or plain query objects containing nested arrays/objects, before transport rather than sending `[object Object]`. Flat arrays and flat plain query objects retain their schema-free defaults; they still require comparison with the declared OpenAPI style. Scalar path encoding, compound cookies, body encoding and response parsing also need review. A keyword search is only an initial screen.
 
 When migrating, compile metadata from the same schema revision as the generated types, then check required/undeclared inputs, media selection, wire encodings and response consumers. Core requires explicit body contentType; strict can infer a single concrete declared media. Binary response consumers must account for strict's ArrayBuffer default instead of core's text fallback. Changing entry points is not an unconditional behavior-preserving migration.

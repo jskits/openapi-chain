@@ -36,19 +36,37 @@ type RuntimeExtensions = {
 type Runtime = { options: CoreClientOptions; transport: Transport };
 
 const entries = Object.entries;
-const encodeScalar = (v: unknown) => encodeURIComponent(String(v));
+function scalar(value: unknown, location: string): string {
+  if (typeof value === 'function' || (typeof value === 'object' && value !== null))
+    throw new OpenAPIChainError(
+      'SERIALIZATION',
+      `Structured ${location} value needs an operation-local extension or strict client.`,
+    );
+  return String(value);
+}
+
+// Preserve the schema-free comma behavior for flat arrays without coercing nested values.
+const flat = (value: unknown, location: string) =>
+  Array.isArray(value)
+    ? value.map((item) => (item == null ? '' : scalar(item, location))).join(',')
+    : scalar(value, location);
+const encodeScalar = (value: unknown, location: string) =>
+  encodeURIComponent(scalar(value, location));
 function serializeQuery(input: Record<string, unknown>) {
   if (!isPlainRecord(input))
     throw new OpenAPIChainError('SERIALIZATION', 'Query must be a plain record.');
   const query = new URLSearchParams();
   for (const [name, value] of entries(input)) {
     if (value == null) continue;
-    if (Array.isArray(value)) value.forEach((item) => query.append(name, String(item)));
+    if (Array.isArray(value))
+      value.forEach((item) => query.append(name, scalar(item, `query ${name}`)));
     else if (typeof value === 'object') {
       if (!isPlainRecord(value))
         throw new OpenAPIChainError('SERIALIZATION', `Query ${name} must be a plain record.`);
-      entries(value).forEach(([key, entry]) => entry != null && query.append(key, String(entry)));
-    } else query.append(name, String(value));
+      entries(value).forEach(
+        ([key, entry]) => entry != null && query.append(key, scalar(entry, `query ${name}`)),
+      );
+    } else query.append(name, scalar(value, `query ${name}`));
   }
   return query.toString();
 }
@@ -56,7 +74,12 @@ function serializeQuery(input: Record<string, unknown>) {
 function renderPath(state: State, serialize?: RuntimeExtensions['path']) {
   let dynamicIndex = 0;
   const encode = (value: unknown) =>
-    safePath(serialize ? serialize(value, { index: dynamicIndex++ }) : encodeScalar(value), true);
+    safePath(
+      serialize
+        ? serialize(value, { index: dynamicIndex++ })
+        : encodeURIComponent(flat(value, 'path')),
+      true,
+    );
   if (!Array.isArray(state))
     return state.template.replace(/\{([^{}]+)\}/g, (_m, name: string) => {
       if (!state.params || !Object.hasOwn(state.params, name))
@@ -118,7 +141,7 @@ async function executeRequest(
       if (extensions?.header) mergeHeaders(extensions.header(input.header));
       else
         for (const [k, v] of entries(input.header))
-          if (v != null) headers.set(k, Array.isArray(v) ? v.join(',') : String(v));
+          if (v != null) headers.set(k, flat(v, `header ${k}`));
     }
     if (input?.init?.headers) mergeHeaders(input.init.headers);
     if (input?.cookie) {
@@ -128,7 +151,7 @@ async function executeRequest(
         for (const [k, v] of entries(input.cookie)) {
           if (v == null) continue;
           (Array.isArray(v) ? v : [v]).forEach((item) =>
-            cookies.push(`${encodeScalar(k)}=${encodeScalar(item)}`),
+            cookies.push(`${encodeScalar(k, 'cookie name')}=${encodeScalar(item, `cookie ${k}`)}`),
           );
         }
         if (cookies.length) headers.set('cookie', cookies.join('; '));

@@ -13,7 +13,7 @@ Choose core when the operations you use have verified default encodings and suit
 | Fluent methods, `$path`, `baseUrl`, static headers, Fetch/transport, `throwOnError` | Keep the existing configuration and call forms; add matching compiled metadata |
 | Explicit `contentType` and operation extensions | Keep them initially; strict may infer a single concrete media, but removing explicit media is optional |
 | Empty query records | Both clients now invoke a configured query extension for `{}`; omitted input skips it. Earlier strict versions skipped empty records |
-| Parameters and paths | Review style, explode, content, reserved characters and value shapes; default object headers differ too |
+| Parameters and paths | Review style, explode, content, reserved characters and value shapes; core rejects object path/header/cookie values and nested query/array values without a location extension |
 | Missing/extra inputs | Fix missing required values and undeclared keys, including undeclared keys whose value is `undefined`; strict rejects them before extensions. Declared required header parameters must be supplied in `header`, even if similarly named client/init headers exist |
 | Nullish values | Core drops nullish query/header/cookie values; strict skips `undefined` but generally serializes `null`. Use omission/`undefined` when absence is intended; required inputs must still be supplied |
 | Request bodies | Strict checks declared media and required body presence, and rejects `contentType` without a body. Plain form objects may become usable without a body extension; keep tested extensions until separately reviewed |
@@ -22,6 +22,8 @@ Choose core when the operations you use have verified default encodings and suit
 | Compilation and routing | Bundle supported references, scope large documents, and use exact `$path()` for non-fluent paths or ambiguous chains |
 
 Strict still does not validate full JSON Schema constraints or response data. Unsupported encodings, incorrect documents and browser restrictions need the remedies in the [support matrix](support.md). Runtime extensions cannot recover a failed compilation or bypass earlier required/undeclared input checks.
+
+Core now fails before transport when its default serializer would coerce a structured value into `[object Object]` or flatten a nested array. If you used such a value, add a location extension that owns its wire format or move the operation to strict metadata serialization. Flat arrays and flat query objects retain their existing schema-free behavior, which still needs a wire-level comparison with your API.
 
 ## 1. Scope the contract before changing clients
 

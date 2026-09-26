@@ -43,7 +43,7 @@ The check runs in `pnpm check` and CI. Each scenario must stay below 3 million i
 
 These entries have different feature sets. Strict is an alternative to core; metadata compilation can run at build time, so neither entry must necessarily ship with every application. Consumer tree shaking can also change the result.
 
-The separate `pnpm size:check` release gate uses a different stable metric: it concatenates reachable emitted core ESM chunks and gzips that text, including their source-map comments, with a 3072-byte limit. Neither metric equals the sum of separately compressed HTTP assets; compare like-for-like when publishing results.
+The separate `pnpm size:check` release gate uses a different stable metric: it concatenates reachable emitted core ESM chunks and gzips that text, including their source-map comments, with a 3584-byte limit. Neither metric equals the sum of separately compressed HTTP assets; compare like-for-like when publishing results.
 
 ## Shared schema graphs
 
@@ -151,6 +151,8 @@ The document alone is 6602 B gzip. Consumer figures compress the whole bundle; t
 
 Build-time delivery eliminates shipping the compiler and document. Server targets can also benefit in artifact size, initialization and memory, even when browser transfer is not a concern. Neither approach removes the runtime route index or makes cost proportional to inferred source-code call sites.
 
-For the historical 2026-09-21 emitted-entry measurement: core 1916 B, strict 6789 B, metadata 4673 B gzip. That historical core transitive release gate reported 2046 / 2048 B; the current safety budget is 3072 B. Historical tables above remain labeled historical; do not mix their method or baseline with these numbers. The [serializer-profile experiment](serializer-profiles.md) records why no new reduced strict entry is published in this iteration.
+For the historical 2026-09-21 emitted-entry measurement: core 1916 B, strict 6789 B, metadata 4673 B gzip. That historical core transitive release gate reported 2046 / 2048 B; the current safety budget is 3584 B. Historical tables above remain labeled historical; do not mix their method or baseline with these numbers. The [serializer-profile experiment](serializer-profiles.md) records why no new reduced strict entry is published in this iteration.
 
-The September 24 runtime-hardening implementation measures **3020 B transitive gzip** with the size gate's emitted-module method. The current gate is **3072 B (3 KiB)**. The increase includes URL boundary validation, shared query and response contracts, guarded JSON serialization, plain-record and cross-realm native-body checks, and stable error codes with operation context. This replaces the intermediate 2560 B safety budget; it does not revise the historical benchmark tables.
+The September 24 runtime-hardening implementation measures **3020 B transitive gzip** with the size gate's emitted-module method. The current gate is **3584 B (3.5 KiB)**. The increase includes URL boundary validation, shared query and response contracts, guarded JSON serialization, plain-record and cross-realm native-body checks, and stable error codes with operation context. This replaces the intermediate 2560 B safety budget; it does not revise the historical benchmark tables.
+
+The September 26 core structured-value guard adds 107 B over the preceding 3060 B build: **3167 B transitive gzip**. The 3584 B budget retains space for maintenance and correctness fixes. Budget changes require an explained measurement and review; strict/compiler code remains outside this entry.
