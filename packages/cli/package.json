@@ -1,6 +1,6 @@
 {
   "name": "@openapi-chain/cli",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "Build-time types, scoped clients and metadata for openapi-chain.",
   "license": "MIT",
   "repository": {
