@@ -4,7 +4,9 @@
 
 ## Generator installation fails with a TypeScript peer error
 
-openapi-typescript 7.13.0 declares `typescript: ^5.x`. Installing it with TypeScript 6.0.3 under strict peer checking fails with `ERR_PNPM_PEER_DEP_ISSUES` unless your application configures the same scoped allowance used by this repository. Installing the library does not copy its workspace rules into your application. Follow [generator and TypeScript compatibility](getting-started.md#generator-and-typescript-compatibility) to allow this exact pair while keeping other peer checks enabled.
+If you use the [official CLI](cli.md), install `@openapi-chain/cli` as a development dependency and let it own its pinned generator and TypeScript 5.9.3. This path needs no application peer override. The application compiler minimum remains TypeScript 6.0.3.
+
+If you install `openapi-typescript@7.13.0` directly alongside TypeScript 6.0.3, strict pnpm peer checking can fail with `ERR_PNPM_PEER_DEP_ISSUES` because the generator declares `typescript: ^5.x`. The library does not copy its workspace peer rules into your application. Follow the [manual generator compatibility setup](getting-started.md#generator-and-typescript-compatibility) to allow this exact pair while keeping other peer checks enabled.
 
 ## A route or method is missing from the chain
 
@@ -62,7 +64,7 @@ Automatically serialized strings use UTF-8. For another charset, provide correct
 
 ## An installed package has a different API
 
-Check its installed version and entry exports against this checkout's [runtime package manifest](../packages/core/package.json); historical registry packages may use another API. Reproduce against a [locally built tarball](getting-started.md#install-this-checkout) before assuming a source example describes the version you installed.
+Check installed versions and entry exports against this checkout's [runtime](../packages/core/package.json) and [CLI](../packages/cli/package.json) manifests; historical registry packages may use another API. Reproduce against the [local tarball consumer check](getting-started.md#install-this-checkout) before assuming a source example describes the version you installed.
 
 For repository failures, start with [development checks](development.md#choose-the-right-check). For a bug report, include the version, entry point, runtime, generator version, minimal synthetic schema and expected/actual request or response. Use [GitHub Issues](https://github.com/jskits/openapi-chain/issues) for ordinary bugs and the [security process](../SECURITY.md) for vulnerabilities.
 

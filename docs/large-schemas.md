@@ -6,7 +6,14 @@ Use one explicit scope for both client types and runtime metadata. This controls
 
 ## Official generation workflow
 
-The [CLI guide](cli.md) covers installed applications. The checked-in [catalog example](../examples/scoped/client.ts) uses the same CLI and public package imports:
+In an installed application, put the exact path keys in `openapi-chain.config.json`, then run:
+
+```sh
+pnpm exec openapi-chain generate
+pnpm exec openapi-chain generate --check
+```
+
+The [CLI guide](cli.md) covers the full installed workflow. The checked-in [catalog example](../examples/scoped/client.ts) uses the same CLI and public package imports; its repository commands are:
 
 ```sh
 pnpm generate:scoped
@@ -35,7 +42,22 @@ export type ScopedPaths = Pick<paths, (typeof selectedPaths)[number]>;
 
 The full source document remains available for local references, including references into unselected path items. The type generator emits full declarations; the selected `Pick` narrows client types, and only selected operations enter runtime metadata. This is not declaration pruning or source-call-site tree shaking.
 
-Create the client with `createStrictClient<ScopedPaths>({ baseUrl, metadata })`. The generic is essential: merely declaring ScopedPaths does not narrow an untyped client. Both chain nodes and `$path()` completion narrow to the selected keys.
+Use the generated scope and metadata for the first request:
+
+```ts
+import { createStrictClient } from 'openapi-chain/strict';
+import { metadata } from './generated/metadata.js';
+import type { ScopedPaths } from './generated/scope.js';
+
+const api = createStrictClient<ScopedPaths>({
+  baseUrl: 'https://api.example.com',
+  metadata,
+});
+const item = await api.items('42').get();
+console.log(item);
+```
+
+The generic is essential: merely declaring `ScopedPaths` does not narrow an untyped client. Both chain nodes and `$path()` completion narrow to the selected keys. The document, CLI and type generator stay out of the client bundle.
 
 ## Checks and deployment
 

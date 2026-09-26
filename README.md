@@ -2,20 +2,11 @@
 
 [![CI](https://github.com/jskits/openapi-chain/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jskits/openapi-chain/actions/workflows/ci.yml) [![TypeScript](https://img.shields.io/badge/TypeScript-typed-3178C6?logo=typescript&logoColor=white)](docs/api.md) [![Modules](https://img.shields.io/badge/modules-ESM%20%2B%20CommonJS-blue)](docs/api.md#entry-points) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A TypeScript OpenAPI client with a fluent path API, zero generated client code, and no runtime dependencies. Generate a `paths` type, then call your API through typed properties and functions:
+A TypeScript OpenAPI client with a fluent path API, zero generated endpoint code, and no runtime dependencies. The build-time CLI generates scoped types and serialization metadata from one OpenAPI document.
 
 The pnpm monorepo contains three publishable packages: [`openapi-chain`](packages/core), [`@openapi-chain/cli`](packages/cli), and [`@openapi-chain/query`](packages/query). The runtime keeps its existing package name and entry points. See the [package migration guide](docs/migration-to-scope.md) for CLI and query import changes and release availability.
 
-```ts
-import { createClient } from 'openapi-chain';
-import type { paths } from './schema.js';
-
-const api = createClient<paths>({ baseUrl: 'https://api.example.com' });
-const item = await api.items('42').get();
-console.log(item.name);
-```
-
-This example uses the [Items schema](examples/service.openapi.json). Your chain follows your own schema: static path segments become properties, `{parameters}` become function calls, and HTTP methods become request functions.
+The first request below uses the [Items schema](examples/service.openapi.json). Your chain follows your own schema: static path segments become properties, `{parameters}` become function calls, and HTTP methods become request functions.
 
 - **Typed requests and responses:** infer parameters, request media types and status-correlated results from the selected operation.
 - **Small default runtime:** the complete emitted core has a **3.5 KiB gzip budget**, enforced by a [reproducible size check](docs/performance.md#size).
@@ -24,17 +15,48 @@ This example uses the [Items schema](examples/service.openapi.json). Your chain 
 
 ## Install
 
-**TypeScript 7 is recommended for type checking and editor responsiveness, especially for large schemas.** Use the [verified dual-version setup](docs/getting-started.md#generator-and-typescript-compatibility): TS 7.0.2 checks your application while TS 6.0.3 remains available to the generator and tools using its compiler API. Apply the scoped peer configuration there before installing. Large schemas still benefit from [path scoping](docs/large-schemas.md).
-
-For an npm release that contains the API documented here:
+For a published release with this API:
 
 ```sh
 pnpm add openapi-chain
-pnpm add -D --save-exact typescript@6.0.3 typescript7@npm:typescript@7.0.2 openapi-typescript@7.13.0
-pnpm exec openapi-typescript ./openapi.json -o ./schema.d.ts
+pnpm add -D @openapi-chain/cli
 ```
 
-These docs describe the current source API. Check the published packages' manifests for the checkout versions: [runtime](packages/core/package.json), [CLI](packages/cli/package.json), and [query adapter](packages/query/package.json). An installed npm release may expose a different API. To try this exact implementation, follow [the local tarball installation](docs/getting-started.md#install-this-checkout). Type generation produces declarations only; no endpoint client code is generated.
+Save the Items document as `openapi.json`, then create `openapi-chain.config.json`:
+
+```json
+{
+  "schema": "./openapi.json",
+  "outDir": "./src/generated/api",
+  "paths": ["/items/{id}"]
+}
+```
+
+Generate types and metadata together:
+
+```sh
+pnpm exec openapi-chain generate
+pnpm exec openapi-chain generate --check
+```
+
+In `src/client.ts`, use the generated scope and metadata for the first request:
+
+```ts
+import { createStrictClient } from 'openapi-chain/strict';
+import { metadata } from './generated/api/metadata.js';
+import type { ScopedPaths } from './generated/api/scope.js';
+
+const api = createStrictClient<ScopedPaths>({
+  baseUrl: 'https://api.example.com',
+  metadata,
+});
+const item = await api.items('42').get();
+console.log(item.name);
+```
+
+Replace the example URL with your service. The minimum supported application compiler is TypeScript 6.0.3; install it in a new application if TypeScript is not already present. CI pins 6.0.3 and 7.0.2. TypeScript 7.0.2 is recommended for large schemas and editor responsiveness. The CLI privately installs TypeScript 5.9.3 for generation, so this path needs no generator peer override. See [compiler compatibility](docs/getting-started.md#generator-and-typescript-compatibility) and [path scoping](docs/large-schemas.md).
+
+These docs describe the current source API. The source manifests show the checkout versions: [runtime](packages/core/package.json), [CLI](packages/cli/package.json), and [query adapter](packages/query/package.json). An installed npm release may expose a different API. To try this exact implementation, follow [the local tarball consumer check](docs/getting-started.md#install-this-checkout). Generation produces declarations and metadata, not endpoint client code.
 
 The package exports ESM and CommonJS. Its Node.js engine range is `^22.22.1 || ^24.11.0 || >=26.0.0`. Browser use requires standard Fetch APIs and a bundler or ESM setup; Chromium has an integration suite. Enable TypeScript strict mode and include DOM types. See [setup and compatibility](docs/getting-started.md).
 
@@ -46,23 +68,9 @@ The package exports ESM and CommonJS. Its Node.js engine range is `^22.22.1 || ^
 | OpenAPI parameter styles, structured forms or multipart encoding | `openapi-chain/strict` → `createStrictClient` | Compiled metadata |
 | Compile serialization metadata from an OpenAPI document | `openapi-chain/metadata` → `compileOpenAPIMetadata` | OpenAPI 3.0, 3.1 or 3.2 object |
 
-Core requires an explicit `contentType` whenever a body is supplied. Strict can infer a single declared concrete media type and implements additional serialization rules. Both expose the same fluent path API and operation-local extensions. See the [support matrix](docs/support.md) before choosing serialization behavior.
+Core requires an explicit `contentType` whenever a body is supplied. Strict can infer a single declared concrete media type and implements additional serialization rules. Both expose the same fluent path API and operation-local extensions. The programmatic compiler remains available for manual workflows and OpenAPI 3.2 metadata; the official CLI currently generates OpenAPI 3.0/3.1 types and metadata. See the [support matrix](docs/support.md) before choosing serialization behavior.
 
-```ts
-import document from './openapi.json' with { type: 'json' };
-import { createStrictClient } from 'openapi-chain/strict';
-import { compileOpenAPIMetadata } from 'openapi-chain/metadata';
-import type { paths } from './schema.js';
-
-const api = createStrictClient<paths>({
-  baseUrl: 'https://api.example.com',
-  metadata: compileOpenAPIMetadata(document),
-});
-
-const item = await api.items('42').get();
-```
-
-For browser/edge and large schemas, use the [build-time metadata and single-scope workflow](docs/large-schemas.md) so the document and compiler stay out of the runtime bundle.
+The generated strict client above keeps the document, CLI and compiler out of browser bundles. For large schemas, follow the [single-scope workflow](docs/large-schemas.md).
 
 For an existing core application, follow the [migration guide](docs/migration.md) and compare representative requests before switching. Core cannot detect missing serialization rules from erased types; HTTP 200 is not proof of a correct filter.
 
@@ -73,11 +81,13 @@ Generate `paths` and metadata from the same schema revision. Strict checks reque
 By default, calls return parsed success data and throw `HttpError` for non-2xx responses. Use `throwOnError: false` to receive a typed result instead:
 
 ```ts
-import { createClient } from 'openapi-chain';
-import type { paths } from './schema.js';
+import { createStrictClient } from 'openapi-chain/strict';
+import { metadata } from './generated/api/metadata.js';
+import type { ScopedPaths } from './generated/api/scope.js';
 
-const api = createClient<paths>({
+const api = createStrictClient<ScopedPaths>({
   baseUrl: 'https://api.example.com',
+  metadata,
   throwOnError: false,
 });
 
@@ -112,7 +122,7 @@ Start with [CONTRIBUTING.md](CONTRIBUTING.md). Report bugs or request features i
 
 ## Build-time generation
 
-The separate `@openapi-chain/cli` package provides an official `openapi-chain generate` command for local OpenAPI 3.0/3.1 JSON/YAML documents. One config produces full type declarations, scoped client types, selected runtime metadata and a provenance manifest. `generate --check` detects drift without writing files.
+The separate `@openapi-chain/cli` package provides the `openapi-chain generate` command for local OpenAPI 3.0/3.1 JSON/YAML documents. One config produces full type declarations, scoped client types, selected runtime metadata and a provenance manifest. `generate --check` detects drift without writing files.
 
 See the [CLI guide](docs/cli.md) and [runnable scoped example](docs/large-schemas.md). CLI dependencies remain separate from the runtime package and browser bundles.
 
