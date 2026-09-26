@@ -1,0 +1,82 @@
+name: Release PR CI
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Immutable release PR head commit to validate
+        type: string
+        required: true
+      pr_number:
+        description: Release PR number
+        type: string
+        required: true
+
+permissions: {}
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Verify release PR and dispatched commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          RELEASE_PR: ${{ inputs.pr_number }}
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+
+          const expected = process.env.EXPECTED_SHA;
+          const number = process.env.RELEASE_PR;
+          const repository = process.env.GITHUB_REPOSITORY;
+          if (!/^[a-f0-9]{40}$/.test(expected) || !/^[1-9][0-9]*$/.test(number)) {
+            throw new Error('Invalid release PR number or commit.');
+          }
+          if (process.env.GITHUB_REF !== 'refs/heads/changeset-release/main' || process.env.GITHUB_SHA !== expected) {
+            throw new Error('Dispatch does not target the expected release branch commit.');
+          }
+          const pr = JSON.parse(execFileSync('gh', ['api', `repos/${repository}/pulls/${number}`], { encoding: 'utf8' }));
+          if (pr.number !== Number(number) || pr.state !== 'open' || pr.base.ref !== 'main' || pr.base.repo.full_name !== repository || pr.head.repo.full_name !== repository || pr.head.ref !== 'changeset-release/main' || pr.head.sha !== expected) {
+            throw new Error('Release PR no longer has the expected source, target, or head commit.');
+          }
+          console.log(`Verified release PR #${number} at ${expected}`);
+          NODE
+
+  verify:
+    needs: guard
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ci.yml
+    with:
+      ref: ${{ inputs.expected_sha }}
+
+  report:
+    needs: [guard, verify]
+    if: always() && needs.guard.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      statuses: write
+    steps:
+      - name: Report release PR CI commit status
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          VERIFY_RESULT: ${{ needs.verify.result }}
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+
+          const state = process.env.VERIFY_RESULT === 'success' ? 'success' : 'failure';
+          const description = state === 'success' ? 'Release PR matrix and browser checks passed' : `Release PR validation ${process.env.VERIFY_RESULT}`;
+          const target = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+          execFileSync('gh', ['api', '--method', 'POST', `repos/${process.env.GITHUB_REPOSITORY}/statuses/${process.env.EXPECTED_SHA}`,
+            '-f', `state=${state}`, '-f', 'context=Release PR CI', '-f', `description=${description}`, '-f', `target_url=${target}`]);
+          console.log(`Reported Release PR CI ${state} for ${process.env.EXPECTED_SHA}`);
+          NODE

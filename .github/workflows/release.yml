@@ -80,6 +80,8 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      actions: write
+      statuses: write
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -99,6 +101,37 @@ jobs:
           script: pnpm version:packages
           commit-message: 'chore(release): version packages'
           pr-title: 'chore(release): version packages'
+      - name: Dispatch validation for the version PR
+        if: steps.version.outputs.pr-number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_PR: ${{ steps.version.outputs.pr-number }}
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          const repository = process.env.GITHUB_REPOSITORY;
+          const number = process.env.RELEASE_PR;
+          if (!/^[1-9][0-9]*$/.test(number)) throw new Error('Invalid version PR number.');
+          const pr = JSON.parse(execFileSync('gh', ['api', `repos/${repository}/pulls/${number}`], { encoding: 'utf8' }));
+          if (pr.number !== Number(number) || pr.state !== 'open' || pr.base.ref !== 'main' || pr.base.repo.full_name !== repository || pr.head.repo.full_name !== repository || pr.head.ref !== 'changeset-release/main') {
+            throw new Error('Unexpected version PR repository or branch.');
+          }
+          if (!/^[a-f0-9]{40}$/.test(pr.head.sha)) throw new Error('Invalid version PR commit.');
+          const status = (state, description) => execFileSync('gh', ['api', '--method', 'POST', `repos/${repository}/statuses/${pr.head.sha}`,
+            '-f', `state=${state}`, '-f', 'context=Release PR CI', '-f', `description=${description}`,
+            '-f', `target_url=${process.env.GITHUB_SERVER_URL}/${repository}/actions/runs/${process.env.GITHUB_RUN_ID}`]);
+          status('pending', 'Release PR validation queued');
+          try {
+            execFileSync('gh', ['workflow', 'run', 'release-pr-ci.yml', '--repo', repository,
+              '--ref', pr.head.ref, '-f', `expected_sha=${pr.head.sha}`, '-f', `pr_number=${number}`], { stdio: 'inherit' });
+          } catch (error) {
+            try { status('error', 'Release PR validation dispatch failed'); }
+            catch (statusError) { console.error('Could not report dispatch failure:', statusError); }
+            throw error;
+          }
+          console.log(`Dispatched validation for release PR #${number} at ${pr.head.sha}`);
+          NODE
       - name: Explain release PR failure recovery
         if: failure() && steps.version.outcome == 'failure'
         env:
