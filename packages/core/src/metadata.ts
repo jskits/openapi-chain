@@ -7,7 +7,6 @@ import type {
   EncodingMetadata,
   HttpMethod,
   MediaTypeMetadata,
-  OpenAPIMetadata,
   OperationMetadata,
   ParameterLocation,
   ParameterMetadata,
@@ -1085,11 +1084,6 @@ export function compileOpenAPIMetadata(
   }
 
   return { version: 1, complete: true, operations } as CompiledOpenAPIMetadata;
-}
-
-/** Create an explicitly partial metadata table for advanced/manual use. */
-export function defineOpenAPIMetadata(metadata: OpenAPIMetadata): OpenAPIMetadata {
-  return metadata;
 }
 
 export type {

@@ -10,7 +10,7 @@ Examples using `./schema.js` and `./openapi.json` refer to the [Items schema](..
 | --- | --- | --- |
 | `openapi-chain` | `createClient`, `HttpError`, `httpMethods` | Schema-free client and shared public types |
 | `openapi-chain/strict` | `createStrictClient` | Metadata-driven client and selected operation types |
-| `openapi-chain/metadata` | `compileOpenAPIMetadata`, `defineOpenAPIMetadata` | Metadata compiler and metadata types |
+| `openapi-chain/metadata` | `compileOpenAPIMetadata` | Metadata compiler and metadata types |
 
 Import `HttpError`, `Transport` and `Middleware` from the root entry, including when using a strict client. All three entries have ESM and CommonJS exports. Use `import type` for declarations.
 
@@ -269,7 +269,7 @@ Strict middleware has the shape `(request, next) => Promise<Response>` and wraps
 
 `compileOpenAPIMetadata(document: unknown)` returns `CompiledOpenAPIMetadata` or throws for unsupported/ambiguous compilation inputs. It extracts serialization hints from OpenAPI 3.0/3.1/3.2; it is not a full OpenAPI or JSON Schema validator. See [schema inference](support.md#schema-inference-matrix) for references, composition, recursion and work limits.
 
-`defineOpenAPIMetadata(metadata)` returns its input unchanged and types it as `OpenAPIMetadata`. It does not compile, validate, freeze, or brand a table. It does not meet `createStrictClient`'s required compiled type. Use the compiler for strict clients rather than asserting a hand-written table to the compiled brand.
+Use the compiler or CLI to create strict metadata. The former `defineOpenAPIMetadata()` identity helper has been removed: it neither validated a table nor produced the compiled type strict requires. For code that only describes a partial table, use `satisfies OpenAPIMetadata`; that table remains unsuitable for `createStrictClient`. Replace strict-client casts with compilation from the original OpenAPI document.
 
 Strict construction rejects absent or partial metadata, unsupported artifact versions and invalid route/operation records before user callbacks run. Use `compileOpenAPIMetadata()` or the official CLI; a complete empty scope is valid and permits no operations.
 

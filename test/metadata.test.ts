@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { compileOpenAPIMetadata, defineOpenAPIMetadata } from '../packages/core/src/metadata.js';
+import { compileOpenAPIMetadata } from '../packages/core/src/metadata.js';
 
 describe('compileOpenAPIMetadata', () => {
   test('resolves local refs and operation parameters override path parameters', () => {
@@ -275,10 +275,5 @@ describe('compileOpenAPIMetadata', () => {
     expect(() => compileOpenAPIMetadata({ openapi: '2.0', paths: {} })).toThrow(
       'supports OpenAPI 3.0, 3.1, and 3.2',
     );
-  });
-
-  test('supports explicit partial metadata without marking it complete', () => {
-    const partial = defineOpenAPIMetadata({ version: 1, operations: {} });
-    expect(partial.complete).toBeUndefined();
   });
 });

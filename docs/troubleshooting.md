@@ -34,7 +34,7 @@ If a callback still does not run, check whether strict rejected required or unde
 
 Pass a parsed OpenAPI object, not a JSON/YAML string. Bundle or dereference external references first; local anchor fragments are not supported JSON Pointer references. Check the [reference and schema inference rules](support.md#reference-contexts).
 
-Duplicate template hierarchies fail by default; see the [explicit compatibility option](#a-third-party-document-repeats-a-template-hierarchy). Conflicting inferred part media, non-inferable schema cycles, depth over 128 and excessive traversal work fail explicitly. Simplify the serialization schema or preprocess unsupported constructs. `defineOpenAPIMetadata` and a TypeScript cast do not replace compilation or validation.
+Duplicate template hierarchies fail by default; see the [explicit compatibility option](#a-third-party-document-repeats-a-template-hierarchy). Conflicting inferred part media, non-inferable schema cycles, depth over 128 and excessive traversal work fail explicitly. Simplify the serialization schema or preprocess unsupported constructs. A TypeScript cast does not replace compilation or validation. The former `defineOpenAPIMetadata` identity helper has been removed; use the compiler or CLI for strict metadata.
 
 Errors raised while compiling an operation name it, for example `POST /upload: multipart/form-data request body: Invalid media declaration: form-data`, and carry `method` and `pathTemplate`. When the rest of a third-party document is usable, correct that operation or compile only the paths you call with the compiler's or CLI's `paths` selection; unselected operations are not compiled.
 
