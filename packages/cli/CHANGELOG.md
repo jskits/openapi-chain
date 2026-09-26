@@ -1,5 +1,13 @@
 # @openapi-chain/cli
 
+## 0.5.3
+
+### Patch Changes
+
+- Updated dependencies [0792e82]
+- Updated dependencies [cd19c0b]
+  - openapi-chain@0.6.0
+
 ## 0.5.2
 
 ### Patch Changes

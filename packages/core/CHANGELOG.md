@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.0
+
+### Minor Changes
+
+- 0792e82: Reject structured core path, header and cookie values, plus nested query and array values, before transport instead of coercing them into incorrect strings. Flat arrays, flat query objects and operation-local location extensions keep their existing behavior.
+- cd19c0b: Remove `defineOpenAPIMetadata`, an identity helper that did not validate metadata or produce the compiled artifact required by strict clients. Use `compileOpenAPIMetadata` or the CLI for strict metadata. Code that only describes a partial table can use `satisfies OpenAPIMetadata` without implying it is safe to execute.
+
 ## 0.5.2
 
 ### Upgrade notes
