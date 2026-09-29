@@ -42,6 +42,8 @@ If your Node.js installation does not include Corepack, install pnpm 10.34.5 usi
 | `pnpm test:browser`                                               | Run Chromium integration after building and installing its browser                                                       |
 | `pnpm benchmark`                                                  | Rebuild and measure type scale, runtime overhead and comparable bundle sizes                                             |
 | `pnpm benchmark:competitors` / `pnpm benchmark:competitors:types` | Compare request overhead (Fetch mock and loopback HTTP) / TS 6 and TS 7 type-checking cost with pinned competing clients |
+| `pnpm website:dev` / `pnpm website:build`                         | Run the documentation website locally / export the static site to `website/out`                                          |
+| `pnpm website:sync` / `pnpm test:website`                         | Regenerate site pages from repository Markdown / test the sync and check every doc link and anchor                       |
 | `pnpm benchmark:real-schemas --compiler=ts6` / `--compiler=ts7`   | Download pinned GitHub and Stripe documents (network) and compare openapi-chain and openapi-fetch type-checking cost     |
 | `pnpm clean`                                                      | Remove build and coverage output                                                                                         |
 
@@ -252,6 +254,28 @@ TanStack/SWR types, performs real HTTP requests and checks browser bundle isolat
 repeats consumer verification with TS 6 and TS 7. Changesets includes this workspace package; the
 release packing job builds it through the root build command. The adapter has no runtime
 dependencies and does not alter the core gzip budget.
+
+## Documentation website
+
+`website/` is a private workspace package: a [Fumadocs](https://fumadocs.dev) site on Next.js,
+exported as static files. It publishes the repository's Markdown rather than a copy of it.
+`website/scripts/sync-docs.mjs` turns `docs/**/*.md`, `CONTRIBUTING.md`, `SECURITY.md` and the
+package changelogs into `website/content/docs/**/*.md` before `dev`, `build` and `typecheck`. It
+uses each level-1 heading as the page title and its first sentence as the page description, drops
+the navigation line under the heading, and rewrites links: documents become site pages, and other
+repository files become GitHub links. Generated `.md` pages are ignored by Git; hand-written site
+pages are `.mdx`, and navigation lives in `website/content/docs/**/meta.json`.
+
+The sync fails on a broken relative link, a missing heading anchor, or a published document absent
+from every `meta.json`. `pnpm test:website` runs that check across the repository and is part of
+`pnpm check`. `pnpm website:dev` watches the source documents and regenerates pages on save.
+
+CI builds the site below `/openapi-chain`, the path GitHub Pages serves it from. The `Website`
+workflow deploys `main` to [GitHub Pages](https://jskits.github.io/openapi-chain/) when
+documentation or the site changes. It needs **Settings → Pages → Build and deployment → Source:
+GitHub Actions**. The site's lint, formatting and TypeScript follow the repository configuration;
+its Next.js and Fumadocs dependencies stay in the website package and never reach published
+packages.
 
 [required-check-troubleshooting]:
   https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks#checks-from-some-workflow-jobs-are-not-evaluated

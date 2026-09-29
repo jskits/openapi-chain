@@ -14,6 +14,9 @@ Objects) and applies them to every request. A build-time CLI generates types and
 the paths you call, so large documents stay affordable to type-check and to ship. Calls use a fluent
 path API with no generated endpoint code and no runtime dependencies.
 
+Read the guides on the [documentation website](https://jskits.github.io/openapi-chain/); the same
+pages live in [`docs/`](https://github.com/jskits/openapi-chain/blob/main/docs/README.md) on GitHub.
+
 The first request below uses the
 [Items schema](https://github.com/jskits/openapi-chain/blob/main/examples/service.openapi.json).
 Your chain follows your own schema: static path segments become properties, `{parameters}` become

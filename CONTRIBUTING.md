@@ -90,6 +90,11 @@ GitHub table rows and a single URL longer than the width. Put an inline link who
 overflow a line into a reference-style definition at the end of the file, and split long code
 examples with variables or line continuations without changing what they run.
 
+Guides in `docs/` are also published on the documentation website. When adding one, add its page
+name to `website/content/docs/meta.json`; `pnpm test:website` fails for an unlisted guide, a broken
+relative link or a missing heading anchor. Start each guide with a level-1 heading and an
+introductory paragraph, which become the page title and description.
+
 ### Tagged releases and recovery
 
 Pushing a `v<packages/core/package.json version>` tag publishes that exact commit after CI passes,
