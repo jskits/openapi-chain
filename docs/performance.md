@@ -2,7 +2,7 @@
 
 [Documentation index](README.md) · [Support matrix](support.md)
 
-Run `pnpm benchmark` to build fresh artifacts and reproduce the default-compiler benchmark scenarios. TS 7 is the recommended performance baseline; both compiler versions are pinned and checked in CI using the commands below. The pinned reference client is `openapi-fetch` 0.17.0; TypeScript and tsdown use the versions in `package.json`. The historical samples below were recorded on 2026-09-20, on macOS arm64 with Node 24.16.0. They are not a cross-platform throughput guarantee or measurements of the current working tree.
+Run `pnpm benchmark` to build fresh artifacts and reproduce the default-compiler benchmark scenarios. TS 7 is the recommended performance baseline; both compiler versions are pinned and checked in CI using the commands below. The pinned reference client is `openapi-fetch` 0.17.0; the [client comparison](#comparison-with-other-clients) also pins `openapi-typescript-fetch`, `feature-fetch`, `axios` and `superagent`. TypeScript and tsdown use the versions in `package.json`. The runtime, size and comparison tables were recorded on 2026-09-29; the type-system and editor tables below remain historical samples from 2026-09-20 and 2026-09-21. All were recorded on macOS arm64 with Node 24.16.0. They are not a cross-platform throughput guarantee or measurements of the current working tree.
 
 See the archived [schema semantics report](archive/qualification/schema-semantics-qualification.md) for the baseline used by the original measurements and the [path and reference report](archive/qualification/path-reference-qualification.md) for the later shared-prefix type-checking scenario. The subsequent [media report](archive/qualification/media-qualification.md) records another core size. Use `pnpm build && pnpm size:check` to measure the checkout you are evaluating.
 
@@ -12,11 +12,11 @@ Each client uses the same Fetch replacement returning an empty HTTP 204 response
 
 | Routes | Core | Strict chain | Strict `$path()` | openapi-fetch |
 | ------ | ---: | -----------: | ---------------: | ------------: |
-| 10     | 1.45 |         2.27 |             1.65 |          2.72 |
-| 1000   | 1.06 |         1.69 |             1.26 |          2.55 |
-| 10000  | 1.16 |         1.81 |             1.26 |          2.11 |
+| 10     | 2.17 |         3.39 |             2.08 |          2.60 |
+| 1000   | 1.59 |         2.54 |             1.96 |          2.42 |
+| 10000  | 1.94 |         2.72 |             2.00 |          2.10 |
 
-The 10000-route metadata compile took about 10 ms and strict indexing about 16 ms. This setup cost is paid at client construction. Runtime figures include different client response wrappers and Request construction choices; they do not establish which library is faster for real applications. `test/routes.test.ts` guards against per-request route-table enumeration without relying on noisy timing thresholds.
+Each cell is the median of three script runs. The 2026-09-20 table (core 1.06-1.45 µs) predates the September 24 runtime hardening; it is superseded rather than comparable. The 10000-route metadata compile took about 12 ms and strict indexing about 33 ms. This setup cost is paid at client construction. Runtime figures include different client response wrappers and Request construction choices; they do not establish which library is faster for real applications. `test/routes.test.ts` guards against per-request route-table enumeration without relying on noisy timing thresholds.
 
 ## Type system
 
@@ -32,18 +32,90 @@ The check runs in `pnpm check` and CI. Each scenario must stay below 3 million i
 
 ## Size
 
-`pnpm benchmark:size` bundles each complete public runtime entry separately with the same tsdown version, ES2022 target, minifier, no source map and gzip level 9. Dependencies are bundled and each result must be a single file.
+`pnpm benchmark:size` bundles one entry module per client with the same tsdown version, browser platform conditions, ES2022 target, minifier, no source map and gzip level 9. Each entry imports only the client factory an application uses (for example `createClient` and `HttpError`, or openapi-fetch's default export), so consumer tree shaking applies equally. Dependencies are bundled and each result must be a single file.
 
-| Entry         | Minified bytes | Gzip bytes |
-| ------------- | -------------: | ---------: |
-| core          |           4221 |       1850 |
-| strict        |          21046 |       6519 |
-| metadata      |          13867 |       4517 |
-| openapi-fetch |           7418 |       2833 |
+| Entry                                  | Minified bytes | Gzip bytes |
+| -------------------------------------- | -------------: | ---------: |
+| openapi-chain core                     |           7061 |       3051 |
+| openapi-chain strict                   |          27629 |       8617 |
+| openapi-chain metadata compiler        |          18415 |       6045 |
+| openapi-fetch                          |           6540 |       2532 |
+| openapi-typescript-fetch               |           2678 |       1232 |
+| feature-fetch (`createApiFetchClient`) |          13913 |       4768 |
+| axios                                  |          50282 |      18629 |
+| superagent                             |          63471 |      19467 |
+
+Before 2026-09-29 this benchmark bundled complete entry files on the neutral platform (core 4221 / 1850 B on 2026-09-20). The neutral platform cannot bundle the CommonJS competitors, and the core has since grown; do not compare the two tables.
 
 These entries have different feature sets. Strict is an alternative to core; metadata compilation can run at build time, so neither entry must necessarily ship with every application. Consumer tree shaking can also change the result.
 
 The separate `pnpm size:check` release gate uses a different stable metric: it concatenates reachable emitted core ESM chunks and gzips that text, including their source-map comments, with a 3584-byte limit. Neither metric equals the sum of separately compressed HTTP assets; compare like-for-like when publishing results.
+
+## Comparison with other clients
+
+`pnpm benchmark:competitors` compares request overhead under one method; `pnpm benchmark:competitors:types` compares type-checking cost on both pinned compilers. Every runtime case must first reach the Fetch mock or server exactly once and succeed, including libraries that return failures as values. Each suite runs in its own process; cases run in shuffled order, each round a 200 ms warmup plus a one-second timed loop, and the tables report the median round. The default is three rounds; the tables below used `--rounds=5`. Timing is informational and does not gate CI.
+
+### Fetch mock
+
+This suite mirrors openapi-fetch's own `test/bench` harness: global `fetch` resolves an empty JSON 200 response on `process.nextTick`. Calls include chain or path selection on each iteration. Higher is better; the ratio is relative to the fastest case.
+
+| Client                          | GET only URL (ops/s) | GET with headers (ops/s) |
+| ------------------------------- | -------------------: | -----------------------: |
+| openapi-typescript-fetch 2.2.1  |       196240 (1.00×) |           140780 (1.03×) |
+| openapi-fetch 0.17.0            |       167136 (1.17×) |           144359 (1.00×) |
+| openapi-fetch path-based client |       163402 (1.20×) |           143896 (1.00×) |
+| **openapi-chain core**          |   **164334 (1.19×)** |       **141077 (1.02×)** |
+| openapi-chain core `$path()`    |       171395 (1.14×) |           138122 (1.05×) |
+| openapi-chain strict            |       136517 (1.44×) |           122243 (1.18×) |
+| feature-fetch 0.1.2             |        96328 (2.04×) |            93648 (1.54×) |
+| axios 1.20.0, fetch adapter     |        29475 (6.66×) |            24992 (5.78×) |
+
+The headers scenario sets one client default header and two per-request headers in each library's own input shape; openapi-chain passes undeclared headers through `init.headers`. Client construction has no request work: core creates about 7.5 million clients per second because its Proxy tree is lazy, 1.8× openapi-fetch. Strict indexes its compiled metadata at construction, so it creates about 276 thousand per second.
+
+The same script on the preceding source measured core at 155433 and 120762 ops/s (1.29× and 1.17×). That build parsed the unchanged base URL on every request and built an intermediate `Headers` object for each merged header record; the base boundary is now reused and plain header records merge directly.
+
+### Loopback HTTP
+
+A child process serves `{}` over keep-alive HTTP on 127.0.0.1. Node's Fetch is used by the Fetch-based clients; axios's default adapter and superagent use `node:http` with a keep-alive agent.
+
+| Client                               |     ops/s |  Relative |
+| ------------------------------------ | --------: | --------: |
+| superagent 10.4.1                    |     13404 |     1.00× |
+| `fetch` + `response.json()` baseline |     12843 |     1.04× |
+| **openapi-chain core**               | **12214** | **1.10×** |
+| openapi-typescript-fetch             |     12160 |     1.10× |
+| openapi-fetch                        |     12120 |     1.11× |
+| openapi-chain strict                 |     11986 |     1.12× |
+| feature-fetch                        |     11456 |     1.17× |
+| axios, fetch adapter                 |      8348 |     1.61× |
+| axios, `node:http` adapter           |      2157 |     6.21× |
+
+With a real socket every Fetch-based client is within 10% of calling `fetch` directly, and their differences are within run-to-run noise. The axios `node:http` figure is roughly one millisecond per loopback request on macOS; treat it as an observation of this setup, not of axios's library overhead.
+
+### Type checking
+
+The types suite generates openapi-typescript-shaped paths with a required query and path parameter, then checks 25 used operations through each client's call style, including negative assertions for a missing query and a wrong path type.
+
+| Routes | Compiler | openapi-chain instantiations | openapi-fetch instantiations | openapi-chain check | openapi-fetch check | Memory (chain / fetch) |
+| --: | --- | --: | --: | --: | --: | --: |
+| 100 | 6.0.3 | 85194 | 54517 | 0.20 s | 0.24 s | 113 / 113 MiB |
+| 1000 | 6.0.3 | 473994 | 127417 | 0.64 s | 1.10 s | 157 / 197 MiB |
+| 5000 | 6.0.3 | 2201994 | 451417 | 2.69 s | 5.10 s | 918 / 458 MiB |
+| 100 | 7.0.2 | 85195 | 53108 | 0.040 s | 0.059 s | 34 / 35 MiB |
+| 1000 | 7.0.2 | 473995 | 127808 | 0.253 s | 0.570 s | 85 / 83 MiB |
+| 5000 | 7.0.2 | 2201995 | 459808 | 1.375 s | 3.783 s | 309 / 303 MiB |
+
+openapi-chain performs about four to five times more instantiations for its prefix tree yet checks this fixture faster; with TS 6 at 5000 routes it uses about twice the memory. Check time is the median of three compiler runs; instantiations and memory come from that run. A [scoped client](large-schemas.md) reduces openapi-chain's work further; the comparison uses the full path set for both.
+
+### Relation to openapi-fetch's published table
+
+openapi-fetch's README lists sizes and GET throughput from its `test/bench/index.bench.js`. Reproducing that harness on 2026-09-29 with the versions above showed these differences, which is why this suite validates every call and separates the mock and HTTP scenarios:
+
+- axios's default Node adapter and superagent use `node:http`, not the stubbed global `fetch`, so the harness attempts real DNS and TLS connections to `api.test.local`. Here axios uses its fetch adapter in the mock suite, and both use a local server in the HTTP suite.
+- The harness's openapi-typescript-codegen fixture is the generator bundle rather than generated client code, so its benchmarked call throws. Generated clients depend on each schema and are omitted here.
+- feature-fetch 0.1.x takes `baseUrl` rather than the harness's `prefixUrl`, and returns failures as `[false, error]` tuples instead of rejecting.
+
+The absolute throughput depends on the machine; compare ratios within one run.
 
 ## Shared schema graphs
 
@@ -155,4 +227,4 @@ For the historical 2026-09-21 emitted-entry measurement: core 1916 B, strict 678
 
 The September 24 runtime-hardening implementation measures **3020 B transitive gzip** with the size gate's emitted-module method. The current gate is **3584 B (3.5 KiB)**. The increase includes URL boundary validation, shared query and response contracts, guarded JSON serialization, plain-record and cross-realm native-body checks, and stable error codes with operation context. This replaces the intermediate 2560 B safety budget; it does not revise the historical benchmark tables.
 
-The September 26 core structured-value guard adds 107 B over the preceding 3060 B build: **3167 B transitive gzip**. The 3584 B budget retains space for maintenance and correctness fixes. Budget changes require an explained measurement and review; strict/compiler code remains outside this entry.
+The September 26 core structured-value guard adds 107 B over the preceding 3060 B build: **3167 B transitive gzip**. The September 29 request-overhead work (base URL reuse and direct header-record merging) measures **3306 B**. The 3584 B budget retains space for maintenance and correctness fixes. Budget changes require an explained measurement and review; strict/compiler code remains outside this entry.

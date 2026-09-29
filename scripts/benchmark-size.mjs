@@ -1,28 +1,38 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { build } from 'tsdown';
 
-const directory = mkdtempSync(join(tmpdir(), 'openapi-chain-size-'));
+// Each entry imports the client factory an application uses, so consumers' tree shaking applies
+// equally. Entries live under node_modules/.cache so bare package specifiers resolve.
+const entries = {
+  core: `export { createClient, HttpError } from 'openapi-chain';`,
+  strict: `export { createStrictClient } from 'openapi-chain/strict';`,
+  metadata: `export { compileOpenAPIMetadata } from 'openapi-chain/metadata';`,
+  openapiFetch: `export { default } from 'openapi-fetch';`,
+  openapiTypescriptFetch: `export { Fetcher } from 'openapi-typescript-fetch';`,
+  featureFetch: `export { createApiFetchClient } from 'feature-fetch';`,
+  axios: `export { default } from 'axios';`,
+  superagent: `export { default } from 'superagent';`,
+};
+const cache = fileURLToPath(new URL('../node_modules/.cache', import.meta.url));
+mkdirSync(cache, { recursive: true });
+const directory = mkdtempSync(join(cache, 'openapi-chain-size-'));
 try {
-  const entries = {
-    core: new URL('../packages/core/dist/index.js', import.meta.url),
-    strict: new URL('../packages/core/dist/strict.js', import.meta.url),
-    metadata: new URL('../packages/core/dist/metadata.js', import.meta.url),
-    openapiFetch: new URL(import.meta.resolve('openapi-fetch')),
-  };
-  for (const [label, url] of Object.entries(entries)) {
-    const outDir = join(directory, label);
+  for (const [label, source] of Object.entries(entries)) {
+    const entry = join(directory, `${label}.mjs`);
+    writeFileSync(entry, source);
+    const outDir = join(directory, 'out', label);
     await build({
       config: false,
-      entry: { entry: fileURLToPath(url) },
+      entry: { entry },
       outDir,
       format: ['esm'],
       target: 'es2022',
-      platform: 'neutral',
+      // Browser conditions select the Fetch/XHR builds that client applications ship.
+      platform: 'browser',
       deps: { alwaysBundle: /.*/ },
       minify: true,
       dts: false,

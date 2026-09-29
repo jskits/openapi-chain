@@ -16,7 +16,7 @@
 | [Core to strict migration](migration.md) | Stage a migration, preserve intentional response contracts and review wire changes |
 | [Offline migration checks](migration-check.md) | Compare core and strict requests and parsed values before switching |
 | [Troubleshooting](troubleshooting.md) | Diagnose type errors, serialization failures and Fetch behavior |
-| [Performance](performance.md) | Reproduce size, runtime and TypeScript measurements |
+| [Performance](performance.md) | Reproduce size, runtime, TypeScript and client-comparison measurements |
 
 ## Contribute and maintain
 

@@ -9,7 +9,7 @@ The pnpm monorepo contains three publishable packages: [`openapi-chain`](package
 The first request below uses the [Items schema](examples/service.openapi.json). Your chain follows your own schema: static path segments become properties, `{parameters}` become function calls, and HTTP methods become request functions.
 
 - **Typed requests and responses:** infer parameters, request media types and status-correlated results from the selected operation.
-- **Small default runtime:** the complete emitted core has a **3.5 KiB gzip budget**, enforced by a [reproducible size check](docs/performance.md#size).
+- **Small default runtime:** the complete emitted core has a **3.5 KiB gzip budget**, enforced by a [reproducible size check](docs/performance.md#size). Its bundle size and per-request overhead are in the same range as openapi-fetch; see the [client comparison](docs/performance.md#comparison-with-other-clients).
 - **Opt-in OpenAPI serialization:** a separate strict client handles supported styles, Encoding Objects and OpenAPI 3.0/3.1/3.2 serialization metadata.
 - **Customizable requests:** operation-typed extensions and Fetch-compatible transports support application-specific serialization, authentication and parsing.
 
@@ -111,7 +111,7 @@ Response types assume the server follows the schema. For runtime validation, bin
 | [API reference](docs/api.md) | Client options, paths, bodies, errors, extensions and transports |
 | [Support and boundaries](docs/support.md) | Serialization matrix, metadata inference and platform limits |
 | [Troubleshooting](docs/troubleshooting.md) | Common type, serialization, Fetch and response problems |
-| [Performance](docs/performance.md) | Size budgets, benchmark methods and dated measurements |
+| [Performance](docs/performance.md) | Size budgets, client comparisons, benchmark methods and dated measurements |
 | [Architecture](docs/architecture.md) | Type model, package boundaries and source map |
 | [Development](docs/development.md) | Local setup, checks, browser tests and release workflow |
 | [Documentation index](docs/README.md) | All guides and historical qualification reports |

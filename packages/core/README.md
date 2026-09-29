@@ -7,7 +7,7 @@ A TypeScript OpenAPI client with a fluent path API, zero generated endpoint code
 The first request below uses the [Items schema](https://github.com/jskits/openapi-chain/blob/main/examples/service.openapi.json). Your chain follows your own schema: static path segments become properties, `{parameters}` become function calls, and HTTP methods become request functions.
 
 - **Typed requests and responses:** infer parameters, request media types and status-correlated results from the selected operation.
-- **Small default runtime:** the complete emitted core has a **3.5 KiB gzip budget**, enforced by a [reproducible size check](https://github.com/jskits/openapi-chain/blob/main/docs/performance.md#size).
+- **Small default runtime:** the complete emitted core has a **3.5 KiB gzip budget**, enforced by a [reproducible size check](https://github.com/jskits/openapi-chain/blob/main/docs/performance.md#size). Its bundle size and per-request overhead are in the same range as openapi-fetch; see the [client comparison](https://github.com/jskits/openapi-chain/blob/main/docs/performance.md#comparison-with-other-clients).
 - **Opt-in OpenAPI serialization:** a separate strict client handles supported styles, Encoding Objects and OpenAPI 3.0/3.1/3.2 serialization metadata.
 - **Customizable requests:** operation-typed extensions and Fetch-compatible transports support application-specific serialization, authentication and parsing.
 
@@ -109,7 +109,7 @@ Response types assume the server follows the schema. For runtime validation, bin
 | [API reference](https://github.com/jskits/openapi-chain/blob/main/docs/api.md) | Client options, paths, bodies, errors, extensions and transports |
 | [Support and boundaries](https://github.com/jskits/openapi-chain/blob/main/docs/support.md) | Serialization matrix, metadata inference and platform limits |
 | [Troubleshooting](https://github.com/jskits/openapi-chain/blob/main/docs/troubleshooting.md) | Common type, serialization, Fetch and response problems |
-| [Performance](https://github.com/jskits/openapi-chain/blob/main/docs/performance.md) | Size budgets, benchmark methods and dated measurements |
+| [Performance](https://github.com/jskits/openapi-chain/blob/main/docs/performance.md) | Size budgets, client comparisons, benchmark methods and dated measurements |
 | [Architecture](https://github.com/jskits/openapi-chain/blob/main/docs/architecture.md) | Type model, package boundaries and source map |
 | [Development](https://github.com/jskits/openapi-chain/blob/main/docs/development.md) | Local setup, checks, browser tests and release workflow |
 | [Documentation index](https://github.com/jskits/openapi-chain/blob/main/docs/README.md) | All guides and historical qualification reports |
