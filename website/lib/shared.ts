@@ -1,8 +1,7 @@
 import { createGetUrl } from 'fumadocs-core/source';
 
 export const appName = 'openapi-chain';
-export const appDescription =
-  'A type-safe OpenAPI client for complex and large APIs, whose requests follow the document’s wire rules exactly.';
+export const appDescription = 'Typed OpenAPI calls, serialized exactly as your spec declares.';
 export const docsRoute = '/docs';
 export const docsImageRoute = '/og/docs';
 export const docsContentRoute = '/llms.mdx/docs';

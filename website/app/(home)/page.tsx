@@ -82,7 +82,9 @@ export default function HomePage() {
             </span>
           </p>
           <h1 className="text-4xl font-semibold tracking-tight md:text-5xl">
-            Type-safe OpenAPI requests that follow your document exactly
+            <span className="block">Spec-exact requests.</span>
+            <span className="block">Fluent, fully typed calls.</span>
+            <span className="block">Fast type-checks on huge specs.</span>
           </h1>
           <p className="max-w-2xl text-lg text-fd-muted-foreground">
             openapi-chain compiles the serialization rules an OpenAPI document declares and applies
