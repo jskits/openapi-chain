@@ -2,6 +2,7 @@
   "name": "@openapi-chain/query",
   "version": "0.5.2",
   "description": "Explicit operation query keys and fetchers for TanStack Query and SWR.",
+  "homepage": "https://jskits.github.io/openapi-chain/",
   "license": "MIT",
   "repository": {
     "type": "git",
