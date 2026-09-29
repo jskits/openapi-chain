@@ -1,0 +1,33 @@
+{
+  "title": "Documentation",
+  "pages": [
+    "index",
+    "---Get started---",
+    "getting-started",
+    "cli",
+    "large-schemas",
+    "---Guides---",
+    "integrations",
+    "openapi-fetch-adapter",
+    "migration",
+    "migration-check",
+    "migration-to-scope",
+    "troubleshooting",
+    "---Reference---",
+    "api",
+    "support",
+    "compatibility",
+    "---Comparisons and performance---",
+    "wire-comparison",
+    "performance",
+    "serializer-profiles",
+    "---Project---",
+    "architecture",
+    "development",
+    "contributing",
+    "corpus",
+    "security",
+    "changelog",
+    "archive"
+  ]
+}
