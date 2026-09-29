@@ -14,6 +14,7 @@ import {
 } from './serialization.js';
 import { createOperationResolver, type ProxyState } from './routes.js';
 import { safePath, safeUrl } from './path.js';
+import { mergeHeaders } from './headers.js';
 import { mediaType, isJsonMediaType } from './media.js';
 import { httpMethods } from './constant.js';
 import { snapshotMetadata } from './metadata-contract.js';
@@ -123,14 +124,11 @@ async function execute(
 
     const headers = await resolveHeaders(runtime.options.headers);
     if (input?.header && extensions?.header) {
-      new Headers(extensions.header(input.header)).forEach((value, key) => headers.set(key, value));
+      mergeHeaders(headers, extensions.header(input.header));
     } else {
       appendParameterHeaders(headers, input?.header, operation, undefined);
     }
-    if (input?.init?.headers) {
-      const extra = new Headers(input.init.headers);
-      extra.forEach((value, key) => headers.set(key, value));
-    }
+    if (input?.init?.headers) mergeHeaders(headers, input.init.headers);
     if (input?.cookie && extensions?.cookie) {
       headers.set('cookie', extensions.cookie(input.cookie));
     } else {

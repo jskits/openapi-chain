@@ -15,15 +15,23 @@ export function safePath(path: string, segment = false): string {
   return path;
 }
 
+const reference = 'http://openapi.invalid/';
+// A client's base URL rarely changes, so remember the last parsed boundary by value.
+let lastBase: string | undefined;
+let lastBoundary: { origin: string; prefix: string } | undefined;
+function baseBoundary(base: string) {
+  if (base === lastBase && lastBoundary) return lastBoundary;
+  const source = new URL(base, reference);
+  const boundary = { origin: source.origin, prefix: `${source.pathname.replace(/\/+$/, '')}/` };
+  if (typeof base === 'string') [lastBase, lastBoundary] = [base, boundary];
+  return boundary;
+}
+
 /** Compare parsed URLs as Fetch will see them, including relative service URLs. */
 export function safeUrl(base: string, url: string): string {
-  const reference = 'http://openapi.invalid/';
-  const source = new URL(base, reference);
+  const { origin, prefix } = baseBoundary(base);
   const target = new URL(url, reference);
-  if (
-    target.origin !== source.origin ||
-    !target.pathname.startsWith(`${source.pathname.replace(/\/+$/, '')}/`)
-  )
+  if (target.origin !== origin || !target.pathname.startsWith(prefix))
     throw new OpenAPIChainError('UNSAFE_PATH', 'Request URL escapes the service base path.');
   return url;
 }

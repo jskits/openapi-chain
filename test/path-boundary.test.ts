@@ -131,3 +131,30 @@ test('final URL validation checks origin and path-segment boundaries', () => {
     'https://example.test/root//x',
   );
 });
+
+test('final URL validation follows base URL changes between requests', () => {
+  expect(safeUrl('https://example.test/a', 'https://example.test/a/x')).toBe(
+    'https://example.test/a/x',
+  );
+  expect(() => safeUrl('https://example.test/b', 'https://example.test/a/x')).toThrow(/escapes/);
+  expect(() => safeUrl('https://other.test/a', 'https://example.test/a/x')).toThrow(/escapes/);
+  expect(safeUrl('https://example.test/a', 'https://example.test/a/y')).toBe(
+    'https://example.test/a/y',
+  );
+});
+
+test('core validation follows a mutated baseUrl option', async () => {
+  const urls: string[] = [];
+  const options = {
+    baseUrl: 'https://example.test/v1',
+    transport: async ({ url }: { url: string }) => {
+      urls.push(url);
+      return new Response(null, { status: 204 });
+    },
+  };
+  const api = createClient<Paths>(options);
+  await api.files('a').post({ body: {}, contentType: 'application/json' });
+  options.baseUrl = 'https://example.test/v2';
+  await api.files('b').post({ body: {}, contentType: 'application/json' });
+  expect(urls).toEqual(['https://example.test/v1/files/a', 'https://example.test/v2/files/b']);
+});

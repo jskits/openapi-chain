@@ -6,6 +6,7 @@ import { isPlainRecord } from './record.js';
 /* oxlint-disable typescript/no-base-to-string -- Core scalar coercion intentionally follows String(); structured serialization uses typed extensions. */
 import { stringifyJson } from './json.js';
 import { safePath, safeUrl } from './path.js';
+import { mergeHeaders } from './headers.js';
 import { mediaType, isJsonMediaType, validateTextCharset } from './media.js';
 import { httpMethods } from './constant.js';
 import {
@@ -135,15 +136,13 @@ async function executeRequest(
       joinUrl(runtime.options.baseUrl, safePath(renderPath(state, extensions?.path))),
     );
     const headers = new Headers(runtime.options.headers);
-    const mergeHeaders = (value: HeadersInit) =>
-      new Headers(value).forEach((entry, name) => headers.set(name, entry));
     if (input?.header) {
-      if (extensions?.header) mergeHeaders(extensions.header(input.header));
+      if (extensions?.header) mergeHeaders(headers, extensions.header(input.header));
       else
         for (const [k, v] of entries(input.header))
           if (v != null) headers.set(k, flat(v, `header ${k}`));
     }
-    if (input?.init?.headers) mergeHeaders(input.init.headers);
+    if (input?.init?.headers) mergeHeaders(headers, input.init.headers);
     if (input?.cookie) {
       if (extensions?.cookie) headers.set('cookie', extensions.cookie(input.cookie));
       else {
