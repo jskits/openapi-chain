@@ -1,8 +1,10 @@
 # Development
 
-[Documentation index](README.md) · [Contributing](../CONTRIBUTING.md) · [Architecture](architecture.md)
+[Documentation index](README.md) · [Contributing](../CONTRIBUTING.md) ·
+[Architecture](architecture.md)
 
-Use Node.js **24.16.0** (see `.node-version`) and **pnpm 10.34.5**. CI also checks Node.js 22.22.2 and 26, plus Windows and macOS on Node.js 24.
+Use Node.js **24.16.0** (see `.node-version`) and **pnpm 10.34.5**. CI also checks Node.js 22.22.2
+and 26, plus Windows and macOS on Node.js 24.
 
 ```sh
 corepack enable
@@ -11,44 +13,56 @@ pnpm install --frozen-lockfile
 pnpm check
 ```
 
-If your Node.js installation does not include Corepack, install pnpm 10.34.5 using the [pnpm installation guide](https://pnpm.io/installation).
+If your Node.js installation does not include Corepack, install pnpm 10.34.5 using the
+[pnpm installation guide](https://pnpm.io/installation).
 
-| Command | Purpose |
-| --- | --- |
-| `pnpm dev` | Rebuild the library on changes |
-| `pnpm build` | Use Turbo to build the published packages in dependency order, with local output caching |
-| `pnpm lint` / `pnpm lint:fix` | Oxlint checks, including type-aware rules; optional fixes |
-| `pnpm format` / `pnpm format:check` | Format or check using Oxfmt |
-| `pnpm typecheck` / `pnpm typecheck:ts7` | Strict source, test and example checks with pinned TS 6 / TS 7 |
-| `pnpm check:ts7` | TS 7 source, installed-consumer and type-budget gates (build first) |
-| `pnpm benchmark:types:ts7` / `pnpm benchmark:editor:ts7` | Native compiler complexity scenarios / actual native LSP completion samples |
-| `pnpm test` / `pnpm test:watch` | Run Vitest once or in watch mode |
-| `pnpm test:coverage` | Run tests with V8 coverage and 90% thresholds |
-| `pnpm test:corpus:fixed` | Compare the fixed corpus with its approved baseline; TS6 and TS7 run in `pnpm check` |
-| `pnpm test:cli` | Run CLI filesystem, generation and command-contract regressions after building |
-| `pnpm test:release` | Run offline registry visibility, provenance and timeout regressions |
-| `pnpm verify:published` | Check exact registry versions and provenance metadata, then install and exercise all three public packages |
-| `pnpm test:cli:package` | Install runtime/CLI tarballs and verify the installed command, generated types and browser bundle |
-| `pnpm test:package` / `pnpm verify:package` | Verify all three entries in an isolated tarball consumer |
-| `pnpm size:check` | Enforce the 3584-byte transitive core gzip limit after building |
-| `pnpm check` | Run the complete local quality gate, including a fresh build |
-| `pnpm commit` | Create a Conventional Commit using Commitizen |
-| `pnpm changeset` | Describe a user-facing change and its version impact |
-| `pnpm version:packages` | Apply changesets, update the lockfile and regenerate the scoped CLI fixture |
-| `pnpm test:generated` | Regenerate and compare the pinned OpenAPI fixtures |
-| `pnpm test:browser` | Run Chromium integration after building and installing its browser |
-| `pnpm benchmark` | Rebuild and measure type scale, runtime overhead and comparable bundle sizes |
+| Command                                                           | Purpose                                                                                                                  |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm dev`                                                        | Rebuild the library on changes                                                                                           |
+| `pnpm build`                                                      | Use Turbo to build the published packages in dependency order, with local output caching                                 |
+| `pnpm lint` / `pnpm lint:fix`                                     | Oxlint checks, including type-aware rules; optional fixes                                                                |
+| `pnpm format` / `pnpm format:check`                               | Format or check using Oxfmt                                                                                              |
+| `pnpm typecheck` / `pnpm typecheck:ts7`                           | Strict source, test and example checks with pinned TS 6 / TS 7                                                           |
+| `pnpm check:ts7`                                                  | TS 7 source, installed-consumer and type-budget gates (build first)                                                      |
+| `pnpm benchmark:types:ts7` / `pnpm benchmark:editor:ts7`          | Native compiler complexity scenarios / actual native LSP completion samples                                              |
+| `pnpm test` / `pnpm test:watch`                                   | Run Vitest once or in watch mode                                                                                         |
+| `pnpm test:coverage`                                              | Run tests with V8 coverage and 90% thresholds                                                                            |
+| `pnpm test:corpus:fixed`                                          | Compare the fixed corpus with its approved baseline; TS6 and TS7 run in `pnpm check`                                     |
+| `pnpm test:cli`                                                   | Run CLI filesystem, generation and command-contract regressions after building                                           |
+| `pnpm test:release`                                               | Run offline registry visibility, provenance and timeout regressions                                                      |
+| `pnpm verify:published`                                           | Check exact registry versions and provenance metadata, then install and exercise all three public packages               |
+| `pnpm test:cli:package`                                           | Install runtime/CLI tarballs and verify the installed command, generated types and browser bundle                        |
+| `pnpm test:package` / `pnpm verify:package`                       | Verify all three entries in an isolated tarball consumer                                                                 |
+| `pnpm size:check`                                                 | Enforce the 3584-byte transitive core gzip limit after building                                                          |
+| `pnpm check`                                                      | Run the complete local quality gate, including a fresh build                                                             |
+| `pnpm commit`                                                     | Create a Conventional Commit using Commitizen                                                                            |
+| `pnpm changeset`                                                  | Describe a user-facing change and its version impact                                                                     |
+| `pnpm version:packages`                                           | Apply changesets, update the lockfile and regenerate the scoped CLI fixture                                              |
+| `pnpm test:generated`                                             | Regenerate and compare the pinned OpenAPI fixtures                                                                       |
+| `pnpm test:browser`                                               | Run Chromium integration after building and installing its browser                                                       |
+| `pnpm benchmark`                                                  | Rebuild and measure type scale, runtime overhead and comparable bundle sizes                                             |
 | `pnpm benchmark:competitors` / `pnpm benchmark:competitors:types` | Compare request overhead (Fetch mock and loopback HTTP) / TS 6 and TS 7 type-checking cost with pinned competing clients |
-| `pnpm benchmark:real-schemas --compiler=ts6` / `--compiler=ts7` | Download pinned GitHub and Stripe documents (network) and compare openapi-chain and openapi-fetch type-checking cost |
-| `pnpm clean` | Remove build and coverage output |
+| `pnpm benchmark:real-schemas --compiler=ts6` / `--compiler=ts7`   | Download pinned GitHub and Stripe documents (network) and compare openapi-chain and openapi-fetch type-checking cost     |
+| `pnpm clean`                                                      | Remove build and coverage output                                                                                         |
 
-`test:package` needs `pnpm build` first. It packs and installs the package in a temporary directory, verifies the file allowlist, and checks ESM/CJS imports plus NodeNext declaration resolution for core, strict and metadata, typed operations, mocked requests and real local HTTP. It does not publish anything.
+`test:package` needs `pnpm build` first. It packs and installs the package in a temporary directory,
+verifies the file allowlist, and checks ESM/CJS imports plus NodeNext declaration resolution for
+core, strict and metadata, typed operations, mocked requests and real local HTTP. It does not
+publish anything.
 
 ## Choose the right check
 
-`pnpm check` runs a fresh build/package lint first, followed by formatting, typed lint, generated-fixture freshness, TypeScript, runtime coverage, CLI and release-verifier regressions, fixed corpus baselines, migration/scoped checks, installed runtime/CLI/Query tarball consumers, core gzip size, and TS 6/TS 7 type-scale/scoping gates. TS 7 also checks an isolated generator installation and installed declarations. It excludes the separate Chromium suite, public-registry consumer check and runtime/size/metadata microbenchmarks.
+`pnpm check` runs a fresh build/package lint first, followed by formatting, typed lint,
+generated-fixture freshness, TypeScript, runtime coverage, CLI and release-verifier regressions,
+fixed corpus baselines, migration/scoped checks, installed runtime/CLI/Query tarball consumers, core
+gzip size, and TS 6/TS 7 type-scale/scoping gates. TS 7 also checks an isolated generator
+installation and installed declarations. It excludes the separate Chromium suite, public-registry
+consumer check and runtime/size/metadata microbenchmarks.
 
-For a focused behavior change, run its Vitest file during iteration, then the full gate before submitting. For documentation, check links/anchors and typecheck examples against their actual generated schema; keep measured claims tied to a dated verification report. `pnpm format` formats the whole repository, so inspect the diff and avoid including unrelated formatting changes.
+For a focused behavior change, run its Vitest file during iteration, then the full gate before
+submitting. For documentation, check links/anchors and typecheck examples against their actual
+generated schema; keep measured claims tied to a dated verification report. `pnpm format` formats
+the whole repository, so inspect the diff and avoid including unrelated formatting changes.
 
 For transport or browser behavior:
 
@@ -58,73 +72,185 @@ pnpm exec playwright install chromium
 pnpm test:browser
 ```
 
-On Linux CI, the workflow uses `pnpm exec playwright install --with-deps chromium`. The suite starts local loopback servers and checks real Chromium Fetch behavior, including multipart, CORS/cookies, cancellation, binary and streaming responses. It does not qualify Firefox or WebKit.
+On Linux CI, the workflow uses `pnpm exec playwright install --with-deps chromium`. The suite starts
+local loopback servers and checks real Chromium Fetch behavior, including multipart, CORS/cookies,
+cancellation, binary and streaming responses. It does not qualify Firefox or WebKit.
 
-For compiler, serialization or type changes that real documents could expose, run the opt-in corpus check after `pnpm build`:
+For compiler, serialization or type changes that real documents could expose, run the opt-in corpus
+check after `pnpm build`:
 
 ```sh
 pnpm test:corpus --types=120
 ```
 
-It runs the preferred OpenAPI 3.x document of every API listed by APIs.guru through metadata compilation and every operation through core and strict clients with a capturing transport; `--types=N` also generates N documents with the CLI and type-checks typed calls. The first run downloads about 600 MB into `.cache/corpus`; later runs reuse it, and `--offline` skips downloads (set `NODE_USE_ENV_PROXY=1` if direct Fetch cannot reach the network). It fails on crashes, hangs, missing or invalid JSON documents and type errors in generated consumers. Contract rejections are reported in groups, with full results in `.cache/corpus/results.json`. Add `--baseline=<reviewed-file>` to reject new compilation failures, request rejections and suspicious output. The small fixed regression corpus runs offline under TS6 and TS7 in `pnpm check`; see [corpus regression checks](corpus.md) for baseline review and reproduction. See the [corpus report](archive/qualification/apis-guru-corpus-2026-09-25.md) for the method and a dated result.
+It runs the preferred OpenAPI 3.x document of every API listed by APIs.guru through metadata
+compilation and every operation through core and strict clients with a capturing transport;
+`--types=N` also generates N documents with the CLI and type-checks typed calls. The first run
+downloads about 600 MB into `.cache/corpus`; later runs reuse it, and `--offline` skips downloads
+(set `NODE_USE_ENV_PROXY=1` if direct Fetch cannot reach the network). It fails on crashes, hangs,
+missing or invalid JSON documents and type errors in generated consumers. Contract rejections are
+reported in groups, with full results in `.cache/corpus/results.json`. Add
+`--baseline=<reviewed-file>` to reject new compilation failures, request rejections and suspicious
+output. The small fixed regression corpus runs offline under TS6 and TS7 in `pnpm check`; see
+[corpus regression checks](corpus.md) for baseline review and reproduction. See the
+[corpus report](archive/qualification/apis-guru-corpus-2026-09-25.md) for the method and a dated
+result.
 
-For schema changes, run `pnpm generate:example`, format the generated declarations, then `pnpm test:generated` and `pnpm typecheck`. The Petstore, Items and conformance fixtures use that workflow. The scoped catalog uses `pnpm generate:scoped` and `pnpm test:scoped` through the official CLI; its generated directory must not be reformatted. For performance changes, use `pnpm benchmark`; see [measurement methods](performance.md). Runtime/metadata timings are observations, not CI timing gates.
+For schema changes, run `pnpm generate:example`, format the generated declarations, then
+`pnpm test:generated` and `pnpm typecheck`. The Petstore, Items and conformance fixtures use that
+workflow. The scoped catalog uses `pnpm generate:scoped` and `pnpm test:scoped` through the official
+CLI; its generated directory must not be reformatted. For performance changes, use `pnpm benchmark`;
+see [measurement methods](performance.md). Runtime/metadata timings are observations, not CI timing
+gates.
 
 ## Project conventions
 
-- Add exports to the appropriate public entry: `packages/core/src/index.ts`, `packages/core/src/strict.ts` or `packages/core/src/metadata.ts`. Keep strict/compiler imports out of core. Put behavior tests in `test/*.test.ts` and compile-time regressions in `test/*.typecheck.ts`.
+- Add exports to the appropriate public entry: `packages/core/src/index.ts`,
+  `packages/core/src/strict.ts` or `packages/core/src/metadata.ts`. Keep strict/compiler imports out
+  of core. Put behavior tests in `test/*.test.ts` and compile-time regressions in
+  `test/*.typecheck.ts`.
 - Use explicit `.js` extensions for relative TypeScript imports under NodeNext.
-- The runtime package has no dependencies. The separate `packages/cli/` workspace owns Node-only generation dependencies and pins a private TypeScript 5.9.3 compatible with its generator. Keep those dependencies out of runtime entries.
-- TypeScript 6.0.3 remains the compiler API/build dependency; `typescript7` is a pinned npm alias to TypeScript 7.0.2 for the recommended performance baseline. Both are checked. Use named scripts, not bare `tsc`, because their executable names collide. `pnpm-workspace.yaml` permits this exact version for openapi-typescript 7.13.0, whose declared peer range is `^5.x`, while retaining strict peer checks. Independent applications need their own [scoped configuration](getting-started.md#generator-and-typescript-compatibility). Compiler upgrades must pass declaration, generated fixture, installed-consumer and type-scale checks.
-- Only built output and package metadata, README, license and an optional changelog ship from the core and query packages. The CLI ships its Node source.
-- `pnpm install` installs Husky hooks. Pre-commit runs lint-staged; commit-msg runs commitlint. The full type-aware check runs in `pnpm check` and CI.
-- `sideEffects: false` assumes library modules do not perform import-time side effects. Update the declaration if future modules require them.
-- Dependency lifecycle scripts are denied by default. Review and explicitly allow any future dependency that needs a build script in `pnpm-workspace.yaml`.
+- The runtime package has no dependencies. The separate `packages/cli/` workspace owns Node-only
+  generation dependencies and pins a private TypeScript 5.9.3 compatible with its generator. Keep
+  those dependencies out of runtime entries.
+- TypeScript 6.0.3 remains the compiler API/build dependency; `typescript7` is a pinned npm alias to
+  TypeScript 7.0.2 for the recommended performance baseline. Both are checked. Use named scripts,
+  not bare `tsc`, because their executable names collide. `pnpm-workspace.yaml` permits this exact
+  version for openapi-typescript 7.13.0, whose declared peer range is `^5.x`, while retaining strict
+  peer checks. Independent applications need their own
+  [scoped configuration](getting-started.md#generator-and-typescript-compatibility). Compiler
+  upgrades must pass declaration, generated fixture, installed-consumer and type-scale checks.
+- Only built output and package metadata, README, license and an optional changelog ship from the
+  core and query packages. The CLI ships its Node source.
+- `pnpm install` installs Husky hooks. Pre-commit runs lint-staged; commit-msg runs commitlint. The
+  full type-aware check runs in `pnpm check` and CI.
+- `sideEffects: false` assumes library modules do not perform import-time side effects. Update the
+  declaration if future modules require them.
+- Dependency lifecycle scripts are denied by default. Review and explicitly allow any future
+  dependency that needs a build script in `pnpm-workspace.yaml`.
 
 See [CONTRIBUTING.md](../CONTRIBUTING.md) for the contributor and release workflows.
 
 ## Release setup
 
-Changesets v3 and its v2 GitHub Actions manage version PRs, changelogs, package artifacts, npm publication and GitHub releases. The workflow separates verification, packing and publication; only the publishing job has an OIDC permission.
+Changesets v3 and its v2 GitHub Actions manage version PRs, changelogs, package artifacts, npm
+publication and GitHub releases. The workflow separates verification, packing and publication; only
+the publishing job has an OIDC permission.
 
-The [release workflow](../.github/workflows/release.yml) runs on `main` and supports an existing `v<core version>` tag for recovery. All three packages are already published, with Trusted Publishing configured. `SCOPED_PUBLISH_ENABLED=true` records that setup; `RELEASE_ENABLED=false` is an emergency stop.
+The [release workflow](../.github/workflows/release.yml) runs on `main` and supports an existing
+`v<core version>` tag for recovery. All three packages are already published, with Trusted
+Publishing configured. `SCOPED_PUBLISH_ENABLED=true` records that setup; `RELEASE_ENABLED=false` is
+an emergency stop.
 
 Before releasing:
 
-1. Review each package version, `pnpm changeset status`, the changesets and the [compatibility policy](compatibility.md). Run `pnpm check` and Chromium, and confirm the private vulnerability reporting channel is enabled.
-2. Keep the Trusted Publisher configured for **each** npm package: GitHub owner `jskits`, repository `openapi-chain`, workflow filename `release.yml`, and the matching environment setting. A new package needs its own bootstrap publication and publisher configuration before adding it to the release flow.
-3. Keep **Allow GitHub Actions to create and approve pull requests** enabled. The version job uses `contents: write` and `pull-requests: write` for the release PR, `actions: write` to dispatch validation, and `statuses: write` to mark it pending; publication uses a separate OIDC permission.
+1. Review each package version, `pnpm changeset status`, the changesets and the
+   [compatibility policy](compatibility.md). Run `pnpm check` and Chromium, and confirm the private
+   vulnerability reporting channel is enabled.
+2. Keep the Trusted Publisher configured for **each** npm package: GitHub owner `jskits`, repository
+   `openapi-chain`, workflow filename `release.yml`, and the matching environment setting. A new
+   package needs its own bootstrap publication and publisher configuration before adding it to the
+   release flow.
+3. Keep **Allow GitHub Actions to create and approve pull requests** enabled. The version job uses
+   `contents: write` and `pull-requests: write` for the release PR, `actions: write` to dispatch
+   validation, and `statuses: write` to mark it pending; publication uses a separate OIDC
+   permission.
 
-`version:packages` applies Changesets' independent package releases and refreshes the generated scoped fixture. The `v<version>` recovery path validates the core package version; use the normal Changesets flow for independent CLI and Query releases.
+`version:packages` applies Changesets' independent package releases and refreshes the generated
+scoped fixture. The `v<version>` recovery path validates the core package version; use the normal
+Changesets flow for independent CLI and Query releases.
 
-Pushing changesets to `main` creates or updates a version PR. The version job marks its head SHA with a pending `Release PR CI` commit status, then dispatches the [release PR validation workflow](../.github/workflows/release-pr-ci.yml). Its guard requires the dispatch SHA to equal the expected SHA and the PR to remain open, target `main`, and use this repository's `changeset-release/main` branch at that SHA. It then runs the full Node/OS matrix and Chromium through the read-only reusable CI workflow at the immutable SHA. A separate job reports `Release PR CI` success only when that validation succeeds, and failure when the reusable CI does not succeed. If the guard fails, the whole run is canceled, or the status API fails, the pending status can remain until the version job or validation is rerun.
+Pushing changesets to `main` creates or updates a version PR. The version job marks its head SHA
+with a pending `Release PR CI` commit status, then dispatches the
+[release PR validation workflow](../.github/workflows/release-pr-ci.yml). Its guard requires the
+dispatch SHA to equal the expected SHA and the PR to remain open, target `main`, and use this
+repository's `changeset-release/main` branch at that SHA. It then runs the full Node/OS matrix and
+Chromium through the read-only reusable CI workflow at the immutable SHA. A separate job reports
+`Release PR CI` success only when that validation succeeds, and failure when the reusable CI does
+not succeed. If the guard fails, the whole run is canceled, or the status API fails, the pending
+status can remain until the version job or validation is rerun.
 
-This is a [commit status](https://docs.github.com/en/rest/commits/statuses#about-commit-statuses), which GitHub reflects on PRs involving that commit. GitHub does **not** evaluate `workflow_dispatch` job checks as required PR checks, even when they ran on the PR head SHA; see [required-check troubleshooting](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks#checks-from-some-workflow-jobs-are-not-evaluated). The `Release PR CI` status provides a separate result for this release PR; it does not replace the existing required matrix and Chromium checks. Do not make this context a global requirement for `main` unless every other PR also emits it. Review the PR status and approve its eligible `pull_request` workflow runs before merging when GitHub requests approval for runs created by `GITHUB_TOKEN`.
+This is a [commit status](https://docs.github.com/en/rest/commits/statuses#about-commit-statuses),
+which GitHub reflects on PRs involving that commit. GitHub does **not** evaluate `workflow_dispatch`
+job checks as required PR checks, even when they ran on the PR head SHA; see
+[required-check troubleshooting](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks#checks-from-some-workflow-jobs-are-not-evaluated).
+The `Release PR CI` status provides a separate result for this release PR; it does not replace the
+existing required matrix and Chromium checks. Do not make this context a global requirement for
+`main` unless every other PR also emits it. Review the PR status and approve its eligible
+`pull_request` workflow runs before merging when GitHub requests approval for runs created by
+`GITHUB_TOKEN`.
 
-Merging the version PR runs the publish verification again before packaging and publication. Only the publish job receives `id-token: write`. It publishes the packed artifact with lifecycle scripts disabled, then creates Git tags and GitHub releases. The workflow requires the publish-plan and package artifact IDs so a missing artifact cannot fall back to publishing from the checkout.
+Merging the version PR runs the publish verification again before packaging and publication. Only
+the publish job receives `id-token: write`. It publishes the packed artifact with lifecycle scripts
+disabled, then creates Git tags and GitHub releases. The workflow requires the publish-plan and
+package artifact IDs so a missing artifact cannot fall back to publishing from the checkout.
 
-The pinned Node.js version provides npm; the publish job checks npm is at least `11.5.1`, as required for Trusted Publishing. pnpm 10 delegates tarball publication to that npm CLI. Authentication uses OIDC, with no `NPM_TOKEN`, `NODE_AUTH_TOKEN`, or `setup-node` `registry-url` configuration. Provenance is enabled explicitly. If the npm Trusted Publisher uses an environment name, add the exact same `environment` to the publish job before running it.
+The pinned Node.js version provides npm; the publish job checks npm is at least `11.5.1`, as
+required for Trusted Publishing. pnpm 10 delegates tarball publication to that npm CLI.
+Authentication uses OIDC, with no `NPM_TOKEN`, `NODE_AUTH_TOKEN`, or `setup-node` `registry-url`
+configuration. Provenance is enabled explicitly. If the npm Trusted Publisher uses an environment
+name, add the exact same `environment` to the publish job before running it.
 
-After publication, the workflow runs `pnpm verify:published`'s script against the versions in each package manifest. It waits up to 30 minutes for all exact versions, integrity and provenance metadata to be visible at `registry.npmjs.org`, then installs the three packages with empty npm configuration and cache. The installed consumer checks CLI generation and drift, ESM/CommonJS entry points, core/strict HTTP requests and Query snapshots/fetchers. It uses a local HTTP server and requires no API credentials. The publish job has a 45-minute limit, including registry propagation and installation. `pnpm test:release` exercises pending metadata and timeout behavior offline inside the normal quality gate.
+After publication, the workflow runs `pnpm verify:published`'s script against the versions in each
+package manifest. It waits up to 30 minutes for all exact versions, integrity and provenance
+metadata to be visible at `registry.npmjs.org`, then installs the three packages with empty npm
+configuration and cache. The installed consumer checks CLI generation and drift, ESM/CommonJS entry
+points, core/strict HTTP requests and Query snapshots/fetchers. It uses a local HTTP server and
+requires no API credentials. The publish job has a 45-minute limit, including registry propagation
+and installation. `pnpm test:release` exercises pending metadata and timeout behavior offline inside
+the normal quality gate.
 
-Run `pnpm verify:published` from the released commit to reproduce this check; a checkout with unpublished versions should time out. It verifies metadata presence and actual npm installation, not an independent cryptographic audit of the provenance attestation. Historical recovery tags that predate this script skip the new consumer step and report it as skipped in the summary; current releases require it.
+Run `pnpm verify:published` from the released commit to reproduce this check; a checkout with
+unpublished versions should time out. It verifies metadata presence and actual npm installation, not
+an independent cryptographic audit of the provenance attestation. Historical recovery tags that
+predate this script skip the new consumer step and report it as skipped in the summary; current
+releases require it.
 
-After a release, check the Actions publication and consumer-verification summary, Git tag and GitHub release. If publication succeeds but verification, tag or GitHub release creation fails, inspect those remote states before retrying; do not bump the version, republish merely during propagation, or replace an existing tag to retry a failed run.
+After a release, check the Actions publication and consumer-verification summary, Git tag and GitHub
+release. If publication succeeds but verification, tag or GitHub release creation fails, inspect
+those remote states before retrying; do not bump the version, republish merely during propagation,
+or replace an existing tag to retry a failed run.
 
-The explicit `workflow_dispatch` provides a separate validation result while default-token PR events wait for a maintainer's approval. GitHub documents both behaviors in its [workflow-trigger rules](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow#triggering-a-workflow-from-a-workflow). If dispatch fails, rerun the version job or manually run `release-pr-ci.yml` on `changeset-release/main` with the current PR head as `expected_sha` and its number as `pr_number`; do not merge based only on successful version generation or the dispatch request itself.
+The explicit `workflow_dispatch` provides a separate validation result while default-token PR events
+wait for a maintainer's approval. GitHub documents both behaviors in its
+[workflow-trigger rules](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow#triggering-a-workflow-from-a-workflow).
+If dispatch fails, rerun the version job or manually run `release-pr-ci.yml` on
+`changeset-release/main` with the current PR head as `expected_sha` and its number as `pr_number`;
+do not merge based only on successful version generation or the dispatch request itself.
 
 ### Recover a release PR permission failure
 
-If the Changesets version step reports `GitHub Actions is not permitted to create or approve pull requests`, version generation may already have succeeded and the release branch may already have been pushed. The failure is the repository policy for Actions-created PRs, not npm authentication or the package version.
+If the Changesets version step reports
+`GitHub Actions is not permitted to create or approve pull requests`, version generation may already
+have succeeded and the release branch may already have been pushed. The failure is the repository
+policy for Actions-created PRs, not npm authentication or the package version.
 
-In **Settings → Actions → General → Workflow permissions**, enable **Allow GitHub Actions to create and approve pull requests**. Keep the default token permissions read-only: the `version` job already declares `contents: write` and `pull-requests: write`, but those declarations do not override the separate repository policy. An organization administrator must resolve an inherited restriction if the checkbox cannot be enabled.
+In **Settings → Actions → General → Workflow permissions**, enable **Allow GitHub Actions to create
+and approve pull requests**. Keep the default token permissions read-only: the `version` job already
+declares `contents: write` and `pull-requests: write`, but those declarations do not override the
+separate repository policy. An organization administrator must resolve an inherited restriction if
+the checkbox cannot be enabled.
 
-After correcting the setting, rerun the failed jobs and confirm that Changesets creates or updates the release PR. Do not bump the package version, delete the release branch, merge the release PR, or change npm credentials merely to retry this failure. A successful `version` job prepares a PR; publication follows only after the release PR is merged and the publish path passes verification.
+After correcting the setting, rerun the failed jobs and confirm that Changesets creates or updates
+the release PR. Do not bump the package version, delete the release branch, merge the release PR, or
+change npm credentials merely to retry this failure. A successful `version` job prepares a PR;
+publication follows only after the release PR is merged and the publish path passes verification.
 
-The workflow adds recovery guidance to the job summary when the version action fails, while preserving the original failure status. It does not query or change repository administration settings using `GITHUB_TOKEN`; that endpoint requires administration access beyond this job's permissions. See [GitHub's workflow-permissions API](https://docs.github.com/en/rest/actions/permissions#get-default-workflow-permissions-for-a-repository).
+The workflow adds recovery guidance to the job summary when the version action fails, while
+preserving the original failure status. It does not query or change repository administration
+settings using `GITHUB_TOKEN`; that endpoint requires administration access beyond this job's
+permissions. See
+[GitHub's workflow-permissions API](https://docs.github.com/en/rest/actions/permissions#get-default-workflow-permissions-for-a-repository).
 
-Reference: [Changesets automation](https://changesets.dev/guide/automating), [npm Trusted Publishing](https://docs.npmjs.com/trusted-publishers/), [tsdown package validation](https://tsdown.dev/options/lint).
+Reference: [Changesets automation](https://changesets.dev/guide/automating),
+[npm Trusted Publishing](https://docs.npmjs.com/trusted-publishers/),
+[tsdown package validation](https://tsdown.dev/options/lint).
 
 ## Query adapter package
 
-`pnpm build` builds both runtime and the separate `@openapi-chain/query` package. `pnpm test:query:package` installs packed artifacts into a fresh consumer, checks ESM/CommonJS and TanStack/SWR types, performs real HTTP requests and checks browser bundle isolation. `pnpm check` repeats consumer verification with TS 6 and TS 7. Changesets includes this workspace package; the release packing job builds it through the root build command. The adapter has no runtime dependencies and does not alter the core gzip budget.
+`pnpm build` builds both runtime and the separate `@openapi-chain/query` package.
+`pnpm test:query:package` installs packed artifacts into a fresh consumer, checks ESM/CommonJS and
+TanStack/SWR types, performs real HTTP requests and checks browser bundle isolation. `pnpm check`
+repeats consumer verification with TS 6 and TS 7. Changesets includes this workspace package; the
+release packing job builds it through the root build command. The adapter has no runtime
+dependencies and does not alter the core gzip budget.

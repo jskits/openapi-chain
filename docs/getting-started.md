@@ -2,7 +2,9 @@
 
 [Documentation index](README.md) · [API reference](api.md) · [Support matrix](support.md)
 
-This guide uses the repository's [Items document](../examples/service.openapi.json): `GET /items/{id}` returns `{ id: string, name: string }` with status 200 or `{ error: string }` with status 404. Replace it with your own OpenAPI document to build your application's chain.
+This guide uses the repository's [Items document](../examples/service.openapi.json):
+`GET /items/{id}` returns `{ id: string, name: string }` with status 200 or `{ error: string }` with
+status 404. Replace it with your own OpenAPI document to build your application's chain.
 
 ## Install a published package
 
@@ -13,13 +15,22 @@ pnpm add openapi-chain
 pnpm add -D @openapi-chain/cli
 ```
 
-The CLI owns its type generator and a private TypeScript 5.9.3 dependency. Your application still needs a supported TypeScript compiler for type checking; if starting from a new application, install `typescript@6.0.3` as a development dependency. See [compiler compatibility](#generator-and-typescript-compatibility). The runtime has no production dependencies, and neither the CLI nor the OpenAPI document belongs in a browser bundle.
+The CLI owns its type generator and a private TypeScript 5.9.3 dependency. Your application still
+needs a supported TypeScript compiler for type checking; if starting from a new application, install
+`typescript@6.0.3` as a development dependency. See
+[compiler compatibility](#generator-and-typescript-compatibility). The runtime has no production
+dependencies, and neither the CLI nor the OpenAPI document belongs in a browser bundle.
 
-These instructions describe the current source checkout. Check the installed package versions and exports before applying them to a registry release: the [runtime manifest](../packages/core/package.json) and [CLI manifest](../packages/cli/package.json) show the source versions, not what npm currently serves. To verify this exact checkout, use the [local tarball consumer check](#install-this-checkout).
+These instructions describe the current source checkout. Check the installed package versions and
+exports before applying them to a registry release: the
+[runtime manifest](../packages/core/package.json) and [CLI manifest](../packages/cli/package.json)
+show the source versions, not what npm currently serves. To verify this exact checkout, use the
+[local tarball consumer check](#install-this-checkout).
 
 ## Generate your types
 
-Save the Items document as `openapi.json` in your application. Create `openapi-chain.config.json` beside it:
+Save the Items document as `openapi.json` in your application. Create `openapi-chain.config.json`
+beside it:
 
 ```json
 {
@@ -36,9 +47,14 @@ pnpm exec openapi-chain generate
 pnpm exec openapi-chain generate --check
 ```
 
-The CLI emits `schema.d.ts`, `scope.ts`, `metadata.ts`, and `manifest.json` together. `ScopedPaths` includes only the selected exact paths; metadata includes the same operations. Commit the generated files, regenerate after changing the document or config, and do not hand-edit them. The CLI accepts local OpenAPI 3.0/3.1 JSON or YAML; bundle external references first. See the [CLI guide](cli.md) for configuration, ownership and `--check` behavior.
+The CLI emits `schema.d.ts`, `scope.ts`, `metadata.ts`, and `manifest.json` together. `ScopedPaths`
+includes only the selected exact paths; metadata includes the same operations. Commit the generated
+files, regenerate after changing the document or config, and do not hand-edit them. The CLI accepts
+local OpenAPI 3.0/3.1 JSON or YAML; bundle external references first. See the [CLI guide](cli.md)
+for configuration, ownership and `--check` behavior.
 
-For a Node ESM application, set `"type": "module"` in `package.json`. A minimal relevant TypeScript configuration is:
+For a Node ESM application, set `"type": "module"` in `package.json`. A minimal relevant TypeScript
+configuration is:
 
 ```json
 {
@@ -52,7 +68,8 @@ For a Node ESM application, set `"type": "module"` in `package.json`. A minimal 
 }
 ```
 
-Use your framework's module settings for bundled applications. NodeNext uses `.js` relative import specifiers even when the source is TypeScript.
+Use your framework's module settings for bundled applications. NodeNext uses `.js` relative import
+specifiers even when the source is TypeScript.
 
 ## Use strict serialization
 
@@ -71,13 +88,22 @@ const item = await api.items('42').get();
 console.log(item.name);
 ```
 
-Replace the example URL with a service implementing your document. Creating a client starts no server, and the OpenAPI `servers` field does not set `baseUrl` automatically. The generated metadata carries supported OpenAPI parameter and body serialization rules. The document and CLI stay out of the client bundle. Runtime metadata cannot reconstruct erased TypeScript types, so retain `<ScopedPaths>`.
+Replace the example URL with a service implementing your document. Creating a client starts no
+server, and the OpenAPI `servers` field does not set `baseUrl` automatically. The generated metadata
+carries supported OpenAPI parameter and body serialization rules. The document and CLI stay out of
+the client bundle. Runtime metadata cannot reconstruct erased TypeScript types, so retain
+`<ScopedPaths>`.
 
-For an existing core application, follow the [migration guide](migration.md) before switching. The call shape is shared, but serialization, validation and binary parsing can change. To inspect typed HTTP errors rather than throw them, use `throwOnError: false` and the [response contract](api.md#responses-and-errors). Network, abort, serialization and parser failures still reject.
+For an existing core application, follow the [migration guide](migration.md) before switching. The
+call shape is shared, but serialization, validation and binary parsing can change. To inspect typed
+HTTP errors rather than throw them, use `throwOnError: false` and the
+[response contract](api.md#responses-and-errors). Network, abort, serialization and parser failures
+still reject.
 
 ## Make a core request
 
-Core is the smaller schema-free serialization option. It uses the same generated scope type, but does not consume metadata:
+Core is the smaller schema-free serialization option. It uses the same generated scope type, but
+does not consume metadata:
 
 ```ts
 import { createClient } from 'openapi-chain';
@@ -88,15 +114,28 @@ const item = await api.items('42').get();
 console.log(item.name);
 ```
 
-For operations declaring a request body, core requires an explicit `contentType`. See [request inputs and bodies](api.md#request-inputs-and-bodies) for a checked Petstore example, query parameters and Fetch options. Check the [support matrix](support.md) when OpenAPI serialization matters; the core serializer cannot infer it from types alone.
+For operations declaring a request body, core requires an explicit `contentType`. See
+[request inputs and bodies](api.md#request-inputs-and-bodies) for a checked Petstore example, query
+parameters and Fetch options. Check the [support matrix](support.md) when OpenAPI serialization
+matters; the core serializer cannot infer it from types alone.
 
 ## Generator and TypeScript compatibility
 
-The minimum supported **application** compiler is TypeScript 6.0.3. CI pins and checks TypeScript 6.0.3 and 7.0.2, including installed declaration consumers. TypeScript 7.0.2 is recommended for large schemas and editor responsiveness; newer compiler versions need their own qualification. Keep using [path scoping](large-schemas.md): a faster compiler does not remove the cost of a large exposed route tree.
+The minimum supported **application** compiler is TypeScript 6.0.3. CI pins and checks TypeScript
+6.0.3 and 7.0.2, including installed declaration consumers. TypeScript 7.0.2 is recommended for
+large schemas and editor responsiveness; newer compiler versions need their own qualification. Keep
+using [path scoping](large-schemas.md): a faster compiler does not remove the cost of a large
+exposed route tree.
 
-The official CLI privately pins TypeScript 5.9.3 for `openapi-typescript@7.13.0` generation. It does not change the application's compiler minimum. With the CLI path above, consumers do not install the generator directly or configure a peer override.
+The official CLI privately pins TypeScript 5.9.3 for `openapi-typescript@7.13.0` generation. It does
+not change the application's compiler minimum. With the CLI path above, consumers do not install the
+generator directly or configure a peer override.
 
-If you install the upstream type generator directly, for example to pair its output with programmatically compiled metadata, verify that toolchain separately. `openapi-typescript@7.13.0` declares `typescript: ^5.x`; this repository's verified direct-generator setup allows its TS 6.0.3 pairing under strict pnpm peer checks. Merge the following rule into your application's `pnpm-workspace.yaml`, preserving other settings:
+If you install the upstream type generator directly, for example to pair its output with
+programmatically compiled metadata, verify that toolchain separately. `openapi-typescript@7.13.0`
+declares `typescript: ^5.x`; this repository's verified direct-generator setup allows its TS 6.0.3
+pairing under strict pnpm peer checks. Merge the following rule into your application's
+`pnpm-workspace.yaml`, preserving other settings:
 
 ```yaml
 strictPeerDependencies: true
@@ -124,7 +163,12 @@ In `package.json`, the two checks can be:
 }
 ```
 
-Both packages advertise a `tsc` binary, so explicit paths avoid ambiguity in `.bin`. The scoped peer rule only allows the generator's TS 6.0.3 pairing; it does not claim generator support for TS 7's compiler API. The repository's `pnpm test:package:ts7` checks this direct-generator setup in an isolated tarball consumer. For an editor, enable its TypeScript 7 native language server explicitly; installing the alias alone does not switch an editor still using TS 6 tsserver. See the [TypeScript 7 side-by-side guidance](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/#running-side-by-side-with-typescript-6-0).
+Both packages advertise a `tsc` binary, so explicit paths avoid ambiguity in `.bin`. The scoped peer
+rule only allows the generator's TS 6.0.3 pairing; it does not claim generator support for TS 7's
+compiler API. The repository's `pnpm test:package:ts7` checks this direct-generator setup in an
+isolated tarball consumer. For an editor, enable its TypeScript 7 native language server explicitly;
+installing the alias alone does not switch an editor still using TS 6 tsserver. See the
+[TypeScript 7 side-by-side guidance](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/#running-side-by-side-with-typescript-6-0).
 
 For manual strict metadata, compile the same parsed document used to generate `paths`:
 
@@ -140,11 +184,16 @@ const api = createStrictClient<paths>({
 });
 ```
 
-Enable `resolveJsonModule` for this JSON import. The compiler accepts an object, not a filename or YAML string; external references must be bundled into supported local JSON Pointer references or dereferenced first. The compiler supports OpenAPI 3.2 metadata, but you must qualify a matching type generation path separately because the CLI rejects 3.2. Treat metadata as immutable and recreate the client when it changes. A cast of arbitrary JSON does not prove that metadata and types match.
+Enable `resolveJsonModule` for this JSON import. The compiler accepts an object, not a filename or
+YAML string; external references must be bundled into supported local JSON Pointer references or
+dereferenced first. The compiler supports OpenAPI 3.2 metadata, but you must qualify a matching type
+generation path separately because the CLI rejects 3.2. Treat metadata as immutable and recreate the
+client when it changes. A cast of arbitrary JSON does not prove that metadata and types match.
 
 ## Install this checkout
 
-From the repository root, use [the development toolchain](development.md) to build and check both local package tarballs in an isolated application:
+From the repository root, use [the development toolchain](development.md) to build and check both
+local package tarballs in an isolated application:
 
 ```sh
 pnpm install --frozen-lockfile
@@ -152,7 +201,12 @@ pnpm build
 pnpm test:cli:package
 ```
 
-`test:cli:package` packs the runtime and CLI, installs them into a temporary consumer, runs the installed command, checks generated types and metadata, and exercises an HTTP request. It uses a local runtime tarball override so the CLI resolves the same checkout rather than a registry copy. `pnpm test:package` separately checks the runtime's public entry points. These checks do not publish to npm; follow [the consumer script](../scripts/check-cli-package.mjs) when reproducing its tarball installation in another application.
+`test:cli:package` packs the runtime and CLI, installs them into a temporary consumer, runs the
+installed command, checks generated types and metadata, and exercises an HTTP request. It uses a
+local runtime tarball override so the CLI resolves the same checkout rather than a registry copy.
+`pnpm test:package` separately checks the runtime's public entry points. These checks do not publish
+to npm; follow [the consumer script](../scripts/check-cli-package.mjs) when reproducing its tarball
+installation in another application.
 
 ## Run the offline repository example
 
@@ -164,9 +218,14 @@ pnpm exec vitest run test/example.test.ts
 pnpm typecheck
 ```
 
-[complete-client.ts](../examples/complete-client.ts) exports `runExample()`, which the test calls using a deterministic mock transport. It demonstrates both clients, status-correlated results and runtime response validation, and returns `{ name: 'Ada', message: 'not found' }`. No public service or credentials are needed.
+[complete-client.ts](../examples/complete-client.ts) exports `runExample()`, which the test calls
+using a deterministic mock transport. It demonstrates both clients, status-correlated results and
+runtime response validation, and returns `{ name: 'Ada', message: 'not found' }`. No public service
+or credentials are needed.
 
-The declarations in [service-schema.d.ts](../examples/service-schema.d.ts) are already checked in. `pnpm test:generated` verifies the checked-in generated fixtures; `pnpm generate:example` regenerates them when their source documents change.
+The declarations in [service-schema.d.ts](../examples/service-schema.d.ts) are already checked in.
+`pnpm test:generated` verifies the checked-in generated fixtures; `pnpm generate:example`
+regenerates them when their source documents change.
 
 ## Next steps
 

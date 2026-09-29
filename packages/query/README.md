@@ -1,6 +1,7 @@
 # @openapi-chain/query
 
-An optional, dependency-free bridge from explicit typed operations to TanStack Query and SWR. It does not inspect client Proxies, generate hooks, retry requests or infer cache invalidation.
+An optional, dependency-free bridge from explicit typed operations to TanStack Query and SWR. It
+does not inspect client Proxies, generate hooks, retry requests or infer cache invalidation.
 
 ```sh
 pnpm add @openapi-chain/query
@@ -28,10 +29,31 @@ const options = item.swr({ id: 'book', locale: 'en' });
 useSWR(options.key, options.fetcher);
 ```
 
-Install your chosen framework library separately. The package has no React, query-library or client runtime dependencies. It works with core and strict clients; use the client's default throwing HTTP error mode or explicitly unwrap unsuccessful results in your fetcher.
+Install your chosen framework library separately. The package has no React, query-library or client
+runtime dependencies. It works with core and strict clients; use the client's default throwing HTTP
+error mode or explicitly unwrap unsuccessful results in your fetcher.
 
-Include every response-affecting input in the operation input or key prefix, including a non-secret server/account/permission scope. Do not put credentials in keys. Keys and inputs must contain only finite JSON values: plain objects, arrays, strings, numbers, booleans and null. Omit optional fields instead of assigning undefined. `createQuery()` rejects common statically identifiable non-JSON input types such as Dates, BigInts and functions. Runtime checks still reject values that types cannot prove safe, including `NaN`, cycles, explicit `undefined` fields, sparse arrays and arrays with extra properties. Object keys named `__proto__` are also rejected, including in nested inputs and prefixes, because TanStack Query's default hash can discard them and reuse another input's cache entry. Inputs and prefixes are copied and recursively frozen, so mutations after options creation cannot change a request behind its cache key. The fetcher input and the operation key's final item have recursively readonly types; `ReadonlyQueryInput<T>` makes that contract explicit when annotating a fetcher. If an OpenAPI-generated request type requires a mutable array, pass a copy such as `[...input.tags]` rather than mutating the snapshot.
+Include every response-affecting input in the operation input or key prefix, including a non-secret
+server/account/permission scope. Do not put credentials in keys. Keys and inputs must contain only
+finite JSON values: plain objects, arrays, strings, numbers, booleans and null. Omit optional fields
+instead of assigning undefined. `createQuery()` rejects common statically identifiable non-JSON
+input types such as Dates, BigInts and functions. Runtime checks still reject values that types
+cannot prove safe, including `NaN`, cycles, explicit `undefined` fields, sparse arrays and arrays
+with extra properties. Object keys named `__proto__` are also rejected, including in nested inputs
+and prefixes, because TanStack Query's default hash can discard them and reuse another input's cache
+entry. Inputs and prefixes are copied and recursively frozen, so mutations after options creation
+cannot change a request behind its cache key. The fetcher input and the operation key's final item
+have recursively readonly types; `ReadonlyQueryInput<T>` makes that contract explicit when
+annotating a fetcher. If an OpenAPI-generated request type requires a mutable array, pass a copy
+such as `[...input.tags]` rather than mutating the snapshot.
 
-`prefix` is available for deliberate cache invalidation; `key(input)` constructs the exact operation key. `queryOptions(input)` forwards TanStack's AbortSignal. `swr(input)` passes `signal: null` because SWR supplies no framework cancellation signal and promises no automatic request abortion. Mutations, retries, infinite queries, optimistic updates and invalidation relationships remain application/framework policy. Configure these directly in TanStack Query or SWR.
+`prefix` is available for deliberate cache invalidation; `key(input)` constructs the exact operation
+key. `queryOptions(input)` forwards TanStack's AbortSignal. `swr(input)` passes `signal: null`
+because SWR supplies no framework cancellation signal and promises no automatic request abortion.
+Mutations, retries, infinite queries, optimistic updates and invalidation relationships remain
+application/framework policy. Configure these directly in TanStack Query or SWR.
 
-See the repository's [integration recipes](https://github.com/jskits/openapi-chain/blob/main/docs/integrations.md) for MSW, error handling and account isolation. Local tarball tests do not imply that this package version is published.
+See the repository's
+[integration recipes](https://github.com/jskits/openapi-chain/blob/main/docs/integrations.md) for
+MSW, error handling and account isolation. Local tarball tests do not imply that this package
+version is published.

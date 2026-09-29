@@ -17,7 +17,7 @@
     {
       "files": ["*.md", "**/*.md", "*.mdx", "**/*.mdx"],
       "options": {
-        "proseWrap": "never"
+        "proseWrap": "always"
       }
     }
   ]
