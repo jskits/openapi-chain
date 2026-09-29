@@ -2,6 +2,10 @@
 
 [Project overview](../README.md)
 
+These guides are also published on the
+[documentation website](https://jskits.github.io/openapi-chain/), with search and per-page Markdown
+for LLM tools. The site is generated from this directory; edit the files here.
+
 ## Use the client
 
 | Read                                                     | When you need                                                                                          |

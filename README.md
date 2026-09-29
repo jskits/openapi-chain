@@ -13,6 +13,9 @@ Objects) and applies them to every request. A build-time CLI generates types and
 the paths you call, so large documents stay affordable to type-check and to ship. Calls use a fluent
 path API with no generated endpoint code and no runtime dependencies.
 
+Read the guides on the [documentation website](https://jskits.github.io/openapi-chain/); the same
+pages live in [`docs/`](docs/README.md) on GitHub.
+
 The pnpm monorepo contains three publishable packages: [`openapi-chain`](packages/core),
 [`@openapi-chain/cli`](packages/cli), and [`@openapi-chain/query`](packages/query). The runtime
 keeps its existing package name and entry points. See the
