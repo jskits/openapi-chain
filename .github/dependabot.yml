@@ -9,6 +9,11 @@ updates:
         patterns: ['vitest', '@vitest/*']
       commitlint:
         patterns: ['@commitlint/*']
+    ignore:
+      # Node type majors decide which runtime APIs code may use; upgrade them with the supported
+      # engine range (^22.22.1 || ^24.11.0 || >=26.0.0) instead of following the newest release.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
     commit-message:
       prefix: chore
   - package-ecosystem: github-actions
