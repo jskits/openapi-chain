@@ -39,6 +39,7 @@ If your Node.js installation does not include Corepack, install pnpm 10.34.5 usi
 | `pnpm test:browser` | Run Chromium integration after building and installing its browser |
 | `pnpm benchmark` | Rebuild and measure type scale, runtime overhead and comparable bundle sizes |
 | `pnpm benchmark:competitors` / `pnpm benchmark:competitors:types` | Compare request overhead (Fetch mock and loopback HTTP) / TS 6 and TS 7 type-checking cost with pinned competing clients |
+| `pnpm benchmark:real-schemas --compiler=ts6` / `--compiler=ts7` | Download pinned GitHub and Stripe documents (network) and compare openapi-chain and openapi-fetch type-checking cost |
 | `pnpm clean` | Remove build and coverage output |
 
 `test:package` needs `pnpm build` first. It packs and installs the package in a temporary directory, verifies the file allowlist, and checks ESM/CJS imports plus NodeNext declaration resolution for core, strict and metadata, typed operations, mocked requests and real local HTTP. It does not publish anything.

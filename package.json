@@ -33,6 +33,7 @@
     "benchmark:size": "node scripts/benchmark-size.mjs",
     "benchmark:competitors": "node scripts/benchmark-competitors.mjs",
     "benchmark:competitors:types": "node scripts/benchmark-competitors.mjs --suite=types --compiler=ts6 && node scripts/benchmark-competitors.mjs --suite=types --compiler=ts7",
+    "benchmark:real-schemas": "node scripts/benchmark-real-schemas.mjs",
     "benchmark": "pnpm build && pnpm benchmark:types:ts7 && pnpm benchmark:types && pnpm benchmark:runtime && pnpm benchmark:size && pnpm benchmark:competitors && pnpm benchmark:competitors:types && pnpm benchmark:metadata && pnpm benchmark:scoping && pnpm benchmark:editor --compiler=ts6 && pnpm benchmark:editor:ts7 && pnpm benchmark:delivery",
     "benchmark:metadata": "node scripts/benchmark-metadata.mjs",
     "generate:scoped": "pnpm build && node packages/cli/src/cli.mjs generate --config examples/scoped/openapi-chain.config.json",

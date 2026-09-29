@@ -105,7 +105,42 @@ The types suite generates openapi-typescript-shaped paths with a required query 
 | 1000 | 7.0.2 | 473995 | 127808 | 0.253 s | 0.570 s | 85 / 83 MiB |
 | 5000 | 7.0.2 | 2201995 | 459808 | 1.375 s | 3.783 s | 309 / 303 MiB |
 
-openapi-chain performs about four to five times more instantiations for its prefix tree yet checks this fixture faster; with TS 6 at 5000 routes it uses about twice the memory. Check time is the median of three compiler runs; instantiations and memory come from that run. A [scoped client](large-schemas.md) reduces openapi-chain's work further; the comparison uses the full path set for both.
+openapi-chain performs about four to five times more instantiations for its prefix tree yet checks this fixture faster; with TS 6 at 5000 routes it uses about twice the memory. This synthetic fixture has uniform routes; the [real-schema measurements](#real-schemas) below do not show a uniform advantage. Check time is the median of three compiler runs; instantiations and memory come from that run. A [scoped client](large-schemas.md) reduces openapi-chain's work further; the comparison uses the full path set for both.
+
+### Real schemas
+
+`pnpm benchmark:real-schemas --compiler=ts6` and `--compiler=ts7` download two pinned public documents into `.cache/real-schemas`, verify their SHA-256, generate `paths` with the pinned openapi-typescript 7.13.0 and type-check the same operations through both clients:
+
+| Document | Pinned revision | Operations | Paths | Generated declarations |
+| --- | --- | --: | --: | --: |
+| GitHub REST API 1.1.4 (OpenAPI 3.0.3) | `github/rest-api-description@2f44eac` | 1231 | 815 | 6.6 MB |
+| Stripe API 2026-09-30.endive (OpenAPI 3.0.0) | `stripe/openapi@db67eb2` | 612 | 431 | 4.6 MB |
+
+The script selects GET operations that a fluent chain can call with path arguments only: no other required inputs, no reserved segment names and exactly one `application/json` 200 response (562 GitHub and 239 Stripe operations). It takes an evenly spaced, sorted sample and asserts each call's success type: the 200 body for openapi-fetch's `data`, and the 200 body plus any `default` body for openapi-chain, which types undeclared 2xx statuses through `default`. Each consumer also keeps one negative path-input assertion. The full variant uses the generated `paths`; the scoped variant uses `Pick<paths, …>` of the called paths for both clients, as openapi-chain's CLI scope does.
+
+40 called operations; check time is the median of three runs:
+
+| Document | Paths type | Compiler | Instantiations (chain / fetch) | Check time (chain / fetch) | Memory (chain / fetch) |
+| --- | --- | --- | --: | --: | --: |
+| GitHub | Full | 6.0.3 | 931566 / 139336 | 1.09 s / 0.86 s | 355 / 235 MiB |
+| GitHub | Full | 7.0.2 | 931567 / 139759 | 0.492 s / 0.349 s | 172 / 103 MiB |
+| GitHub | Scoped | 6.0.3 | 99788 / 88950 | 0.22 s / 0.24 s | 186 / 160 MiB |
+| GitHub | Scoped | 7.0.2 | 99789 / 88267 | 0.045 s / 0.049 s | 84 / 83 MiB |
+| Stripe | Full | 6.0.3 | 479755 / 254667 | 0.97 s / 0.82 s | 240 / 185 MiB |
+| Stripe | Full | 7.0.2 | 479756 / 260230 | 0.332 s / 0.238 s | 105 / 82 MiB |
+| Stripe | Scoped | 6.0.3 | 147866 / 234823 | 0.59 s / 0.56 s | 183 / 155 MiB |
+| Stripe | Scoped | 7.0.2 | 147867 / 240068 | 0.128 s / 0.140 s | 71 / 74 MiB |
+
+200 called operations with TS 7.0.2:
+
+| Document | Paths type | Instantiations (chain / fetch) | Check time (chain / fetch) | Memory (chain / fetch) |
+| --- | --- | --: | --: | --: |
+| GitHub | Full | 1495402 / 326522 | 0.807 s / 1.763 s | 192 / 124 MiB |
+| GitHub | Scoped | 543983 / 289054 | 0.429 s / 0.529 s | 117 / 108 MiB |
+| Stripe | Full | 1043753 / 428838 | 0.896 s / 0.811 s | 124 / 101 MiB |
+| Stripe | Scoped | 751243 / 422528 | 0.698 s / 0.688 s | 102 / 98 MiB |
+
+On these documents openapi-chain has a larger fixed cost: with the full generated `paths` and 40 calls it checks about 1.4× slower on TS 7 (1.2-1.3× on TS 6) and uses more memory. How the cost grows with calls depends on the document. On GitHub, going from 40 to 200 calls raised openapi-fetch's check time fivefold and made it 2.2× slower than openapi-chain. On Stripe, openapi-fetch grew 3.4× against openapi-chain's 2.7× and remained slightly faster. Scoping to the called paths removes most of openapi-chain's fixed cost: with 40 calls, scoped consumers check within about 10% of each other on both compilers, and with 200 GitHub calls the scoped openapi-chain consumer is 1.2× faster. A single process timing is not editor latency, and your operations may differ from this sample; measure your own schema before relying on a ratio.
 
 ### Relation to openapi-fetch's published table
 
