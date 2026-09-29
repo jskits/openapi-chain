@@ -75,7 +75,11 @@ export default function HomePage() {
         </div>
         <div className="flex min-w-0 flex-col items-center gap-6 text-center md:items-start md:text-left">
           <p className="rounded-full border border-fd-border bg-fd-card px-3 py-1 text-sm text-fd-muted-foreground">
-            OpenAPI 3.0, 3.1 and 3.2 · ESM and CommonJS · no runtime dependencies
+            {/* The full list wraps into two lines on phones, so narrow screens get a shorter label. */}
+            <span className="sm:hidden">OpenAPI 3.0–3.2 · no runtime dependencies</span>
+            <span className="hidden sm:inline">
+              OpenAPI 3.0, 3.1 and 3.2 · ESM and CommonJS · no runtime dependencies
+            </span>
           </p>
           <h1 className="text-4xl font-semibold tracking-tight md:text-5xl">
             Type-safe OpenAPI requests that follow your document exactly
