@@ -9,8 +9,6 @@
     "packages/*/dist/**",
     "coverage/**",
     "pnpm-lock.yaml",
-    ".changeset/*.md",
-    "packages/*/CHANGELOG.md",
     "examples/scoped/generated/**"
   ],
   "overrides": [
