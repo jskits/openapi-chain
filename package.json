@@ -85,7 +85,7 @@
     "openapi-typescript": "7.13.0",
     "openapi-typescript-fetch": "2.2.1",
     "oxfmt": "0.68.0",
-    "oxlint": "1.83.0",
+    "oxlint": "1.85.0",
     "oxlint-tsgolint": "7.0.2002",
     "playwright": "1.63.0",
     "publint": "0.3.24",
