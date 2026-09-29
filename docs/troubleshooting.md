@@ -2,6 +2,10 @@
 
 [Documentation index](README.md) · [API reference](api.md) · [Support matrix](support.md)
 
+Find the symptom you see and follow its fix. The sections cover generator installation, missing
+routes, request bodies, strict rejections, metadata compilation, response parsing, browser limits
+and published-package mismatches.
+
 ## Generator installation fails with a TypeScript peer error
 
 If you use the [official CLI](cli.md), install `@openapi-chain/cli` as a development dependency and
