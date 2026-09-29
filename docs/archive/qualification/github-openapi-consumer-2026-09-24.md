@@ -17,7 +17,10 @@ create a config beside it:
 
 ```sh
 mkdir -p /tmp/openapi-chain-github-e2e
-curl -fLsS 'https://raw.githubusercontent.com/github/rest-api-description/4377b4f4845badf28d13464dfb3042c6cf0e3a1f/descriptions/api.github.com/api.github.com.json' -o /tmp/openapi-chain-github-e2e/openapi.json
+base=https://raw.githubusercontent.com/github/rest-api-description
+commit=4377b4f4845badf28d13464dfb3042c6cf0e3a1f
+curl -fLsS "$base/$commit/descriptions/api.github.com/api.github.com.json" \
+  -o /tmp/openapi-chain-github-e2e/openapi.json
 shasum -a 256 /tmp/openapi-chain-github-e2e/openapi.json
 ```
 
@@ -33,8 +36,9 @@ Save that JSON as `/tmp/openapi-chain-github-e2e/openapi-chain.config.json`, the
 
 ```sh
 pnpm build
-node packages/cli/src/cli.mjs generate --config /tmp/openapi-chain-github-e2e/openapi-chain.config.json
-node packages/cli/src/cli.mjs generate --config /tmp/openapi-chain-github-e2e/openapi-chain.config.json --check
+config=/tmp/openapi-chain-github-e2e/openapi-chain.config.json
+node packages/cli/src/cli.mjs generate --config "$config"
+node packages/cli/src/cli.mjs generate --config "$config" --check
 pnpm --dir packages/core pack --out /tmp/openapi-chain-github-e2e/openapi-chain.tgz
 pnpm --dir packages/query pack --out /tmp/openapi-chain-github-e2e/openapi-chain-query.tgz
 ```

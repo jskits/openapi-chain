@@ -144,7 +144,11 @@ locations, its input is keyed by that parameter's name, and the value is seriali
 parameter's `content` media type:
 
 ```ts
-// parameters: [{ in: 'querystring', name: 'filter', content: { 'application/x-www-form-urlencoded': { schema: { type: 'object' } } } }]
+// parameters: [{
+//   in: 'querystring',
+//   name: 'filter',
+//   content: { 'application/x-www-form-urlencoded': { schema: { type: 'object' } } },
+// }]
 await api.search.get({ querystring: { filter: { tag: 'books', page: 2 } } });
 // GET /search?tag=books&page=2
 ```
