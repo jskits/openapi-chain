@@ -130,3 +130,6 @@ dist
 .pnp.*
 
 .turbo/
+
+# macOS Finder metadata
+.DS_Store
