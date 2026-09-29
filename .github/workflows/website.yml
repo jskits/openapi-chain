@@ -6,6 +6,8 @@ on:
     paths:
       - docs/**
       - website/**
+      # The site imports logo files directly.
+      - assets/logo/**
       - CONTRIBUTING.md
       - SECURITY.md
       - packages/*/CHANGELOG.md

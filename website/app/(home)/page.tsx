@@ -5,7 +5,7 @@ import { Card, Cards } from 'fumadocs-ui/components/card';
 import { ServerCodeBlock } from 'fumadocs-ui/components/codeblock.rsc';
 import { Gauge, GitCompareArrows, Layers, Plug } from 'lucide-react';
 import { appDescription, appName, repositoryUrl } from '@/lib/shared';
-import logo from '../../../assets/logo/openapi-chain-icon-512.png';
+import logo from '../../../assets/logo/openapi-chain-logo-1024.png';
 
 export const metadata: Metadata = {
   title: { absolute: `${appName}: exact OpenAPI requests for complex and large APIs` },
@@ -58,38 +58,53 @@ const wireRows = [
 export default function HomePage() {
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-20 px-4 py-16 md:py-24">
-      <section className="flex flex-col items-center gap-6 text-center">
-        <Image src={logo} alt="openapi-chain logo" width={112} height={112} priority />
-        <p className="rounded-full border border-fd-border bg-fd-card px-3 py-1 text-sm text-fd-muted-foreground">
-          OpenAPI 3.0, 3.1 and 3.2 · ESM and CommonJS · no runtime dependencies
-        </p>
-        <h1 className="max-w-3xl text-4xl font-semibold tracking-tight md:text-5xl">
-          Type-safe OpenAPI requests that follow your document exactly
-        </h1>
-        <p className="max-w-2xl text-lg text-fd-muted-foreground">
-          openapi-chain compiles the serialization rules an OpenAPI document declares and applies
-          them to every request. A build-time CLI scopes types and metadata to the paths you call,
-          so complex and large APIs stay correct and affordable.
-        </p>
-        <div className="flex flex-wrap justify-center gap-3">
-          <Link
-            href="/docs/getting-started"
-            className="rounded-lg bg-fd-primary px-5 py-2.5 text-sm font-medium text-fd-primary-foreground"
-          >
-            Get started
-          </Link>
-          <Link
-            href="/docs/wire-comparison"
-            className="rounded-lg border border-fd-border bg-fd-card px-5 py-2.5 text-sm font-medium"
-          >
-            See the wire comparison
-          </Link>
-          <a
-            href={repositoryUrl}
-            className="rounded-lg border border-fd-border px-5 py-2.5 text-sm font-medium"
-          >
-            GitHub
-          </a>
+      <section className="grid items-center gap-10 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] md:gap-12">
+        <div className="relative order-first flex justify-center md:order-last">
+          {/* A soft glow in the mark's blue and teal keeps the logo from floating on the page. */}
+          <div
+            aria-hidden
+            className="absolute inset-x-[8%] inset-y-[18%] rounded-full bg-[radial-gradient(closest-side,rgba(37,99,235,0.28),transparent),radial-gradient(closest-side_at_75%_50%,rgba(45,212,191,0.28),transparent)] blur-2xl"
+          />
+          <Image
+            src={logo}
+            alt="openapi-chain logo"
+            priority
+            sizes="(min-width: 768px) 480px, 80vw"
+            className="relative h-auto w-4/5 max-w-[480px] md:w-full"
+          />
+        </div>
+        <div className="flex min-w-0 flex-col items-center gap-6 text-center md:items-start md:text-left">
+          <p className="rounded-full border border-fd-border bg-fd-card px-3 py-1 text-sm text-fd-muted-foreground">
+            OpenAPI 3.0, 3.1 and 3.2 · ESM and CommonJS · no runtime dependencies
+          </p>
+          <h1 className="text-4xl font-semibold tracking-tight md:text-5xl">
+            Type-safe OpenAPI requests that follow your document exactly
+          </h1>
+          <p className="max-w-2xl text-lg text-fd-muted-foreground">
+            openapi-chain compiles the serialization rules an OpenAPI document declares and applies
+            them to every request. A build-time CLI scopes types and metadata to the paths you call,
+            so complex and large APIs stay correct and affordable.
+          </p>
+          <div className="flex flex-wrap justify-center gap-3 md:justify-start">
+            <Link
+              href="/docs/getting-started"
+              className="rounded-lg bg-fd-primary px-5 py-2.5 text-sm font-medium text-fd-primary-foreground"
+            >
+              Get started
+            </Link>
+            <Link
+              href="/docs/wire-comparison"
+              className="rounded-lg border border-fd-border bg-fd-card px-5 py-2.5 text-sm font-medium"
+            >
+              See the wire comparison
+            </Link>
+            <a
+              href={repositoryUrl}
+              className="rounded-lg border border-fd-border px-5 py-2.5 text-sm font-medium"
+            >
+              GitHub
+            </a>
+          </div>
         </div>
       </section>
 
