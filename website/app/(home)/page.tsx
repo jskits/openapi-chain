@@ -1,9 +1,11 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { Card, Cards } from 'fumadocs-ui/components/card';
 import { ServerCodeBlock } from 'fumadocs-ui/components/codeblock.rsc';
 import { Gauge, GitCompareArrows, Layers, Plug } from 'lucide-react';
 import { appDescription, appName, repositoryUrl } from '@/lib/shared';
+import logo from '../../../assets/logo/openapi-chain-icon-512.png';
 
 export const metadata: Metadata = {
   title: { absolute: `${appName}: exact OpenAPI requests for complex and large APIs` },
@@ -57,6 +59,7 @@ export default function HomePage() {
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-20 px-4 py-16 md:py-24">
       <section className="flex flex-col items-center gap-6 text-center">
+        <Image src={logo} alt="openapi-chain logo" width={112} height={112} priority />
         <p className="rounded-full border border-fd-border bg-fd-card px-3 py-1 text-sm text-fd-muted-foreground">
           OpenAPI 3.0, 3.1 and 3.2 · ESM and CommonJS · no runtime dependencies
         </p>
