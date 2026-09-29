@@ -78,6 +78,28 @@ jobs:
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
 
+  website:
+    name: Website
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@f520eceda224fe1a4aed5a2a27a194379a409996 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:website
+      - run: pnpm website:typecheck
+      # Build below a project path, as GitHub Pages serves it, so base-path regressions fail here.
+      - run: pnpm website:build
+        env:
+          DOCS_BASE_PATH: /openapi-chain
+
   browser:
     name: Chromium integration
     runs-on: ubuntu-latest
