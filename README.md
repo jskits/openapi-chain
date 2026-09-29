@@ -2,16 +2,24 @@
 
 [![CI](https://github.com/jskits/openapi-chain/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jskits/openapi-chain/actions/workflows/ci.yml) [![TypeScript](https://img.shields.io/badge/TypeScript-typed-3178C6?logo=typescript&logoColor=white)](docs/api.md) [![Modules](https://img.shields.io/badge/modules-ESM%20%2B%20CommonJS-blue)](docs/api.md#entry-points) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A TypeScript OpenAPI client with a fluent path API, zero generated endpoint code, and no runtime dependencies. The build-time CLI generates scoped types and serialization metadata from one OpenAPI document.
+A type-safe OpenAPI client for complex and large APIs, whose requests follow the document's wire rules exactly.
+
+openapi-chain compiles the serialization rules an OpenAPI document declares (parameter `style`, `explode`, `allowReserved` and `content`, request media types, and form and multipart Encoding Objects) and applies them to every request. A build-time CLI generates types and metadata scoped to the paths you call, so large documents stay affordable to type-check and to ship. Calls use a fluent path API with no generated endpoint code and no runtime dependencies.
 
 The pnpm monorepo contains three publishable packages: [`openapi-chain`](packages/core), [`@openapi-chain/cli`](packages/cli), and [`@openapi-chain/query`](packages/query). The runtime keeps its existing package name and entry points. See the [package migration guide](docs/migration-to-scope.md) for CLI and query import changes and release availability.
 
 The first request below uses the [Items schema](examples/service.openapi.json). Your chain follows your own schema: static path segments become properties, `{parameters}` become function calls, and HTTP methods become request functions.
 
+- **Exact wire serialization:** the strict client sends what the document specifies and rejects representations it cannot encode instead of guessing. The [wire comparison](docs/wire-comparison.md) executes 20 declarations through both clients: openapi-fetch 0.17.0 sends a request with different values, media type or missing parameters in 16 of them, and differs only in percent-encoding or list spacing in 3 more.
+- **Scoped generation for large documents:** one CLI config produces full declarations, a path scope and matching runtime metadata. On the pinned GitHub REST document, scoping a 40-operation consumer reduced openapi-chain's TypeScript 7 check time from 0.49 s to 0.045 s ([real-schema measurements](docs/performance.md#real-schemas)).
 - **Typed requests and responses:** infer parameters, request media types and status-correlated results from the selected operation.
-- **Small default runtime:** the complete emitted core has a **3.5 KiB gzip budget**, enforced by a [reproducible size check](docs/performance.md#size). Its bundle size and per-request overhead are in the same range as openapi-fetch; see the [client comparison](docs/performance.md#comparison-with-other-clients).
-- **Opt-in OpenAPI serialization:** a separate strict client handles supported styles, Encoding Objects and OpenAPI 3.0/3.1/3.2 serialization metadata.
+- **Keep openapi-fetch if you already use it:** `openapi-chain/openapi-fetch` applies the same serialization to an existing openapi-fetch client ([adapter guide](docs/openapi-fetch-adapter.md)).
+- **Small schema-free core:** the default client has a **3.5 KiB gzip budget**, enforced by a [reproducible size check](docs/performance.md#size); its bundle size and per-request overhead are in the same range as openapi-fetch ([client comparison](docs/performance.md#comparison-with-other-clients)).
 - **Customizable requests:** operation-typed extensions and Fetch-compatible transports support application-specific serialization, authentication and parsing.
+
+## When to choose openapi-chain
+
+Choose the strict client when your document declares non-default parameter styles, parameter `content`, cookie parameters, non-JSON media types or form and multipart encoding, and the server depends on them. Choose the CLI's scoped generation when a large document makes type-checking or metadata delivery expensive. If your API only uses JSON bodies and default parameter styles, openapi-fetch and openapi-chain's core are comparable in size and speed; pick the call style you prefer. Without scoping, openapi-chain's fluent types cost more to check than openapi-fetch's on the measured GitHub and Stripe documents.
 
 ## Install
 
@@ -67,6 +75,7 @@ The package exports ESM and CommonJS. Its Node.js engine range is `^22.22.1 || ^
 | Fluent typed calls with schema-free serialization defaults | `openapi-chain` → `createClient` | None |
 | OpenAPI parameter styles, structured forms or multipart encoding | `openapi-chain/strict` → `createStrictClient` | Compiled metadata |
 | Compile serialization metadata from an OpenAPI document | `openapi-chain/metadata` → `compileOpenAPIMetadata` | OpenAPI 3.0, 3.1 or 3.2 object |
+| Keep openapi-fetch calls with the strict serializer | `openapi-chain/openapi-fetch` → `withOpenAPISerialization` | Compiled metadata |
 
 Core requires an explicit `contentType` whenever a body is supplied. Strict can infer a single declared concrete media type and implements additional serialization rules. Both expose the same fluent path API and operation-local extensions. The programmatic compiler remains available for manual workflows and OpenAPI 3.2 metadata; the official CLI currently generates OpenAPI 3.0/3.1 types and metadata. See the [support matrix](docs/support.md) before choosing serialization behavior.
 
@@ -111,6 +120,8 @@ Response types assume the server follows the schema. For runtime validation, bin
 | [API reference](docs/api.md) | Client options, paths, bodies, errors, extensions and transports |
 | [Support and boundaries](docs/support.md) | Serialization matrix, metadata inference and platform limits |
 | [Troubleshooting](docs/troubleshooting.md) | Common type, serialization, Fetch and response problems |
+| [Wire comparison](docs/wire-comparison.md) | Requests openapi-chain and openapi-fetch send for the same OpenAPI declarations, verified by tests |
+| [openapi-fetch adapter](docs/openapi-fetch-adapter.md) | Strict serialization inside an existing openapi-fetch client, or for another HTTP client |
 | [Performance](docs/performance.md) | Size budgets, client comparisons, benchmark methods and dated measurements |
 | [Architecture](docs/architecture.md) | Type model, package boundaries and source map |
 | [Development](docs/development.md) | Local setup, checks, browser tests and release workflow |

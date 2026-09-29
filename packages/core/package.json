@@ -1,10 +1,12 @@
 {
   "name": "openapi-chain",
   "version": "0.5.2",
-  "description": "A tiny, type-safe OpenAPI client with fluent chain APIs, strict wire semantics, and a small dependency-free core.",
+  "description": "A type-safe OpenAPI client for complex and large APIs, with requests that follow the document's wire rules exactly.",
   "keywords": [
     "client",
     "openapi",
+    "openapi-fetch",
+    "serialization",
     "typescript"
   ],
   "homepage": "https://github.com/jskits/openapi-chain#readme",
