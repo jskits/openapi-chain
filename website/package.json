@@ -3,9 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "typecheck": "next typegen && tsc --noEmit"
+    "sync": "node scripts/sync-docs.mjs",
+    "dev": "node scripts/dev.mjs",
+    "build": "node scripts/sync-docs.mjs && next build",
+    "typecheck": "node scripts/sync-docs.mjs && next typegen && tsc --noEmit",
+    "test": "node --test scripts/sync-docs.test.mjs"
   },
   "dependencies": {
     "fumadocs-core": "16.15.15",
@@ -14,7 +16,8 @@
     "lucide-react": "1.47.0",
     "next": "16.3.6",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.3.3",
@@ -22,8 +25,14 @@
     "@types/node": "24.13.6",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
+    "github-slugger": "2.0.0",
+    "mdast-util-from-markdown": "2.0.3",
+    "mdast-util-gfm": "3.1.0",
+    "mdast-util-to-string": "4.0.0",
+    "micromark-extension-gfm": "3.0.0",
     "postcss": "8.5.28",
     "tailwindcss": "4.3.3",
-    "typescript": "6.0.3"
+    "typescript": "6.0.3",
+    "unist-util-visit": "5.1.0"
   }
 }
