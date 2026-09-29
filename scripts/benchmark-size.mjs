@@ -11,6 +11,7 @@ const entries = {
   core: `export { createClient, HttpError } from 'openapi-chain';`,
   strict: `export { createStrictClient } from 'openapi-chain/strict';`,
   metadata: `export { compileOpenAPIMetadata } from 'openapi-chain/metadata';`,
+  openapiFetchAdapter: `export { withOpenAPISerialization } from 'openapi-chain/openapi-fetch';`,
   openapiFetch: `export { default } from 'openapi-fetch';`,
   openapiTypescriptFetch: `export { Fetcher } from 'openapi-typescript-fetch';`,
   featureFetch: `export { createApiFetchClient } from 'feature-fetch';`,

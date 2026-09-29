@@ -57,6 +57,16 @@
         "types": "./dist/metadata.d.cts",
         "default": "./dist/metadata.cjs"
       }
+    },
+    "./openapi-fetch": {
+      "import": {
+        "types": "./dist/openapi-fetch.d.ts",
+        "default": "./dist/openapi-fetch.js"
+      },
+      "require": {
+        "types": "./dist/openapi-fetch.d.cts",
+        "default": "./dist/openapi-fetch.cjs"
+      }
     }
   },
   "publishConfig": {

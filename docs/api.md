@@ -9,10 +9,11 @@ Examples using `./schema.js` and `./openapi.json` refer to the [Items schema](..
 | Import | Runtime exports | Purpose |
 | --- | --- | --- |
 | `openapi-chain` | `createClient`, `HttpError`, `httpMethods` | Schema-free client and shared public types |
-| `openapi-chain/strict` | `createStrictClient` | Metadata-driven client and selected operation types |
+| `openapi-chain/strict` | `createStrictClient`, `createRequestSerializer` | Metadata-driven client, client-independent request serializer and selected operation types |
 | `openapi-chain/metadata` | `compileOpenAPIMetadata` | Metadata compiler and metadata types |
+| `openapi-chain/openapi-fetch` | `withOpenAPISerialization` | Strict serialization for an existing openapi-fetch client; see the [adapter guide](openapi-fetch-adapter.md) |
 
-Import `HttpError`, `Transport` and `Middleware` from the root entry, including when using a strict client. All three entries have ESM and CommonJS exports. Use `import type` for declarations.
+Import `HttpError`, `Transport` and `Middleware` from the root entry, including when using a strict client. All four entries have ESM and CommonJS exports. Use `import type` for declarations.
 
 See [compatibility and versioning](compatibility.md) for the stable API boundary, compiler support, error compatibility and metadata artifact policy.
 

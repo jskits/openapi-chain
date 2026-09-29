@@ -36,9 +36,10 @@ The check runs in `pnpm check` and CI. Each scenario must stay below 3 million i
 
 | Entry                                  | Minified bytes | Gzip bytes |
 | -------------------------------------- | -------------: | ---------: |
-| openapi-chain core                     |           7061 |       3051 |
-| openapi-chain strict                   |          27629 |       8617 |
+| openapi-chain core                     |           7061 |       3046 |
+| openapi-chain strict                   |          27627 |       8611 |
 | openapi-chain metadata compiler        |          18415 |       6045 |
+| openapi-chain openapi-fetch adapter    |          24036 |       7355 |
 | openapi-fetch                          |           6540 |       2532 |
 | openapi-typescript-fetch               |           2678 |       1232 |
 | feature-fetch (`createApiFetchClient`) |          13913 |       4768 |
@@ -262,4 +263,4 @@ For the historical 2026-09-21 emitted-entry measurement: core 1916 B, strict 678
 
 The September 24 runtime-hardening implementation measures **3020 B transitive gzip** with the size gate's emitted-module method. The current gate is **3584 B (3.5 KiB)**. The increase includes URL boundary validation, shared query and response contracts, guarded JSON serialization, plain-record and cross-realm native-body checks, and stable error codes with operation context. This replaces the intermediate 2560 B safety budget; it does not revise the historical benchmark tables.
 
-The September 26 core structured-value guard adds 107 B over the preceding 3060 B build: **3167 B transitive gzip**. The September 29 request-overhead work (base URL reuse and direct header-record merging) measures **3306 B**. The 3584 B budget retains space for maintenance and correctness fixes. Budget changes require an explained measurement and review; strict/compiler code remains outside this entry.
+The September 26 core structured-value guard adds 107 B over the preceding 3060 B build: **3167 B transitive gzip**. The September 29 request-overhead work (base URL reuse and direct header-record merging) measures **3306 B**. Adding the openapi-fetch adapter entry changed shared chunk boundaries without changing core code: **3335 B** across four emitted modules. The 3584 B budget retains space for maintenance and correctness fixes. Budget changes require an explained measurement and review; strict/compiler code remains outside this entry.

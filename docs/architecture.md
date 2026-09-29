@@ -36,6 +36,12 @@ The transitive ESM core is gzip-gated at 3584 bytes. The size script recursively
 
 `openapi-chain/strict` owns the exact-wire serializer. It consumes branded `CompiledOpenAPIMetadata` and implements runtime-only OpenAPI semantics such as parameter styles, `explode`, `allowReserved`, Parameter `content`, request-body Encoding Objects, multipart/form-urlencoded details, and OpenAPI 3.2 `querystring`/`cookie` behavior.
 
+The same serializer is available without a client: `createRequestSerializer(metadata)` resolves one template and method and returns the encoded path, query, headers and body. It shares the strict client's validation and has no extension hooks.
+
+### openapi-fetch adapter entry
+
+`openapi-chain/openapi-fetch` wraps an openapi-fetch client in a Proxy. Each method call is serialized with `createRequestSerializer` and forwarded with per-request `pathSerializer`, `querySerializer` and `bodySerializer` options, so openapi-fetch keeps its request construction, middleware and response handling. The entry has no type or runtime dependency on openapi-fetch; its generic preserves the wrapped client's type.
+
 ### Metadata entry
 
 `openapi-chain/metadata` compiles only serialization-relevant OpenAPI data. It is independent from both client entry points, so importing the tiny core cannot pull the compiler into an application bundle.

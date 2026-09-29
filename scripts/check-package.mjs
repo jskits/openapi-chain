@@ -48,7 +48,7 @@ try {
   );
   const files = packed.files.map(({ path }) => path);
   for (const required of [
-    ...['index', 'strict', 'metadata'].flatMap((entry) =>
+    ...['index', 'strict', 'metadata', 'openapi-fetch'].flatMap((entry) =>
       ['js', 'cjs', 'd.ts', 'd.cts'].map((extension) => `dist/${entry}.${extension}`),
     ),
     'README.md',
@@ -137,6 +137,7 @@ api.missing.get();
   const specifier = JSON.stringify(manifest.name);
   const strictSpecifier = JSON.stringify(`${manifest.name}/strict`);
   const metadataSpecifier = JSON.stringify(`${manifest.name}/metadata`);
+  const adapterSpecifier = JSON.stringify(`${manifest.name}/openapi-fetch`);
   const behavior = `
 const assert = require('node:assert/strict');
 async function main() {
@@ -164,6 +165,15 @@ async function main() {
     assert.deepEqual(await api.x('a b').get(), {ok:true});
     if (factory === createStrictClient) await assert.rejects(api.$path('/unselected').get(), /does not contain/);
   }
+  const serialize = createRequestSerializer(metadata);
+  assert.equal(serialize({method:'get', path:'/x/{id}', params:{path:{id:'a b'}}}).path, '/x/a%20b');
+  const urls = [];
+  const adapted = withOpenAPISerialization({GET: async (path, init) => {
+    urls.push(init.pathSerializer('https://example.test' + path));
+    return {data: 1};
+  }}, {metadata});
+  assert.deepEqual(await adapted.GET('/x/{id}', {params:{path:{id:'a b'}}}), {data: 1});
+  assert.deepEqual(urls, ['https://example.test/x/a%20b']);
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });
 `;
@@ -173,12 +183,14 @@ main().catch(error => { console.error(error); process.exitCode = 1; });
         ? `import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 import { createClient } from ${specifier};
-import { createStrictClient } from ${strictSpecifier};
+import { createStrictClient, createRequestSerializer } from ${strictSpecifier};
 import { compileOpenAPIMetadata } from ${metadataSpecifier};
+import { withOpenAPISerialization } from ${adapterSpecifier};
 `
         : `const { createClient } = require(${specifier});
-const { createStrictClient } = require(${strictSpecifier});
+const { createStrictClient, createRequestSerializer } = require(${strictSpecifier});
 const { compileOpenAPIMetadata } = require(${metadataSpecifier});
+const { withOpenAPISerialization } = require(${adapterSpecifier});
 `;
     const filename = mode === 'esm' ? 'smoke.mjs' : 'smoke.cjs';
     writeFileSync(join(consumer, filename), imports + behavior);
@@ -193,8 +205,9 @@ const { compileOpenAPIMetadata } = require(${metadataSpecifier});
   );
   run(process.execPath, ['packed-http.mjs']);
   const typeConsumer = `import { createClient, type OperationExtensionsFor } from ${specifier};
-import { createStrictClient } from ${strictSpecifier};
+import { createStrictClient, createRequestSerializer, type SerializedRequest } from ${strictSpecifier};
 import { compileOpenAPIMetadata, type CompileOpenAPIMetadataOptions } from ${metadataSpecifier};
+import { withOpenAPISerialization } from ${adapterSpecifier};
 type Paths = {'/x/{id}': {parameters:{path:{id:string}}, get:{responses:{200:{content:{'application/json':{ok:true}}}}}}};
 const options = {paths: ['/x/{id}'], onAmbiguousTemplate: 'allow'} satisfies CompileOpenAPIMetadataOptions;
 void options;
@@ -202,6 +215,10 @@ void options;
 const invalid: CompileOpenAPIMetadataOptions = {onAmbiguousTemplate:'ignore'};
 void invalid;
 const metadata = compileOpenAPIMetadata({openapi:'3.2.1',paths:{}});
+const serialized: SerializedRequest = createRequestSerializer(metadata)({method:'get', path:'/x'});
+void serialized;
+const adaptedClient: {GET(path: string): Promise<unknown>} = withOpenAPISerialization({GET: async (_path: string) => 1}, {metadata});
+void adaptedClient;
 const core = createClient<Paths>({baseUrl:'https://example.test'});
 const strict = createStrictClient<Paths>({baseUrl:'https://example.test',metadata});
 const extension = {path: value => value.toUpperCase()} satisfies OperationExtensionsFor<Paths, '/x/{id}', 'get'>;

@@ -6,9 +6,9 @@ This policy defines the public contracts being stabilized for 1.0. Before 1.0, i
 
 ## Public API
 
-The supported import paths are `openapi-chain`, `openapi-chain/strict`, `openapi-chain/metadata`, and `@openapi-chain/query`. The CLI exposes the `openapi-chain` executable, its documented flags/configuration, generated modules and exit status. Published `package.json` exports are supported for package/version inspection. Deep imports into `dist`, `src` or generated implementation chunks are not public APIs.
+The supported import paths are `openapi-chain`, `openapi-chain/strict`, `openapi-chain/metadata`, `openapi-chain/openapi-fetch`, and `@openapi-chain/query`. The CLI exposes the `openapi-chain` executable, its documented flags/configuration, generated modules and exit status. Published `package.json` exports are supported for package/version inspection. Deep imports into `dist`, `src` or generated implementation chunks are not public APIs.
 
-All named exports from the supported entry points are public, including type-only exports. The reviewed source inventories are [core](../packages/core/src/index.ts), [strict](../packages/core/src/strict.ts), [metadata](../packages/core/src/metadata.ts) and [query](../packages/query/src/index.ts). A new export requires an intentional compatibility decision and user-facing documentation.
+All named exports from the supported entry points are public, including type-only exports. The reviewed source inventories are [core](../packages/core/src/index.ts), [strict](../packages/core/src/strict.ts), [metadata](../packages/core/src/metadata.ts), [openapi-fetch adapter](../packages/core/src/openapi-fetch.ts) and [query](../packages/query/src/index.ts). A new export requires an intentional compatibility decision and user-facing documentation.
 
 `CoreClientOptions` and `StrictClientOptions` describe their respective constructors. `ClientOptions` and `RequestInput` are broader shared shapes; they do not authorize every field at every operation. Use `OperationInputFor` and `OperationExtensionsFor` for reusable operation inputs and extensions. The generic parameter order and defaults of these helpers, `API`, result types and metadata record types are part of the contract.
 

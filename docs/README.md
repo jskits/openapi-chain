@@ -13,6 +13,7 @@
 | [API reference](api.md) | Options, path calls, request bodies, errors, extensions and transport |
 | [Compatibility and versioning](compatibility.md) | Public API, metadata formats, supported toolchains and breaking changes |
 | [Support and boundaries](support.md) | Decide whether a wire format, schema feature or platform is supported |
+| [openapi-fetch adapter](openapi-fetch-adapter.md) | Keep openapi-fetch and use strict OpenAPI serialization, or serialize requests for another HTTP client |
 | [Wire comparison with openapi-fetch](wire-comparison.md) | See the requests each client sends for the same OpenAPI declarations, verified by tests |
 | [Core to strict migration](migration.md) | Stage a migration, preserve intentional response contracts and review wire changes |
 | [Offline migration checks](migration-check.md) | Compare core and strict requests and parsed values before switching |

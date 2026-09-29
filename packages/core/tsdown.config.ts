@@ -1,7 +1,7 @@
 import { defineConfig } from 'tsdown';
 
 export default defineConfig({
-  entry: ['src/index.ts', 'src/strict.ts', 'src/metadata.ts'],
+  entry: ['src/index.ts', 'src/strict.ts', 'src/metadata.ts', 'src/openapi-fetch.ts'],
   format: ['esm', 'cjs'],
   target: 'es2022',
   platform: 'neutral',
