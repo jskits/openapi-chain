@@ -2,10 +2,9 @@
 
 [Archive index](README.md) · [Current documentation](../../README.md)
 
-Historical baseline:
-[verified implementation](https://github.com/jskits/openapi-chain/commit/98c9387f45719d8fba9144b853c4c1b35c3d44d6).
-Results below apply only to this baseline and the recorded environment; they are not a statement of
-current support or release status.
+Historical baseline: [verified implementation][verified-implementation]. Results below apply only to
+this baseline and the recorded environment; they are not a statement of current support or release
+status.
 
 This is the earlier hardening snapshot. See the
 [conformance follow-up](conformance-qualification.md) for the subsequent fixes and later
@@ -55,3 +54,6 @@ No push, npm publication, remote CI execution, GitHub release configuration chan
 private-reporting setting change was performed. Firefox/WebKit and remote OS matrix results are not
 established by the local Chromium/Node results. See the [support matrix](../../support.md),
 [onboarding guide](../../getting-started.md) and [security reporting process](../../../SECURITY.md).
+
+[verified-implementation]:
+  https://github.com/jskits/openapi-chain/commit/98c9387f45719d8fba9144b853c4c1b35c3d44d6

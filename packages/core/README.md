@@ -1,11 +1,9 @@
 # openapi-chain
 
-[![npm version](https://img.shields.io/npm/v/openapi-chain.svg)](https://www.npmjs.com/package/openapi-chain)
-[![npm downloads](https://img.shields.io/npm/dm/openapi-chain.svg)](https://www.npmjs.com/package/openapi-chain)
-[![CI](https://github.com/jskits/openapi-chain/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jskits/openapi-chain/actions/workflows/ci.yml)
-[![TypeScript](https://img.shields.io/badge/TypeScript-typed-3178C6?logo=typescript&logoColor=white)](https://github.com/jskits/openapi-chain/blob/main/docs/api.md)
-[![Modules](https://img.shields.io/badge/modules-ESM%20%2B%20CommonJS-blue)](https://github.com/jskits/openapi-chain/blob/main/docs/api.md#entry-points)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/jskits/openapi-chain/blob/main/LICENSE)
+[![npm version][npm-version-badge]][npm-version]
+[![npm downloads][npm-downloads-badge]][npm-version] [![CI][ci-badge]][ci]
+[![TypeScript][typescript-badge]][typescript] [![Modules][modules-badge]][modules]
+[![License: MIT][license-mit-badge]][license-mit]
 
 A type-safe OpenAPI client for complex and large APIs, whose requests follow the document's wire
 rules exactly.
@@ -29,17 +27,15 @@ function calls, and HTTP methods become request functions.
   list spacing in 3 more.
 - **Scoped generation for large documents:** one CLI config produces full declarations, a path scope
   and matching runtime metadata. On the pinned GitHub REST document, scoping a 40-operation consumer
-  reduced openapi-chain's TypeScript 7 check time from 0.49 s to 0.045 s
-  ([real-schema measurements](https://github.com/jskits/openapi-chain/blob/main/docs/performance.md#real-schemas)).
+  reduced openapi-chain's TypeScript 7 check time from 0.49 s to 0.045 s ([real-schema
+  measurements][real-schema-measurements]).
 - **Typed requests and responses:** infer parameters, request media types and status-correlated
   results from the selected operation.
 - **Keep openapi-fetch if you already use it:** `openapi-chain/openapi-fetch` applies the same
-  serialization to an existing openapi-fetch client
-  ([adapter guide](https://github.com/jskits/openapi-chain/blob/main/docs/openapi-fetch-adapter.md)).
+  serialization to an existing openapi-fetch client ([adapter guide][adapter-guide]).
 - **Small schema-free core:** the default client has a **3.5 KiB gzip budget**, enforced by a
-  [reproducible size check](https://github.com/jskits/openapi-chain/blob/main/docs/performance.md#size);
-  its bundle size and per-request overhead are in the same range as openapi-fetch
-  ([client comparison](https://github.com/jskits/openapi-chain/blob/main/docs/performance.md#comparison-with-other-clients)).
+  [reproducible size check][reproducible-size-check]; its bundle size and per-request overhead are
+  in the same range as openapi-fetch ([client comparison][client-comparison]).
 - **Customizable requests:** operation-typed extensions and Fetch-compatible transports support
   application-specific serialization, authentication and parsing.
 
@@ -98,20 +94,18 @@ Replace the example URL with your service. The minimum supported application com
 6.0.3; install it in a new application if TypeScript is not already present. CI pins 6.0.3 and
 7.0.2. TypeScript 7.0.2 is recommended for large schemas and editor responsiveness. The CLI
 privately installs TypeScript 5.9.3 for generation, so this path needs no generator peer override.
-See
-[compiler compatibility](https://github.com/jskits/openapi-chain/blob/main/docs/getting-started.md#generator-and-typescript-compatibility)
-and [path scoping](https://github.com/jskits/openapi-chain/blob/main/docs/large-schemas.md).
+See [compiler compatibility][compiler-compatibility] and
+[path scoping](https://github.com/jskits/openapi-chain/blob/main/docs/large-schemas.md).
 
 These docs describe the current source API. Check [package.json](package.json) for the checkout
 version; an installed npm release may expose a different API. To try this exact implementation,
-follow
-[the local tarball consumer check](https://github.com/jskits/openapi-chain/blob/main/docs/getting-started.md#install-this-checkout).
-Generation produces declarations and metadata, not endpoint client code.
+follow [the local tarball consumer check][the-local-tarball-consumer-check]. Generation produces
+declarations and metadata, not endpoint client code.
 
 The package exports ESM and CommonJS. Its Node.js engine range is
 `^22.22.1 || ^24.11.0 || >=26.0.0`. Browser use requires standard Fetch APIs and a bundler or ESM
 setup; Chromium has an integration suite. Enable TypeScript strict mode and include DOM types. See
-[setup and compatibility](https://github.com/jskits/openapi-chain/blob/main/docs/getting-started.md).
+[setup and compatibility][setup-and-compatibility].
 
 ## Choose a client
 
@@ -173,7 +167,7 @@ Response types assume the server follows the schema. For runtime validation, bin
 streaming, use a
 [response extension](https://github.com/jskits/openapi-chain/blob/main/docs/api.md#extensions). Core
 defaults to JSON/text parsing; strict also returns `ArrayBuffer` for other media. See the full
-[response contract](https://github.com/jskits/openapi-chain/blob/main/docs/api.md#responses-and-errors).
+[response contract][response-contract].
 
 ## Documentation
 
@@ -211,3 +205,30 @@ CLI dependencies remain separate from the runtime package and browser bundles.
 ## License
 
 [MIT](https://github.com/jskits/openapi-chain/blob/main/LICENSE)
+
+[npm-version-badge]: https://img.shields.io/npm/v/openapi-chain.svg
+[npm-version]: https://www.npmjs.com/package/openapi-chain
+[npm-downloads-badge]: https://img.shields.io/npm/dm/openapi-chain.svg
+[ci-badge]: https://github.com/jskits/openapi-chain/actions/workflows/ci.yml/badge.svg?branch=main
+[ci]: https://github.com/jskits/openapi-chain/actions/workflows/ci.yml
+[typescript-badge]:
+  https://img.shields.io/badge/TypeScript-typed-3178C6?logo=typescript&logoColor=white
+[typescript]: https://github.com/jskits/openapi-chain/blob/main/docs/api.md
+[modules-badge]: https://img.shields.io/badge/modules-ESM%20%2B%20CommonJS-blue
+[modules]: https://github.com/jskits/openapi-chain/blob/main/docs/api.md#entry-points
+[license-mit-badge]: https://img.shields.io/badge/license-MIT-blue.svg
+[license-mit]: https://github.com/jskits/openapi-chain/blob/main/LICENSE
+[real-schema-measurements]:
+  https://github.com/jskits/openapi-chain/blob/main/docs/performance.md#real-schemas
+[adapter-guide]: https://github.com/jskits/openapi-chain/blob/main/docs/openapi-fetch-adapter.md
+[reproducible-size-check]:
+  https://github.com/jskits/openapi-chain/blob/main/docs/performance.md#size
+[client-comparison]:
+  https://github.com/jskits/openapi-chain/blob/main/docs/performance.md#comparison-with-other-clients
+[compiler-compatibility]:
+  https://github.com/jskits/openapi-chain/blob/main/docs/getting-started.md#generator-and-typescript-compatibility
+[the-local-tarball-consumer-check]:
+  https://github.com/jskits/openapi-chain/blob/main/docs/getting-started.md#install-this-checkout
+[setup-and-compatibility]: https://github.com/jskits/openapi-chain/blob/main/docs/getting-started.md
+[response-contract]:
+  https://github.com/jskits/openapi-chain/blob/main/docs/api.md#responses-and-errors

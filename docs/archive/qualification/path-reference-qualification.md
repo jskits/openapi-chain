@@ -2,10 +2,9 @@
 
 [Archive index](README.md) · [Current documentation](../../README.md)
 
-Historical baseline:
-[verified implementation](https://github.com/jskits/openapi-chain/commit/6efd6dc3b09a386e4417628e76f486c8a815222c).
-Results below apply only to this baseline and the recorded environment; they are not a statement of
-current support or release status.
+Historical baseline: [verified implementation][verified-implementation]. Results below apply only to
+this baseline and the recorded environment; they are not a statement of current support or release
+status.
 
 For the subsequent multipart fixes and later local results, see the
 [multipart qualification](multipart-qualification.md).
@@ -68,3 +67,6 @@ publication. Do not infer registry delivery from a successful local tarball test
 
 See the [schema inference matrix](../../support.md#schema-inference-matrix) and
 [type-performance methodology](../../performance.md) for the remaining product limits.
+
+[verified-implementation]:
+  https://github.com/jskits/openapi-chain/commit/6efd6dc3b09a386e4417628e76f486c8a815222c

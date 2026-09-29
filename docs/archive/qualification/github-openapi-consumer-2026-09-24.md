@@ -4,14 +4,11 @@ Baseline: [`3542d64`](https://github.com/jskits/openapi-chain/commit/3542d64) af
 conformance-test and Query type fixes. This is a dated consumer observation, not a continuing
 compatibility promise for GitHub's API.
 
-The source was GitHub's
-[REST API OpenAPI description](https://docs.github.com/en/rest/about-the-rest-api/about-the-openapi-description-for-the-rest-api),
-pinned to
-[`github/rest-api-description@4377b4f`](https://github.com/github/rest-api-description/blob/4377b4f4845badf28d13464dfb3042c6cf0e3a1f/descriptions/api.github.com/api.github.com.json).
-The downloaded file's SHA-256 was
-`b8ca03764f54058ec40e2b61e048a4518ee88e943ac04d393b1757094c895aad`; its Git blob ID matched the
-pinned commit. It is an OpenAPI 3.0.3 document with 808 path keys and 12,964,430 bytes. The document
-is not copied into this repository.
+The source was GitHub's [REST API OpenAPI description][rest-api-openapi-description], pinned to
+[`github/rest-api-description@4377b4f`][github-rest-api-description-4377b4f]. The downloaded file's
+SHA-256 was `b8ca03764f54058ec40e2b61e048a4518ee88e943ac04d393b1757094c895aad`; its Git blob ID
+matched the pinned commit. It is an OpenAPI 3.0.3 document with 808 path keys and 12,964,430 bytes.
+The document is not copied into this repository.
 
 ## Reproduction
 
@@ -75,3 +72,8 @@ The probe covers two selected paths and GET requests. It does not validate GitHu
 at runtime, authenticate, exercise all 808 paths, or establish editor responsiveness, long-term
 compatibility, or production adoption. Large third-party descriptions still incur the cost of
 generating and storing full declarations, even for a small selected scope.
+
+[rest-api-openapi-description]:
+  https://docs.github.com/en/rest/about-the-rest-api/about-the-openapi-description-for-the-rest-api
+[github-rest-api-description-4377b4f]:
+  https://github.com/github/rest-api-description/blob/4377b4f4845badf28d13464dfb3042c6cf0e3a1f/descriptions/api.github.com/api.github.com.json

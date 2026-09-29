@@ -2,10 +2,9 @@
 
 [Archive index](README.md) · [Current documentation](../../README.md)
 
-Historical baseline:
-[verified implementation](https://github.com/jskits/openapi-chain/commit/183abef3d9d81b377963979efb2ab283e28f0052).
-Results below apply only to this baseline and the recorded environment; they are not a statement of
-current support or release status.
+Historical baseline: [verified implementation][verified-implementation]. Results below apply only to
+this baseline and the recorded environment; they are not a statement of current support or release
+status.
 
 Local verification: 2026-09-20, macOS arm64, Node 24.16.0, pnpm 10.34.5.
 
@@ -40,3 +39,6 @@ response extension. See the
 
 This report records local evidence. Remote CI results must be checked against the pushed baseline;
 npm registry delivery and provenance require a separate release.
+
+[verified-implementation]:
+  https://github.com/jskits/openapi-chain/commit/183abef3d9d81b377963979efb2ab283e28f0052

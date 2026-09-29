@@ -172,13 +172,12 @@ status can remain until the version job or validation is rerun.
 
 This is a [commit status](https://docs.github.com/en/rest/commits/statuses#about-commit-statuses),
 which GitHub reflects on PRs involving that commit. GitHub does **not** evaluate `workflow_dispatch`
-job checks as required PR checks, even when they ran on the PR head SHA; see
-[required-check troubleshooting](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks#checks-from-some-workflow-jobs-are-not-evaluated).
-The `Release PR CI` status provides a separate result for this release PR; it does not replace the
-existing required matrix and Chromium checks. Do not make this context a global requirement for
-`main` unless every other PR also emits it. Review the PR status and approve its eligible
-`pull_request` workflow runs before merging when GitHub requests approval for runs created by
-`GITHUB_TOKEN`.
+job checks as required PR checks, even when they ran on the PR head SHA; see [required-check
+troubleshooting][required-check-troubleshooting]. The `Release PR CI` status provides a separate
+result for this release PR; it does not replace the existing required matrix and Chromium checks. Do
+not make this context a global requirement for `main` unless every other PR also emits it. Review
+the PR status and approve its eligible `pull_request` workflow runs before merging when GitHub
+requests approval for runs created by `GITHUB_TOKEN`.
 
 Merging the version PR runs the publish verification again before packaging and publication. Only
 the publish job receives `id-token: write`. It publishes the packed artifact with lifecycle scripts
@@ -212,11 +211,11 @@ those remote states before retrying; do not bump the version, republish merely d
 or replace an existing tag to retry a failed run.
 
 The explicit `workflow_dispatch` provides a separate validation result while default-token PR events
-wait for a maintainer's approval. GitHub documents both behaviors in its
-[workflow-trigger rules](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow#triggering-a-workflow-from-a-workflow).
-If dispatch fails, rerun the version job or manually run `release-pr-ci.yml` on
-`changeset-release/main` with the current PR head as `expected_sha` and its number as `pr_number`;
-do not merge based only on successful version generation or the dispatch request itself.
+wait for a maintainer's approval. GitHub documents both behaviors in its [workflow-trigger
+rules][workflow-trigger-rules]. If dispatch fails, rerun the version job or manually run
+`release-pr-ci.yml` on `changeset-release/main` with the current PR head as `expected_sha` and its
+number as `pr_number`; do not merge based only on successful version generation or the dispatch
+request itself.
 
 ### Recover a release PR permission failure
 
@@ -239,8 +238,7 @@ publication follows only after the release PR is merged and the publish path pas
 The workflow adds recovery guidance to the job summary when the version action fails, while
 preserving the original failure status. It does not query or change repository administration
 settings using `GITHUB_TOKEN`; that endpoint requires administration access beyond this job's
-permissions. See
-[GitHub's workflow-permissions API](https://docs.github.com/en/rest/actions/permissions#get-default-workflow-permissions-for-a-repository).
+permissions. See [GitHub's workflow-permissions API][github-s-workflow-permissions-api].
 
 Reference: [Changesets automation](https://changesets.dev/guide/automating),
 [npm Trusted Publishing](https://docs.npmjs.com/trusted-publishers/),
@@ -254,3 +252,10 @@ TanStack/SWR types, performs real HTTP requests and checks browser bundle isolat
 repeats consumer verification with TS 6 and TS 7. Changesets includes this workspace package; the
 release packing job builds it through the root build command. The adapter has no runtime
 dependencies and does not alter the core gzip budget.
+
+[required-check-troubleshooting]:
+  https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks#checks-from-some-workflow-jobs-are-not-evaluated
+[workflow-trigger-rules]:
+  https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow#triggering-a-workflow-from-a-workflow
+[github-s-workflow-permissions-api]:
+  https://docs.github.com/en/rest/actions/permissions#get-default-workflow-permissions-for-a-repository

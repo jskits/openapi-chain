@@ -313,6 +313,8 @@
 The predecessor implementation used the name `openapi-client-codegen`; its version numbers are not
 releases of `openapi-chain`.
 
-See
-[the legacy implementation changelog](https://github.com/jskits/openapi-chain/blob/main/docs/legacy-changelog.md)
-for the preserved migration history.
+See [the legacy implementation changelog][the-legacy-implementation-changelog] for the preserved
+migration history.
+
+[the-legacy-implementation-changelog]:
+  https://github.com/jskits/openapi-chain/blob/main/docs/legacy-changelog.md

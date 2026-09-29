@@ -2,10 +2,9 @@
 
 [Archive index](README.md) · [Current documentation](../../README.md)
 
-Historical baseline:
-[verified implementation](https://github.com/jskits/openapi-chain/commit/63675878b7d0b14ddf8a62643cdfce900560487a).
-Results below apply only to this baseline and the recorded environment; they are not a statement of
-current support or release status.
+Historical baseline: [verified implementation][verified-implementation]. Results below apply only to
+this baseline and the recorded environment; they are not a statement of current support or release
+status.
 
 See the subsequent [schema semantics qualification](schema-semantics-qualification.md) for newer
 implementation and verification results.
@@ -71,3 +70,6 @@ allOf media defaults fail explicitly. External references and local named anchor
 preprocessing; local JSON Pointer references support URI fragment decoding. The supported subset and
 extension boundaries remain in [support](../../support.md); this corpus is not a complete OpenAPI
 certification.
+
+[verified-implementation]:
+  https://github.com/jskits/openapi-chain/commit/63675878b7d0b14ddf8a62643cdfce900560487a

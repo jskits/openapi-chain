@@ -1,8 +1,7 @@
 # openapi-chain
 
-[![CI](https://github.com/jskits/openapi-chain/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jskits/openapi-chain/actions/workflows/ci.yml)
-[![TypeScript](https://img.shields.io/badge/TypeScript-typed-3178C6?logo=typescript&logoColor=white)](docs/api.md)
-[![Modules](https://img.shields.io/badge/modules-ESM%20%2B%20CommonJS-blue)](docs/api.md#entry-points)
+[![CI][ci-badge]][ci] [![TypeScript][typescript-badge]][typescript]
+[![Modules][modules-badge]][modules]
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 A type-safe OpenAPI client for complex and large APIs, whose requests follow the document's wire
@@ -207,3 +206,11 @@ dependencies remain separate from the runtime package and browser bundles.
 ## License
 
 [MIT](LICENSE)
+
+[ci-badge]: https://github.com/jskits/openapi-chain/actions/workflows/ci.yml/badge.svg?branch=main
+[ci]: https://github.com/jskits/openapi-chain/actions/workflows/ci.yml
+[typescript-badge]:
+  https://img.shields.io/badge/TypeScript-typed-3178C6?logo=typescript&logoColor=white
+[typescript]: docs/api.md
+[modules-badge]: https://img.shields.io/badge/modules-ESM%20%2B%20CommonJS-blue
+[modules]: docs/api.md#entry-points

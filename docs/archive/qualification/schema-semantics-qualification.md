@@ -2,10 +2,9 @@
 
 [Archive index](README.md) · [Current documentation](../../README.md)
 
-Historical baseline:
-[verified implementation](https://github.com/jskits/openapi-chain/commit/cd6d13ff2bfec58ce613aab312c0d79646bf3990).
-Results below apply only to this baseline and the recorded environment; they are not a statement of
-current support or release status.
+Historical baseline: [verified implementation][verified-implementation]. Results below apply only to
+this baseline and the recorded environment; they are not a statement of current support or release
+status.
 
 For the subsequent fixes and later local results, see the
 [path and reference qualification](path-reference-qualification.md).
@@ -65,8 +64,8 @@ sibling-specific cache identity.
   remain available through `$path()`.
 
 Normative references:
-[request media precedence](https://spec.openapis.org/oas/v3.1.1.html#request-body-object),
-[allOf composition](https://spec.openapis.org/oas/v3.1.1.html#composition-and-inheritance-polymorphism),
+[request media precedence](https://spec.openapis.org/oas/v3.1.1.html#request-body-object), [allOf
+composition][allof-composition],
 [Reference Objects](https://spec.openapis.org/oas/v3.1.1.html#reference-object),
 [OAS 3.0 references](https://spec.openapis.org/oas/v3.0.4.html#reference-object),
 [Path Item references](https://spec.openapis.org/oas/v3.2.1.html#path-item-object).
@@ -78,3 +77,8 @@ preceding the client migration and npm latest `0.0.1`, neither representing this
 push, release dispatch or publication was performed. Remote CI for this baseline and
 published-consumer behavior remain unverified, as do Firefox/WebKit and independent production
 applications. The installed tarball tests prove local package consumption, not publication.
+
+[verified-implementation]:
+  https://github.com/jskits/openapi-chain/commit/cd6d13ff2bfec58ce613aab312c0d79646bf3990
+[allof-composition]:
+  https://spec.openapis.org/oas/v3.1.1.html#composition-and-inheritance-polymorphism

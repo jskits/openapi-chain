@@ -167,8 +167,8 @@ Both packages advertise a `tsc` binary, so explicit paths avoid ambiguity in `.b
 rule only allows the generator's TS 6.0.3 pairing; it does not claim generator support for TS 7's
 compiler API. The repository's `pnpm test:package:ts7` checks this direct-generator setup in an
 isolated tarball consumer. For an editor, enable its TypeScript 7 native language server explicitly;
-installing the alias alone does not switch an editor still using TS 6 tsserver. See the
-[TypeScript 7 side-by-side guidance](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/#running-side-by-side-with-typescript-6-0).
+installing the alias alone does not switch an editor still using TS 6 tsserver. See the [TypeScript
+7 side-by-side guidance][typescript-7-side-by-side-guidance].
 
 For manual strict metadata, compile the same parsed document used to generate `paths`:
 
@@ -235,3 +235,6 @@ regenerates them when their source documents change.
 - Check [serialization and platform limits](support.md) before using forms or binary data.
 - Use [troubleshooting](troubleshooting.md) for type, media and browser errors.
 - Run repository and browser checks with the [development guide](development.md).
+
+[typescript-7-side-by-side-guidance]:
+  https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/#running-side-by-side-with-typescript-6-0

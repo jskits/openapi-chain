@@ -2,10 +2,9 @@
 
 [Archive index](README.md) · [Current documentation](../../README.md)
 
-Historical baseline:
-[verified implementation](https://github.com/jskits/openapi-chain/commit/85e8f9690f7589e1cb88f5431a38e0133d27496d).
-Results below apply only to this baseline and the recorded environment; they are not a statement of
-current support or release status.
+Historical baseline: [verified implementation][verified-implementation]. Results below apply only to
+this baseline and the recorded environment; they are not a statement of current support or release
+status.
 
 See the [media follow-up](media-qualification.md) for the subsequent changes.
 
@@ -59,3 +58,6 @@ Remote Node/OS matrix results, npm OIDC configuration, published provenance and 
 consumers remain unverified for this baseline. After push/publication authorization, run the
 existing gated release workflow and verify those results against the exact published version. Local
 qualification and a version rehearsal do not establish public delivery.
+
+[verified-implementation]:
+  https://github.com/jskits/openapi-chain/commit/85e8f9690f7589e1cb88f5431a38e0133d27496d
