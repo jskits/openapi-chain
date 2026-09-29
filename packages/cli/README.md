@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/jskits/openapi-chain/main/assets/logo/openapi-chain-icon-512.png" alt="openapi-chain logo" width="160" height="160">
+</p>
+
 # @openapi-chain/cli
 
 Build-time type declarations, scoped client types and serialization metadata for

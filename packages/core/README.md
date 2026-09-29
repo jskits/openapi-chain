@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/jskits/openapi-chain/main/assets/logo/openapi-chain-icon-512.png" alt="openapi-chain logo" width="160" height="160">
+</p>
+
 # openapi-chain
 
 [![npm version][npm-version-badge]][npm-version]

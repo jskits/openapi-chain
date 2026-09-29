@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo/openapi-chain-icon-512.png" alt="openapi-chain logo" width="160" height="160">
+</p>
+
 # openapi-chain
 
 [![CI][ci-badge]][ci] [![TypeScript][typescript-badge]][typescript]
