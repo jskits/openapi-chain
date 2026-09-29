@@ -9,7 +9,11 @@
     "packages/*/dist/**",
     "coverage/**",
     "pnpm-lock.yaml",
-    "examples/scoped/generated/**"
+    "examples/scoped/generated/**",
+    "website/.next/**",
+    "website/out/**",
+    "website/.source/**",
+    "website/next-env.d.ts"
   ],
   "overrides": [
     {

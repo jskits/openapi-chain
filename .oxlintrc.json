@@ -16,7 +16,10 @@
     "coverage/**",
     "node_modules/**",
     "examples/scoped/generated/**",
-    "query/dist/**"
+    "query/dist/**",
+    "website/.next/**",
+    "website/out/**",
+    "website/.source/**"
   ],
   "rules": {
     "typescript/consistent-type-imports": "error",
@@ -32,6 +35,10 @@
       "rules": {
         "typescript/no-redundant-type-constituents": "off"
       }
+    },
+    {
+      "files": ["website/**/*.ts", "website/**/*.tsx"],
+      "plugins": ["typescript", "react", "import", "nextjs"]
     }
   ]
 }
