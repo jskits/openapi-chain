@@ -84,6 +84,12 @@ present historical measurements as current results. Link reports through the arc
 than adding commit tables to the main navigation. Add release notes when documentation describes a
 user-visible behavior change; navigation or wording-only changes need no changeset.
 
+Markdown, including changesets and changelogs, wraps at the 100-column print width. `pnpm format`
+wraps prose and `pnpm format:check` enforces it. Two cases cannot wrap and are accepted exceptions:
+GitHub table rows and a single URL longer than the width. Put an inline link whose URL would
+overflow a line into a reference-style definition at the end of the file, and split long code
+examples with variables or line continuations without changing what they run.
+
 ### Tagged releases and recovery
 
 Pushing a `v<packages/core/package.json version>` tag publishes that exact commit after CI passes,
