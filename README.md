@@ -4,8 +4,7 @@
 
 # openapi-chain
 
-**A type-safe OpenAPI client for complex and large APIs, whose requests follow the document's wire
-rules exactly.**
+**Spec-exact requests.<br> Fluent, fully typed calls.<br> Fast type-checks on huge specs.**
 
 [![CI][ci-badge]][ci] [![TypeScript][typescript-badge]][typescript]
 [![Modules][modules-badge]][modules]
