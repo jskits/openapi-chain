@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.6.0
+
+### Minor Changes
+
+- 0792e82: Reject structured core path, header and cookie values, plus nested query and array
+  values, before transport instead of coercing them into incorrect strings. Flat arrays, flat query
+  objects and operation-local location extensions keep their existing behavior.
+- a0d0494: Add `createRequestSerializer` to `openapi-chain/strict` and a new
+  `openapi-chain/openapi-fetch` entry with `withOpenAPISerialization`. The serializer encodes one
+  operation's path, query, header and cookie parameters and request body from compiled metadata
+  without sending a request. The adapter applies the same OpenAPI serialization to an existing
+  openapi-fetch client while openapi-fetch keeps its types, middleware and response handling.
+- cd19c0b: Remove `defineOpenAPIMetadata`, an identity helper that did not validate metadata or
+  produce the compiled artifact required by strict clients. Use `compileOpenAPIMetadata` or the CLI
+  for strict metadata. Code that only describes a partial table can use `satisfies OpenAPIMetadata`
+  without implying it is safe to execute.
+
+### Patch Changes
+
+- b7d6e70: Reduce per-request overhead in core and strict clients. The service base URL boundary is
+  parsed once and reused while `baseUrl` is unchanged, and plain header records from `init.headers`
+  or header extensions merge without an intermediate `Headers` object. Header precedence,
+  case-insensitive duplicate handling and invalid-header rejections are unchanged.
+
 ## 0.5.2
 
 ### Upgrade notes
