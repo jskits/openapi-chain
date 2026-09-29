@@ -1,5 +1,22 @@
 # @openapi-chain/cli
 
+## 0.7.0
+
+### Minor Changes
+
+- Align the version with `openapi-chain` 0.7.0. Commands, configuration and generated declarations,
+  scopes and metadata are unchanged.
+- Regenerate managed output after upgrading. The manifest records the CLI and runtime versions, so
+  `openapi-chain generate --check` reports 0.5.3 output as stale until `openapi-chain generate`
+  runs.
+- The package README opens with the openapi-chain logo, a one-line summary and links to the CLI
+  guide on the [documentation website](https://jskits.github.io/openapi-chain/).
+
+### Patch Changes
+
+- Updated dependencies
+  - openapi-chain@0.7.0
+
 ## 0.5.3
 
 ### Patch Changes

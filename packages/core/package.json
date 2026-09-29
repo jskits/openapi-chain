@@ -1,6 +1,6 @@
 {
   "name": "openapi-chain",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "A type-safe OpenAPI client for complex and large APIs, with requests that follow the document's wire rules exactly.",
   "keywords": [
     "client",

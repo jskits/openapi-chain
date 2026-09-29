@@ -1,5 +1,13 @@
 # @openapi-chain/query
 
+## 0.7.0
+
+### Minor Changes
+
+- Align the version with `openapi-chain` 0.7.0. The adapter itself is unchanged.
+- The package README opens with the openapi-chain logo, a one-line summary and links to the
+  integration guide on the [documentation website](https://jskits.github.io/openapi-chain/).
+
 ## 0.6.0
 
 ### Minor Changes

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.0
+
+### Minor Changes
+
+- The package README opens with the openapi-chain logo, a one-line summary and links to the
+  [documentation website](https://jskits.github.io/openapi-chain/), the getting-started guide, the
+  wire comparison and these release notes. This release has no runtime, type or API changes: code
+  written for 0.6.0 works unchanged, and compiled metadata stays valid.
+
 ## 0.6.0
 
 ### Minor Changes
