@@ -1,11 +1,18 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/jskits/openapi-chain/main/assets/logo/openapi-chain-icon-512.png" alt="openapi-chain logo" width="160" height="160">
-</p>
+<div align="center">
+
+<img src="https://raw.githubusercontent.com/jskits/openapi-chain/main/assets/logo/openapi-chain-logo-1024.png" alt="openapi-chain logo" width="420">
 
 # @openapi-chain/query
 
-An optional, dependency-free bridge from explicit typed operations to TanStack Query and SWR. It
-does not inspect client Proxies, generate hooks, retry requests or infer cache invalidation.
+**An optional, dependency-free bridge from explicit typed operations to TanStack Query and SWR.**
+
+[Integration guide](https://jskits.github.io/openapi-chain/docs/integrations/) ·
+[Documentation](https://jskits.github.io/openapi-chain/) ·
+[Changelog](https://jskits.github.io/openapi-chain/docs/changelog/query/)
+
+</div>
+
+It does not inspect client Proxies, generate hooks, retry requests or infer cache invalidation.
 
 ```sh
 pnpm add @openapi-chain/query

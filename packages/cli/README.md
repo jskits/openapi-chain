@@ -1,11 +1,17 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/jskits/openapi-chain/main/assets/logo/openapi-chain-icon-512.png" alt="openapi-chain logo" width="160" height="160">
-</p>
+<div align="center">
+
+<img src="https://raw.githubusercontent.com/jskits/openapi-chain/main/assets/logo/openapi-chain-logo-1024.png" alt="openapi-chain logo" width="420">
 
 # @openapi-chain/cli
 
-Build-time type declarations, scoped client types and serialization metadata for
-[openapi-chain](https://github.com/jskits/openapi-chain).
+**Build-time type declarations, scoped client types and serialization metadata for openapi-chain.**
+
+[CLI guide](https://jskits.github.io/openapi-chain/docs/cli/) ·
+[Large schemas](https://jskits.github.io/openapi-chain/docs/large-schemas/) ·
+[Documentation](https://jskits.github.io/openapi-chain/) ·
+[Changelog](https://jskits.github.io/openapi-chain/docs/changelog/cli/)
+
+</div>
 
 ```sh
 pnpm add openapi-chain

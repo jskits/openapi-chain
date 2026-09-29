@@ -1,24 +1,27 @@
-<p align="center">
-  <img src="assets/logo/openapi-chain-icon-512.png" alt="openapi-chain logo" width="160" height="160">
-</p>
+<div align="center">
+
+<img src="assets/logo/openapi-chain-logo-1024.png" alt="openapi-chain logo" width="420">
 
 # openapi-chain
+
+**A type-safe OpenAPI client for complex and large APIs, whose requests follow the document's wire
+rules exactly.**
 
 [![CI][ci-badge]][ci] [![TypeScript][typescript-badge]][typescript]
 [![Modules][modules-badge]][modules]
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A type-safe OpenAPI client for complex and large APIs, whose requests follow the document's wire
-rules exactly.
+[Documentation](https://jskits.github.io/openapi-chain/) ·
+[Getting started](docs/getting-started.md) · [Wire comparison](docs/wire-comparison.md) ·
+[Changelog](packages/core/CHANGELOG.md)
+
+</div>
 
 openapi-chain compiles the serialization rules an OpenAPI document declares (parameter `style`,
 `explode`, `allowReserved` and `content`, request media types, and form and multipart Encoding
 Objects) and applies them to every request. A build-time CLI generates types and metadata scoped to
 the paths you call, so large documents stay affordable to type-check and to ship. Calls use a fluent
 path API with no generated endpoint code and no runtime dependencies.
-
-Read the guides on the [documentation website](https://jskits.github.io/openapi-chain/); the same
-pages live in [`docs/`](docs/README.md) on GitHub.
 
 The pnpm monorepo contains three publishable packages: [`openapi-chain`](packages/core),
 [`@openapi-chain/cli`](packages/cli), and [`@openapi-chain/query`](packages/query). The runtime

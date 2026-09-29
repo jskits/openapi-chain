@@ -1,25 +1,29 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/jskits/openapi-chain/main/assets/logo/openapi-chain-icon-512.png" alt="openapi-chain logo" width="160" height="160">
-</p>
+<div align="center">
+
+<img src="https://raw.githubusercontent.com/jskits/openapi-chain/main/assets/logo/openapi-chain-logo-1024.png" alt="openapi-chain logo" width="420">
 
 # openapi-chain
+
+**A type-safe OpenAPI client for complex and large APIs, whose requests follow the document's wire
+rules exactly.**
 
 [![npm version][npm-version-badge]][npm-version]
 [![npm downloads][npm-downloads-badge]][npm-version] [![CI][ci-badge]][ci]
 [![TypeScript][typescript-badge]][typescript] [![Modules][modules-badge]][modules]
 [![License: MIT][license-mit-badge]][license-mit]
 
-A type-safe OpenAPI client for complex and large APIs, whose requests follow the document's wire
-rules exactly.
+[Documentation](https://jskits.github.io/openapi-chain/) ·
+[Getting started](https://jskits.github.io/openapi-chain/docs/getting-started/) ·
+[Wire comparison](https://jskits.github.io/openapi-chain/docs/wire-comparison/) ·
+[Changelog](https://jskits.github.io/openapi-chain/docs/changelog/core/)
+
+</div>
 
 openapi-chain compiles the serialization rules an OpenAPI document declares (parameter `style`,
 `explode`, `allowReserved` and `content`, request media types, and form and multipart Encoding
 Objects) and applies them to every request. A build-time CLI generates types and metadata scoped to
 the paths you call, so large documents stay affordable to type-check and to ship. Calls use a fluent
 path API with no generated endpoint code and no runtime dependencies.
-
-Read the guides on the [documentation website](https://jskits.github.io/openapi-chain/); the same
-pages live in [`docs/`](https://github.com/jskits/openapi-chain/blob/main/docs/README.md) on GitHub.
 
 The first request below uses the
 [Items schema](https://github.com/jskits/openapi-chain/blob/main/examples/service.openapi.json).
