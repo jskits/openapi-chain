@@ -5,7 +5,7 @@
   "scripts": {
     "sync": "node scripts/sync-docs.mjs",
     "dev": "node scripts/dev.mjs",
-    "build": "node scripts/sync-docs.mjs && next build",
+    "build": "node scripts/sync-docs.mjs && next build && node scripts/check-llms.mjs",
     "typecheck": "node scripts/sync-docs.mjs && next typegen && tsc --noEmit",
     "test": "node --test scripts/sync-docs.test.mjs"
   },

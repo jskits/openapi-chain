@@ -270,6 +270,10 @@ The sync fails on a broken relative link, a missing heading anchor, or a publish
 from every `meta.json`. `pnpm test:website` runs that check across the repository and is part of
 `pnpm check`. `pnpm website:dev` watches the source documents and regenerates pages on save.
 
+`llms.txt`, `llms-full.txt` and each page's Markdown copy are read by tools that do not apply the
+site's base path, so their site links are absolute. After exporting, `pnpm website:build` fails if
+one of those files contains a root-relative link or a site link without an exported page.
+
 CI builds the site below `/openapi-chain`, the path GitHub Pages serves it from. The `Website`
 workflow deploys `main` to [GitHub Pages](https://jskits.github.io/openapi-chain/) when
 documentation or the site changes. It needs **Settings → Pages → Build and deployment → Source:

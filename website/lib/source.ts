@@ -1,5 +1,6 @@
 import { llms, loader } from 'fumadocs-core/source';
 import { docsRoute } from './shared';
+import { pageAddress } from './llms';
 import { defineDocs } from 'fumadocs-mdx/macro';
 import { metaSchema, pageSchema } from 'fumadocs-core/source/schema';
 import { z } from 'zod';
@@ -26,7 +27,7 @@ export const source = loader({
 });
 
 export const docsLlms = llms(source, {
-  renderPage: async (page) => `# ${page.data.title} (${page.url})
+  renderPage: async (page) => `# ${page.data.title} (${pageAddress(page.url)})
 
 ${await page.data.getText('processed')}`,
 });
