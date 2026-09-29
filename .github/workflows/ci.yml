@@ -53,10 +53,13 @@ jobs:
         run: |
           pnpm benchmark:editor --compiler=ts6
           pnpm benchmark:editor:ts7
+      # The version PR consumes every changeset by design, so only other changes must add one.
       - name: Prepare Changesets base branch
+        if: github.ref != 'refs/heads/changeset-release/main' && github.head_ref != 'changeset-release/main'
         shell: bash
         run: git show-ref --verify --quiet refs/heads/main || git branch main origin/main
-      - run: pnpm changeset status
+      - if: github.ref != 'refs/heads/changeset-release/main' && github.head_ref != 'changeset-release/main'
+        run: pnpm changeset status
 
   commitlint:
     if: github.event_name == 'pull_request'
