@@ -1,6 +1,88 @@
 ---
 title: Overview
-description: Documentation for openapi-chain.
+description:
+  A type-safe OpenAPI client for complex and large APIs, whose requests follow the document's wire
+  rules exactly.
 ---
 
-The documentation is being set up.
+openapi-chain compiles the serialization rules an OpenAPI document declares (parameter `style`,
+`explode`, `allowReserved` and `content`, request media types, and form and multipart Encoding
+Objects) and applies them to every request. A build-time CLI generates types and metadata scoped to
+the paths you call. Calls use a fluent path API with no generated endpoint code and no runtime
+dependencies.
+
+## Start here
+
+<Cards>
+  <Card
+    title="Getting started"
+    description="Install the runtime and CLI, generate types and metadata, and send a first request."
+    href="/docs/getting-started"
+  />
+  <Card
+    title="Official CLI"
+    description="Generate synchronized declarations, scopes and metadata; check drift in CI."
+    href="/docs/cli"
+  />
+  <Card
+    title="Large schemas"
+    description="Scope types and runtime metadata to the paths an application calls."
+    href="/docs/large-schemas"
+  />
+  <Card
+    title="openapi-fetch adapter"
+    description="Keep openapi-fetch and add strict OpenAPI serialization to its requests."
+    href="/docs/openapi-fetch-adapter"
+  />
+</Cards>
+
+## Choose a client
+
+| Need                                                             | Entry point                                                | Runtime schema                 |
+| ---------------------------------------------------------------- | ---------------------------------------------------------- | ------------------------------ |
+| Fluent typed calls with schema-free serialization defaults       | `openapi-chain` → `createClient`                           | None                           |
+| OpenAPI parameter styles, structured forms or multipart encoding | `openapi-chain/strict` → `createStrictClient`              | Compiled metadata              |
+| Keep openapi-fetch calls with the strict serializer              | `openapi-chain/openapi-fetch` → `withOpenAPISerialization` | Compiled metadata              |
+| Compile serialization metadata from an OpenAPI document          | `openapi-chain/metadata` → `compileOpenAPIMetadata`        | OpenAPI 3.0, 3.1 or 3.2 object |
+
+<Callout title="Evidence before claims">
+  The [wire comparison](/docs/wire-comparison) executes 20 OpenAPI declarations through
+  openapi-chain and openapi-fetch, and [performance](/docs/performance) records size, request
+  overhead and type-checking cost on synthetic fixtures and the pinned GitHub and Stripe documents.
+</Callout>
+
+## Reference
+
+<Cards>
+  <Card
+    title="API reference"
+    description="Client options, paths, bodies, errors, extensions and transports."
+    href="/docs/api"
+  />
+  <Card
+    title="Support and boundaries"
+    description="Serialization matrix, metadata inference and platform limits."
+    href="/docs/support"
+  />
+  <Card
+    title="Compatibility"
+    description="Public API, metadata formats, supported toolchains and breaking changes."
+    href="/docs/compatibility"
+  />
+  <Card
+    title="Troubleshooting"
+    description="Common type, serialization, Fetch and response problems."
+    href="/docs/troubleshooting"
+  />
+</Cards>
+
+## Packages
+
+| Package                | Role                                                                                  |
+| ---------------------- | ------------------------------------------------------------------------------------- |
+| `openapi-chain`        | Runtime: schema-free core, strict client, metadata compiler and openapi-fetch adapter |
+| `@openapi-chain/cli`   | Node-only build-time generation of declarations, scopes and metadata                  |
+| `@openapi-chain/query` | Explicit operation query keys and fetchers for TanStack Query and SWR                 |
+
+These pages are generated from the repository's Markdown documentation. Each page links to its
+source on GitHub; see [contributing](/docs/contributing) to propose a change.
