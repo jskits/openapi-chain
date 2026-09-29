@@ -1,6 +1,7 @@
 packages:
   - .
   - packages/*
+  - website
 
 strictPeerDependencies: true
 saveExact: true

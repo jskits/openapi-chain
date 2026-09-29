@@ -5,7 +5,10 @@
   "scripts": {
     "build": "turbo run build --filter=./packages/*",
     "dev": "pnpm --filter openapi-chain dev",
-    "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; for (const path of ['packages/core/dist', 'packages/query/dist', 'coverage', '.turbo']) rmSync(path, { recursive: true, force: true });\"",
+    "website:dev": "pnpm --filter @openapi-chain/website dev",
+    "website:build": "pnpm --filter @openapi-chain/website build",
+    "website:typecheck": "pnpm --filter @openapi-chain/website typecheck",
+    "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; for (const path of ['packages/core/dist', 'packages/query/dist', 'coverage', '.turbo', 'website/.next', 'website/out', 'website/.source']) rmSync(path, { recursive: true, force: true });\"",
     "lint": "oxlint --type-aware --deny-warnings",
     "lint:fix": "oxlint --type-aware --fix",
     "format": "oxfmt --write .",
